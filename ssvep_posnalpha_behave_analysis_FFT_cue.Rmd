@@ -20,7 +20,7 @@ cat("\014") # clear console
 # dev.off() # clear plots (if no plots are present, comment it out or it will throw an error)
 rm(list=ls()) # clear environment
 wd="C:/Users/psy05cvd/Dropbox/work/R-statistics/experiments/ssvep_posnalpha_behave/" # work directory
-setwd(wd) # set work directory
+# setwd(wd) # set work directory
 
 # Load relevant libraries:
 
@@ -61,9 +61,9 @@ library(broom.mixed)
 
 library(ggdist)
 
-source('C:/Users/psy05cvd/Dropbox/work/R-statistics/general_functions/RainCloudPlots/tutorial_R/R_rainclouds.R')
-source('C:/Users/psy05cvd/Dropbox/work/R-statistics/general_functions/RainCloudPlots/tutorial_R/summarySE.R')
-source('C:/Users/psy05cvd/Dropbox/work/R-statistics/general_functions/RainCloudPlots/tutorial_R/simulateData.R')
+# source('C:/Users/psy05cvd/Dropbox/work/R-statistics/general_functions/RainCloudPlots/tutorial_R/R_rainclouds.R')
+# source('C:/Users/psy05cvd/Dropbox/work/R-statistics/general_functions/RainCloudPlots/tutorial_R/summarySE.R')
+# source('C:/Users/psy05cvd/Dropbox/work/R-statistics/general_functions/RainCloudPlots/tutorial_R/simulateData.R')
 
 datafile1 <- "data_in/Behavior_FFT_singletrials_cue.txt"
 timewindows = c("[-1000 0]ms", "[0 1000]ms", "[500 1500]ms")
@@ -2192,7 +2192,7 @@ fit_validity_x_SSVEP_alpha = brm(
 
 ```
 
-### **estimating models**
+### **estimating models zscored data**
 <br>
 
 with z-scored alpha and SSVEP amplitudes
@@ -2211,7 +2211,8 @@ fit_z_visalpha = brm(formula = post_RT ~ post_cue_vis_alpha_contra_target + (1|s
           family = shifted_lognormal(),
           file = 'fit_z_visalpha_slog',
           save_pars = save_pars(all = TRUE),
-          file_refit = "on_change"
+          file_refit = "on_change",
+          cores = 4
           # file_refit = "always"
           )  # Save all that hard work.
 
@@ -2221,17 +2222,19 @@ fit_z_validity_visalpha = brm(formula = post_RT ~ cue_validity_label + post_cue_
           family = shifted_lognormal(),
           file = 'fit_z_validity_visalpha_slog',
           save_pars = save_pars(all = TRUE),
-          file_refit = "on_change"
+          file_refit = "on_change",
+          cores = 4
           # file_refit = "always"
           )  # Save all that hard work.
 
-# visual alpha contra target * validity
+visual alpha contra target * validity
 fit_z_validity_x_visalpha = brm(formula = post_RT ~ cue_validity_label * post_cue_vis_alpha_contra_target + (cue_validity_label|subject),
           data = modeldata2, 
           family = shifted_lognormal(),
           file = 'fit_z_validity_x_visalpha_slog',
           save_pars = save_pars(all = TRUE),
-          file_refit = "on_change"
+          file_refit = "on_change",
+          cores = 4
           # file_refit = "always"
           )  # Save all that hard work.
 

@@ -1,7 +1,0 @@
-"0",""
-"0","# compare validity model to model with all data"
-"0","# compare model | alpha contra target + contra nontarget"
-"0","modelcomparison_loo <- "
-"0","  loo_compare(fit_intercept, fit_validity, fit_validity_visalpha, fit_validity_alpha2, fit_validity_alpha1_alpha2, fit_validity_SSVEP, fit_validity_SSVEP_alpha,"
-"0","              criterion = c(""loo""))"
-"0","as.data.frame(modelcomparison_loo)"

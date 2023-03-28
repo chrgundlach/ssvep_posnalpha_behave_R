@@ -1,3 +1,0 @@
-"0","plot(fit_SSVEP, ask = FALSE)
-"
-"0","plot(conditional_effects(fit_SSVEP), ask = FALSE)"
