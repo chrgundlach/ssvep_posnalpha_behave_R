@@ -3,9 +3,9 @@
     "path": "C:/Users/psy05cvd/Dropbox/work/R-statistics/experiments/ssvep_posnalpha_behave/ssvep_posnalpha_behave_analysis_behavior.Rmd",
     "project_path": "ssvep_posnalpha_behave_analysis_behavior.Rmd",
     "type": "r_markdown",
-    "hash": "0",
+    "hash": "1145407702",
     "contents": "",
-    "dirty": true,
+    "dirty": false,
     "created": 1678702213422.0,
     "source_on_save": false,
     "relative_order": 5,
@@ -18,11 +18,11 @@
         "Source": "Source"
     },
     "folds": "",
-    "lastKnownWriteTime": 1679924494,
+    "lastKnownWriteTime": 1679995591,
     "encoding": "UTF-8",
     "collab_server": "",
     "source_window": "",
-    "last_content_update": 1679991191344,
+    "last_content_update": 1679995591330,
     "read_only": false,
     "read_only_alternatives": []
 }
