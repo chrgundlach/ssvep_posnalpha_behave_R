@@ -1,0 +1,817 @@
+---
+title: "tACS_closedloop_effects"
+author: "Christopher Gundlach"
+date: "2019-06-03"
+output:
+  html_document:
+    code_folding: hide
+    toc: true
+    toc_float: true
+    toc_depth: 4
+    theme: readable ##yeti #united ###spacelab #simplex ###readable #paper ##lumen #cosmo ##journal #flatly
+  # tufte::tufte_html: default
+  # prettydoc::html_pretty:
+  #   theme: architect
+  #   highlight: github
+  #   #code_folding: hide
+---
+
+Modelling of potential stimulation effects of *tACS* applied in *phase* or in *opposite phase* (**STIMULATION**) to ongoing alpha oscillations, when eyes were *closed* or *open* (**EYE_STATE**) on *alpha power* measured *pre* and *post* (**TIME**) to stimulation derived from channel *POZ*, an occipital cluster *POC* CSP filter maximizing alpha power *post over pre* or *pre over post* (**SIGNAL**) and different post-stimulation time windows (**TIMEBIN**)  
+
+* via standard ANOVA models~RM~
+* ~~via linear mixed models~~ [*not yet implemented*]
+
+
+```{r load_package, message = FALSE, warning = FALSE}
+library(prettydoc)
+library(tufte)
+library(lme4)
+library(readxl)
+library(tidyverse)
+library(data.table)
+library(tidyverse)
+library(afex)
+library(broom)
+library(apa)
+library(kableExtra)
+library(lmerTest)
+library(pbkrtest)
+library(effects)
+library(visreg)
+library(sjPlot)
+library(broom.mixed)
+library(pander)
+library(mediation)
+library(multcompView)
+library(multcomp)
+library(emmeans)
+library(lemon)
+library(ggbeeswarm)
+
+
+
+# DATAPath = "data/"
+# DATAPath = "data/res_500_timebins/"
+DATAPath = "data/res_500_timebins_nonstd/" # power POC not normalized
+DATAFILES = sprintf("subj%02.0f.dat",c(2:22))
+
+
+options(scipen=1, digits=3)
+```
+<style type="text/css">
+.main-container {
+  max-width: 1800px !important;
+  margin-left: auto;
+  margin-right: auto;
+}
+</style>
+
+
+## Prepare data  
+<br>  
+
+1.  Read in data: 
+    + `r sprintf('%s/%s',getwd(),DATAPath)`
+    + *block N, eyes state, stim relation,p hase pred acc, AP pre POz, AP post POz, AP pre CSPpre, AP post CSPpre, AP pre CSPpost, AP post CSPpost, AP pre POC, AP post POC, sequence num, time bin* 
+2.  Create new dataset with data averaged across trials
+3.  Calculate pre to post modulation in %
+<br>  
+
+```{r load_data, fig.show = "hide", warning = FALSE, fig.height=6, fig.width=10}
+# read in data
+# preallocate file
+# DATAAll <- data.frame(
+#   subjects=factor(),
+#   trials=factor(),
+#   block=factor(),
+#   eye_state=factor(),# EC, EO: eyes closes, eyes open
+#   stimulation=factor(), #-1 opposite phase; 1 in phase
+#   phase_prediction_accuracy = integer(),
+#   `alpha_power_POZ/pre`=integer(),
+#   `alpha_power_POZ/post`=integer(),
+#   `alpha_power_CSPpre/pre`=integer(),
+#   `alpha_power_CSPpre/post`=integer(),
+#   `alpha_power_CSPpost/pre`=integer(),
+#   `alpha_power_CSPpost/post`=integer()
+# )
+# 
+# # read in multiple files
+# for (i_files in 2:length(DATAFILES)){
+  # DATAIn <- read.delim(sprintf("%s%s",DATAPath,DATAFILES[i_files]), header = FALSE, sep=",") %>%
+  #   mutate(subjects=i_files,trials=1:nrow(.))%>%
+  #   dplyr::select(subjects, trials, block=V1, eye_state=V2, stimulation=V3, phase_prediction_accuracy=V4,
+  #               `alpha_power_POZ/pre`=V5, `alpha_power_POZ/post`=V6, `alpha_power_CSPpre/pre`=V7, `alpha_power_CSPpre/post`=V8,
+  #               `alpha_power_CSPpost/pre`=V9, `alpha_power_CSPpost/post`=V10)
+#   DATAAll <-rbind(DATAAll,DATAIn,make.row.names=TRUE)
+# }
+
+DATAAll <- data.frame(
+  subjects=factor(),
+  trials=factor(),
+  block=factor(),
+  eye_state=factor(),# EC, EO: eyes closes, eyes open
+  stimulation=factor(), #-1 opposite phase; 1 in phase
+  seq_num=factor(),
+  timebin=factor(),
+  phase_prediction_accuracy = integer(),
+  `alpha_power_POZ/pre`=integer(),
+  `alpha_power_POZ/post`=integer(),
+  `alpha_power_CSPpre/pre`=integer(),
+  `alpha_power_CSPpre/post`=integer(),
+  `alpha_power_CSPpost/pre`=integer(),
+  `alpha_power_CSPpost/post`=integer(),
+  `alpha_power_POC/pre`=integer(),
+  `alpha_power_POC/post`=integer()
+)
+
+# read in multiple files
+for (i_files in 2:length(DATAFILES)){
+  DATAIn <- read.delim(sprintf("%s%s",DATAPath,DATAFILES[i_files]), header = FALSE, sep=",") %>%
+    mutate(subjects=i_files,trials=1:nrow(.))%>%
+    dplyr::select(subjects, trials, block=V1, eye_state=V2, stimulation=V3, seq_num=V13, timebin=V14, phase_prediction_accuracy=V4,
+                `alpha_power_POZ/pre`=V5, `alpha_power_POZ/post`=V6, `alpha_power_CSPpre/pre`=V7, `alpha_power_CSPpre/post`=V8,
+                `alpha_power_CSPpost/pre`=V9, `alpha_power_CSPpost/post`=V10,`alpha_power_POC/pre`=V11, `alpha_power_POC/post`=V12)
+  DATAAll <-rbind(DATAAll,DATAIn,make.row.names=TRUE)
+}
+
+# create time variable
+DATAAll <- DATAAll %>%
+  gather(datatype, amplitude, -subjects, -trials, -block, -eye_state, -stimulation, -seq_num, -timebin, -phase_prediction_accuracy)%>%
+  separate(datatype, into=c("signal","time"), sep="/")
+# head(DATAAll)
+# str(DATAAll)
+kable(head(DATAAll),escape = F, digits = c(3,3,3,3,3,3,3,3,3,3), caption = c("single trial data")) %>%
+  kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
+
+
+
+# # check data
+# DATAAll$phase_prediction_accuracy[
+#   DATAAll$subjects==2 & DATAAll$trials==1 & DATAAll$block=="block 1" & DATAAll$eye_state=="EO"& DATAAll$stimulation==1]
+
+# average across trials and blocks (only first time bin)
+DATAAll_avg <- DATAAll %>%
+  filter(timebin==1)%>%
+  group_by(subjects, eye_state, stimulation, signal, time) %>%
+  dplyr::summarise(amplitude = mean(amplitude), phase_prediction_accuracy = mean(phase_prediction_accuracy))%>%
+  spread( time, amplitude)%>%
+  # mutate(`post-pre`=post-pre)%>% # difference
+  mutate(`post-pre`=(post/pre)*100-100)%>% # modulation in %
+  gather(time, amplitude, -subjects, -eye_state, -stimulation, -signal, -phase_prediction_accuracy)%>%
+  mutate(time=as.factor(time))
+# head(DATAAll_avg)
+# str(DATAAll_avg)
+kable(head(DATAAll_avg),escape = F, digits = c(3,3,3,3,3,3,3,3,3), caption = c("data collapsed across trials")) %>%
+  kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
+
+# average across trials and blocks (consider sequence)
+DATAAll_avg2 <- DATAAll %>%
+  filter(timebin==1)%>%
+  mutate(seq_num = ifelse(seq_num > 3,3,seq_num))%>% # all sequences larger than 4 are counted as 4
+  group_by(subjects, eye_state, stimulation, signal, time, seq_num) %>%
+  dplyr::summarise(amplitude = mean(amplitude), phase_prediction_accuracy = mean(phase_prediction_accuracy))%>%
+  spread( time, amplitude)%>%
+  # mutate(`post-pre`=post-pre)%>% # difference
+  mutate(`post-pre`=(post/pre)*100-100)%>% # modulation in %
+  gather(time, amplitude, -subjects, -eye_state, -stimulation, -signal, -seq_num, -phase_prediction_accuracy)%>%
+  mutate(time=as.factor(time))
+# head(DATAAll_avg)
+# str(DATAAll_avg)
+kable(head(DATAAll_avg2),escape = F, digits = c(3,3,3,3,3,3,3,3,3), caption = c("data collapsed across trials")) %>%
+  kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
+
+# average across trials and blocks (timebin resolved analysis)
+DATAAll_avg3 <- DATAAll %>%
+  group_by(subjects, eye_state, stimulation, signal, time, timebin) %>%
+  dplyr::summarise(amplitude = mean(amplitude), phase_prediction_accuracy = mean(phase_prediction_accuracy))%>%
+  spread( time, amplitude)%>%
+  # mutate(`post-pre`=post-pre)%>% # difference
+  mutate(`post-pre`=(post/pre)*100-100)%>% # modulation in %
+  gather(time, amplitude, -subjects, -eye_state, -stimulation, -signal, -phase_prediction_accuracy, -timebin)%>%
+  mutate(time=as.factor(time))
+# head(DATAAll_avg)
+# str(DATAAll_avg)
+kable(head(DATAAll_avg),escape = F, digits = c(3,3,3,3,3,3,3,3,3,3), caption = c("data collapsed across trials")) %>%
+  kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
+
+#check data
+# DATAAll_avg$amplitude[DATAAll_avg$subjects==2 & DATAAll_avg$eye_state=="EC" & DATAAll_avg$stimulation == -1 & 
+#                         DATAAll_avg$signal == "alpha_power_CSPpost"]
+# DATAAll_avg$time[DATAAll_avg$subjects==2 & DATAAll_avg$eye_state=="EC" & DATAAll_avg$stimulation == -1 & 
+#                         DATAAll_avg$signal == "alpha_power_CSPpost"]
+
+```
+
+
+
+## Plot data  
+<br>  
+
+1.  plotting alpha power averaged across trials separate for all measures and experimental conditions
+
+```{r plot_data, echo=TRUE, fig.height=3, fig.width=8, warning=FALSE, results = "hide"}
+
+theme_set(theme_bw())
+plot_data <- DATAAll_avg%>%
+  ungroup()%>%
+  filter(time!="post-pre")%>%
+  mutate(stimulation=as.factor(stimulation))%>%
+  mutate(time=factor(time, levels = c('pre', 'post'), ordered = T))
+
+ggplot(plot_data, aes(x = interaction( time, stimulation), y = amplitude, fill = time)) +
+  scale_fill_brewer(palette = "Dark2")+
+  stat_summary(fun.data = mean_se, geom = "bar", position = "dodge") +
+  geom_hline(yintercept=0, show.legend = FALSE) +
+  geom_line(aes(group = interaction(subjects,stimulation)),alpha = 0.6, colour = "grey60") +
+  geom_point(size = 2.5, colour = "black",alpha = 0.3) +
+  # geom_point(size = 1.5, aes(colour  = post_cue_attention)) +
+  #geom_point(shape = 21,aes(fill  = post_cue_task, size = 0.5, stroke = 0.5)) +
+  scale_x_discrete("stimulation phase", labels=c("in","in", "opposite", "opposite")) +
+  stat_summary(fun.data = mean_se, geom = "errorbar",position=position_dodge(width=0.95),width=.4, size=.9) +
+  # scale_x_discrete("alpha bins", breaks=waiver(), labels = rep(c("1","2","3","4","5"),1,5)) +
+  facet_grid(eye_state ~ signal) +
+  labs(title=sprintf("alpha power | N = %1.0f",length(unique(plot_data$subjects))), 
+       subtitle="separet for signals and conditions") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  ylab(expression(paste("alpha power")))
+
+
+g <- ggplot(plot_data, aes(x = interaction( time, stimulation, eye_state), y = amplitude, fill = time)) +
+  # scale_fill_brewer(palette = "Set2")+
+  scale_fill_brewer(palette = "Set2",name = "time",labels = c("pre-stimulation","post-stimulation"))+
+  scale_color_brewer(palette = "Set2",name = "time",labels = c("pre-stimulation","post-stimulation"))+
+  # scale_fill_hue(l=40, c=35) +
+  # scale_fill_grey(start=0.85, end=0.6) +
+  stat_summary(fun.data = mean_se, geom = "bar", position = "dodge") +
+  geom_hline(yintercept=0, show.legend = FALSE) +
+  geom_line(aes(group = interaction(subjects,stimulation,eye_state)),alpha = 1, colour = "grey60") +
+  # geom_point(size = 2.5, colour = "black",alpha = 0.3) +
+  geom_beeswarm(cex=1.5, size = 1.5, color = "black", stroke = 0.5,shape = 21)+
+  # geom_point(size = 1.5, aes(colour  = post_cue_attention)) +
+  #geom_point(shape = 21,aes(fill  = post_cue_task, size = 0.5, stroke = 0.5)) +
+  scale_x_discrete("stimulation phase", labels=c("in_EC","in_EC", "opposite_EC", "opposite_EC","in_EO","in_EO", "opposite_EO", "opposite_EO")) +
+  stat_summary(fun.data = mean_se, geom = "errorbar",position=position_dodge(width=0.95),width=.6, size=.9) +
+  # scale_x_discrete("alpha bins", breaks=waiver(), labels = rep(c("1","2","3","4","5"),1,5)) +
+  # facet_grid(signal ~ ., scales = "free_y") +
+  # facet_grid(. ~ signal, scales = "free_y") +
+  facet_wrap(. ~ signal, scales = "free_y", nrow = 1) +
+  # theme(axis.text=element_blank(), axis.ticks=element_blank())+
+  # facet_rep_wrap(~ signal, scales = "free", repeat.tick.labels = 'bottom', nrow = 4) +
+  labs(title=sprintf("alpha power | N = %1.0f",length(unique(plot_data$subjects))), 
+       subtitle="separate for signals and conditions") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  ylab(expression(paste("alpha power")))
+
+print(g)
+
+ggsave(filename = "Plot1b.eps", width = 8, height = 3,
+       plot = print(g))
+
+```
+
+
+<br>  
+
+2.  plotting pre-to-post modulation of alpha power in % averaged across trials separate for all measures and experimental conditions  
+
+```{r plot_data2, echo=TRUE, fig.height=3, fig.width=8, warning=FALSE, results = "hide"}
+
+theme_set(theme_bw())
+
+
+plot_data <- DATAAll_avg%>%
+  ungroup()%>%
+  filter(time=="post-pre")%>%
+  mutate(stimulation=as.factor(stimulation))
+
+ggplot(plot_data, aes(x = interaction(stimulation, eye_state), y = amplitude, fill = stimulation)) +
+  scale_fill_brewer(palette = "Set1",name = "stimulation phase",labels = c("opposite phase","in phase"))+
+  stat_summary(fun.data = mean_se, geom = "bar", position = "dodge") +
+  geom_hline(yintercept=0, show.legend = FALSE) +
+  geom_line(aes(group = interaction(subjects,eye_state)),alpha = 0.3, colour = "grey60") +
+  geom_point(size = 2.5, colour = "black",alpha = 0.3) +
+  stat_summary(fun.data = mean_se, geom = "errorbar",position=position_dodge(width=0.95),width=.4, size=.9,colour = "grey40") +
+  scale_x_discrete("eye state", labels=c("closed","closed", "open", "open")) +
+  facet_grid(signal ~ .) +
+  labs(title=sprintf("alpha power | modulation post vs pre | N = %1.0f",length(unique(plot_data$subjects))), 
+       subtitle="separate for signals and conditions | same scale") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  # ylab(expression(paste("pre to post difference")))
+  ylab(expression(paste("pre to post modulation in %")))
+
+g <- ggplot(plot_data, aes(x = interaction(stimulation, eye_state), y = amplitude, fill = stimulation)) +
+  scale_fill_brewer(palette = "Set1",name = "stimulation phase",labels = c("opposite phase","in phase"))+
+  scale_color_brewer(palette = "Set1",name = "stimulation phase",labels = c("opposite phase","in phase"))+
+  stat_summary(fun.data = mean_se, geom = "bar", position = "dodge") +
+  geom_hline(yintercept=0, show.legend = FALSE) +
+  # geom_line(aes(group = interaction(subjects,eye_state)),alpha = 0.3, colour = "grey60") +
+  # geom_point(size = 2.5, colour = "black",alpha = 0.3) +
+  geom_beeswarm(cex=2.5, size = 2, color = "black", stroke = 0.5,shape = 21)+
+  stat_summary(fun.data = mean_se, geom = "errorbar",position=position_dodge(width=0.95),width=.6, size=.9,colour = "black") +
+  scale_x_discrete("state", labels=c("EC","EC", "EO", "EO")) +
+  # facet_wrap(~ signal, scales = "free", nrow = 1) 
+  # facet_grid(signal ~ ., scales = "free_y") +
+  # facet_grid(. ~ signal, scales = "free_y") +
+  facet_wrap(. ~ signal, nrow = 1) +
+  labs(title=sprintf("alpha power | modulation post vs pre | N = %1.0f",length(unique(plot_data$subjects))), 
+       subtitle="separate for signals and conditions | scale adjusted") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  # scale_color_manual("post-cue attention", labels = c("contralateral to attended","contralateral to unattended"),
+  #                    values = c("orangered","dodgerblue"),guide = guide_legend()) +
+  # ylab(expression(paste("pre to post difference")))
+  ylab(expression(paste("pre to post modulation in %")))
+print(g)
+
+# ggsave(filename = "Plot2.eps", width = 3.5, height = 8,
+#        plot = print(g))
+ggsave(filename = "Plot2b.eps", width = 8, height = 3,
+       plot = print(g))
+
+
+
+```
+
+
+<br>  
+
+2b.  plotting pre-to-post modulation of alpha power in % averaged across trials separate for all measures and experimental conditions | separately for number of previous trials with the same condition  
+
+```{r plot_data2b, echo=TRUE, fig.height=8, fig.width=10, warning=FALSE, results = "hide"}
+
+theme_set(theme_bw())
+
+
+plot_data <- DATAAll_avg2%>%
+  ungroup()%>%
+  filter(time=="post-pre")%>%
+  mutate(stimulation=as.factor(stimulation))
+
+ggplot(plot_data, aes(x = interaction(stimulation, eye_state), y = amplitude, fill = stimulation)) +
+  scale_fill_brewer(palette = "Set1",name = "stimulation phase",labels = c("opposite phase","in phase"))+
+  stat_summary(fun.data = mean_se, geom = "bar", position = "dodge") +
+  geom_hline(yintercept=0, show.legend = FALSE) +
+  geom_line(aes(group = interaction(subjects,eye_state)),alpha = 0.3, colour = "grey60") +
+  geom_point(size = 2.5, colour = "black",alpha = 0.3) +
+  stat_summary(fun.data = mean_se, geom = "errorbar",position=position_dodge(width=0.95),width=.4, size=.9,colour = "grey40") +
+  scale_x_discrete("eye state", labels=c("closed","closed", "open", "open")) +
+  facet_grid(signal ~ seq_num) +
+  labs(title=sprintf("alpha power | modulation post vs pre | N = %1.0f",length(unique(plot_data$subjects))), 
+       subtitle="separate for signals and conditions | same scale") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  # ylab(expression(paste("pre to post difference")))
+  ylab(expression(paste("pre to post modulation in %")))
+
+ggplot(plot_data, aes(x = interaction(stimulation, eye_state), y = amplitude, fill = stimulation)) +
+  scale_fill_brewer(palette = "Set1",name = "stimulation phase",labels = c("opposite phase","in phase"))+
+  stat_summary(fun.data = mean_se, geom = "bar", position = "dodge") +
+  geom_hline(yintercept=0, show.legend = FALSE) +
+  geom_line(aes(group = interaction(subjects,eye_state)),alpha = 0.3, colour = "grey60") +
+  geom_point(size = 2.5, colour = "black",alpha = 0.3) +
+  stat_summary(fun.data = mean_se, geom = "errorbar",position=position_dodge(width=0.95),width=.4, size=.9,colour = "grey40") +
+  scale_x_discrete("eye state", labels=c("closed","closed", "open", "open")) +
+  facet_wrap(signal ~ seq_num, nrow = 4, ncol = 4, scales = "free") +
+  labs(title=sprintf("alpha power | modulation post vs pre | N = %1.0f",length(unique(plot_data$subjects))), 
+       subtitle="separate for signals and conditions | scale adjusted") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  # ylab(expression(paste("pre to post difference")))
+  ylab(expression(paste("pre to post modulation in %")))
+
+
+
+```
+
+
+<br>  
+
+2c.  plotting pre-to-post modulation of alpha power in % averaged across trials separate for all measures and experimental conditions | separately for post-stimulation time bins  
+
+```{r plot_data2c, echo=TRUE, fig.height=8, fig.width=10, warning=FALSE, results = "hide"}
+
+theme_set(theme_bw())
+
+
+plot_data <- DATAAll_avg3%>%
+  ungroup()%>%
+  filter(time=="post-pre")%>%
+  mutate(stimulation=as.factor(stimulation))
+
+ggplot(plot_data, aes(x = interaction(stimulation, eye_state), y = amplitude, fill = stimulation)) +
+  scale_fill_brewer(palette = "Set1",name = "stimulation phase",labels = c("opposite phase","in phase"))+
+  stat_summary(fun.data = mean_se, geom = "bar", position = "dodge") +
+  geom_hline(yintercept=0, show.legend = FALSE) +
+  geom_line(aes(group = interaction(subjects,eye_state)),alpha = 0.3, colour = "grey60") +
+  geom_point(size = 2.5, colour = "black",alpha = 0.3) +
+  stat_summary(fun.data = mean_se, geom = "errorbar",position=position_dodge(width=0.95),width=.4, size=.9,colour = "grey40") +
+  scale_x_discrete("eye state", labels=c("closed","closed", "open", "open")) +
+  facet_grid(signal ~ timebin) +
+  labs(title=sprintf("alpha power | modulation post vs pre | N = %1.0f",length(unique(plot_data$subjects))), 
+       subtitle="separate for signals and conditions | same scale") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  # ylab(expression(paste("pre to post difference")))
+  ylab(expression(paste("pre to post modulation in %")))
+
+
+ggplot(plot_data, aes(x = interaction(stimulation, eye_state), y = amplitude, fill = stimulation)) +
+  scale_fill_brewer(palette = "Set1",name = "stimulation phase",labels = c("opposite phase","in phase"))+
+  stat_summary(fun.data = mean_se, geom = "bar", position = "dodge") +
+  geom_hline(yintercept=0, show.legend = FALSE) +
+  geom_line(aes(group = interaction(subjects,eye_state)),alpha = 0.3, colour = "grey60") +
+  geom_point(size = 2.5, colour = "black",alpha = 0.3) +
+  stat_summary(fun.data = mean_se, geom = "errorbar",position=position_dodge(width=0.95),width=.4, size=.9,colour = "grey40") +
+  scale_x_discrete("eye state", labels=c("closed","closed", "open", "open")) +
+  facet_wrap(signal ~ timebin, nrow = 4, ncol = 4, scales = "free") +
+  labs(title=sprintf("alpha power | modulation post vs pre | N = %1.0f",length(unique(plot_data$subjects))), 
+       subtitle="separate for signals and conditions | scale adjusted") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  # ylab(expression(paste("pre to post difference")))
+  ylab(expression(paste("pre to post modulation in %")))
+
+
+
+```
+
+
+<br>  
+
+2d.  plotting pre-to-post modulation of alpha power in % averaged across trials for CSP pre measure only and all experimental conditions | separately for post-stimulation time bins  
+
+```{r plot_data2d, echo=TRUE, fig.height=4, fig.width=10, warning=FALSE, results = "hide"}
+
+theme_set(theme_bw())
+
+
+plot_data <- DATAAll_avg3%>%
+  ungroup()%>%
+  filter(time=="post-pre")%>%
+  filter(signal=="alpha_power_CSPpre")%>%
+  mutate(stimulation=as.factor(stimulation))
+
+ggplot(plot_data, aes(x = interaction(stimulation, eye_state), y = amplitude, fill = stimulation)) +
+  scale_fill_brewer(palette = "Set1",name = "stimulation phase",labels = c("opposite phase","in phase"))+
+  stat_summary(fun.data = mean_se, geom = "bar", position = "dodge") +
+  geom_hline(yintercept=0, show.legend = FALSE) +
+  geom_line(aes(group = interaction(subjects,eye_state)),alpha = 0.3, colour = "grey60") +
+  geom_point(size = 2.5, colour = "black",alpha = 0.3) +
+  stat_summary(fun.data = mean_se, geom = "errorbar",position=position_dodge(width=0.95),width=.4, size=.9,colour = "grey40") +
+  scale_x_discrete("eye state", labels=c("closed","closed", "open", "open")) +
+  facet_grid(. ~ timebin) +
+  labs(title=sprintf("alpha power | modulation post vs pre | N = %1.0f",length(unique(plot_data$subjects))), 
+       subtitle="separate for signals and conditions | same scale") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  # ylab(expression(paste("pre to post difference")))
+  ylab(expression(paste("pre to post modulation in %")))
+
+
+```
+
+
+
+## Model data  
+<br>  
+
+### ANOVA~(RM)~ for each measure
+1.  amplitude for measures:
+    + alpha_power_CSPpost
+    + alpha_power_CSPpre
+    + alpha_power_POz
+    + alpha_power_POC
+2.  factors:
+    + **eye_state** [eyes open, eyes closed]
+    + **stimulation** [in phase, opposite phase]
+    + **time** [pre-stimulation, post-stimulation]
+
+
+```{r ANOVA_V1, fig.show = "hide", warning = FALSE, fig.height=6, fig.width=10}
+StatsOut <- DATAAll_avg %>%
+  ungroup()%>%
+  filter(time != "post-pre") %>%
+  mutate(stimulation=as.factor(stimulation))%>%
+  group_by(signal) %>%
+  nest() %>%
+  mutate(stats= map(data, ~broom::tidy(
+    anova(aov_ez(id="subjects", dv = "amplitude", data = ., within = c("time","eye_state","stimulation")))
+  ))) %>%
+  dplyr::select(-data) %>%
+  unnest()
+
+StatsOut %>%
+  # mutate(p.value = p.adjust(p.value, method="holm"))%>%
+  mutate(
+    p.value = cell_spec(ifelse(round(p.value,4)<.001,"< .001",round(p.value,4)), 
+                        color = ifelse(is.nan(p.value),"blue", ifelse(p.value < .05, "green", "red")),
+                        bold = ifelse(is.nan(p.value),F, ifelse(p.value < .05, T,F)),
+                        align = "center")
+  ) %>%
+  mutate(term = cell_spec(term, align = "center")) %>%
+  kable(escape = F, digits = c(3,3,3,3,3,3,3,3,3), caption = c("repeated measures ANOVA | dv = amplitude of alpha oscillations")) %>%
+  kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8)) %>%
+  row_spec(c(1:7, 15:21), background = "white")%>%
+  row_spec(c(8:14, 22:28), background = "#F2F2F2")
+
+```
+
+
+
+<br>  
+
+### ANOVA~(RM)~ for each measure | reduced + post hoc t-tests
+1.  pre to post amplitude modulation in % for measures:
+    + alpha_power_CSPpost
+    + alpha_power_CSPpre
+    + alpha_power_POz
+    + alpha_power_POC
+2.  factors:
+    + **eye_state** [eyes open, eyes closed]
+    + **stimulation** [in phase, opposite phase]
+3.  t-tests
+    + testing amplitude difference for all combinations of all conditons against 0
+
+```{r ANOVA_V2, fig.show = "hide", warning = FALSE, fig.height=6, fig.width=10}
+StatsOut <- DATAAll_avg %>%
+  ungroup()%>%
+  filter(time == "post-pre") %>%
+  mutate(stimulation=as.factor(stimulation))%>%
+  group_by(signal) %>%
+  nest() %>%
+  mutate(stats= map(data, ~broom::tidy(
+    anova(aov_ez(id="subjects", dv = "amplitude", data = ., within = c("eye_state","stimulation")))
+  ))) %>%
+  dplyr::select(-data) %>%
+  unnest()
+
+StatsOut %>%
+  # mutate(p.value = p.adjust(p.value, method="holm"))%>%
+  mutate(
+    p.value = cell_spec(ifelse(round(p.value,4)<.001,"< .001",round(p.value,4)), 
+                        color = ifelse(is.nan(p.value),"blue", ifelse(p.value < .05, "green", "red")),
+                        bold = ifelse(is.nan(p.value),F, ifelse(p.value < .05, T,F)),
+                        align = "center")
+  ) %>%
+  mutate(term = cell_spec(term, align = "center")) %>%
+  kable(escape = F, digits = c(3,3,3,3,3,3,3,3,3), 
+        caption = c("repeated measures ANOVA | dv = pre to post amplitude modulation of alpha power in %")) %>%
+  kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8)) %>%
+  row_spec(c(1:3, 7:9), background = "white")%>%
+  row_spec(c(4:6), background = "#F2F2F2")
+
+# planned t-tests
+DATAAll_avg %>%
+  ungroup()%>%
+  filter(time == "post-pre") %>%
+  mutate(stimulation=as.factor(stimulation))%>%
+  group_by(stimulation, eye_state,signal) %>%
+  nest() %>%
+  mutate(stats = map(data, ~broom::tidy(
+    t.test(.x$amplitude)
+    ))) %>%
+  mutate(meanval = map(data, ~ mean(.x$amplitude))) %>%
+  mutate(std = map(data, ~ sd(.x$amplitude))) %>%
+  dplyr::select(-data) %>%
+  unnest()%>%
+  dplyr::select(signal, eye_state,stimulation, meanval, std, statistic, parameter, p.value)%>%
+  arrange(signal) %>%
+  # mutate(p.value = p.adjust(p.value, method="holm")) %>%
+  mutate(CohensD = `statistic`/sqrt(parameter))%>%
+  mutate(
+    p.value = cell_spec(ifelse(round(p.value,4)<.001,"< .001",round(p.value,4)), 
+                        color = ifelse(is.nan(p.value),"blue", ifelse(p.value < .05, "green", "red")),
+                        bold = ifelse(is.nan(p.value),F, ifelse(p.value < .05, T,F)),
+                        align = "center")
+  ) %>%
+  kable(escape = F, digits = c(3,3,3,3,3,3,3,3,3), 
+        caption = c("planned t-tests against 0 | dv = pre to post amplitude modulation of alpha power in %")) %>%
+  kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8)) %>%
+  row_spec(c(1:4, 9:12), background = "white")%>%
+  row_spec(c(5:8, 13:16), background = "#F2F2F2")
+```
+
+
+### ANOVA~(RM)~ for CSPpre measure with additional factor timebin
+1.  amplitude for measures:
+    + alpha_power_CSPpre
+2.  factors:
+    + **eye_state** [eyes open, eyes closed]
+    + **stimulation** [in phase, opposite phase]
+    + **time** [pre-stimulation, post-stimulation]
+    + **timebin** [1, 2, 3, 4]
+
+
+```{r ANOVA_V3, fig.show = "hide", warning = FALSE, fig.height=6, fig.width=10}
+StatsOut <- DATAAll_avg3 %>%
+  ungroup()%>%
+  filter(time != "post-pre") %>%
+  filter(signal == "alpha_power_CSPpre") %>%
+  mutate(stimulation=as.factor(stimulation))%>%
+  group_by(signal) %>%
+  nest() %>%
+  mutate(stats= map(data, ~broom::tidy(
+    anova(aov_ez(id="subjects", dv = "amplitude", data = ., within = c("time","eye_state","stimulation", "timebin")))
+  ))) %>%
+  dplyr::select(-data) %>%
+  unnest()
+
+StatsOut %>%
+  # mutate(p.value = p.adjust(p.value, method="holm"))%>%
+  mutate(
+    p.value = cell_spec(ifelse(round(p.value,4)<.001,"< .001",round(p.value,4)), 
+                        color = ifelse(is.nan(p.value),"blue", ifelse(p.value < .05, "green", "red")),
+                        bold = ifelse(is.nan(p.value),F, ifelse(p.value < .05, T,F)),
+                        align = "center")
+  ) %>%
+  mutate(term = cell_spec(term, align = "center")) %>%
+  kable(escape = F, digits = c(3,3,3,3,3,3,3,3,3), caption = c("repeated measures ANOVA | dv = amplitude of alpha oscillations")) %>%
+  kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
+
+```
+
+
+
+<br>  
+
+### ANOVA~(RM)~ for each measure | reduced + post hoc t-tests
+1.  pre to post amplitude modulation in % for measures:
+    + alpha_power_CSPpre
+2.  factors:
+    + **eye_state** [eyes open, eyes closed]
+    + **stimulation** [in phase, opposite phase]
+    + **timebin** [1, 2, 3, 4]
+3.  t-tests
+    + testing amplitude difference for all combinations of all conditons against 0
+
+```{r ANOVA_V4, fig.show = "hide", warning = FALSE, fig.height=6, fig.width=10}
+StatsOut <- DATAAll_avg3 %>%
+  ungroup()%>%
+  filter(time == "post-pre") %>%
+  filter(signal == "alpha_power_CSPpre") %>%
+  mutate(stimulation=as.factor(stimulation))%>%
+  group_by(signal) %>%
+  nest() %>%
+  mutate(stats= map(data, ~broom::tidy(
+    anova(aov_ez(id="subjects", dv = "amplitude", data = ., within = c("eye_state","stimulation","timebin")))
+  ))) %>%
+  dplyr::select(-data) %>%
+  unnest()
+
+StatsOut %>%
+  # mutate(p.value = p.adjust(p.value, method="holm"))%>%
+  mutate(
+    p.value = cell_spec(ifelse(round(p.value,4)<.001,"< .001",round(p.value,4)), 
+                        color = ifelse(is.nan(p.value),"blue", ifelse(p.value < .05, "green", "red")),
+                        bold = ifelse(is.nan(p.value),F, ifelse(p.value < .05, T,F)),
+                        align = "center")
+  ) %>%
+  mutate(term = cell_spec(term, align = "center")) %>%
+  kable(escape = F, digits = c(3,3,3,3,3,3,3,3,3), 
+        caption = c("repeated measures ANOVA | dv = pre to post amplitude modulation of alpha power in %")) %>%
+  kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
+
+# planned t-tests
+DATAAll_avg3 %>%
+  ungroup()%>%
+  filter(time == "post-pre") %>%
+  filter(signal == "alpha_power_CSPpre") %>%
+  mutate(stimulation=as.factor(stimulation))%>%
+  group_by(stimulation, eye_state,timebin) %>%
+  nest() %>%
+  mutate(stats = map(data, ~broom::tidy(
+    t.test(.x$amplitude)
+    ))) %>%
+  mutate(meanval = map(data, ~ mean(.x$amplitude))) %>%
+  mutate(std = map(data, ~ sd(.x$amplitude))) %>%
+  dplyr::select(-data) %>%
+  unnest()%>%
+  dplyr::select(timebin,eye_state,stimulation, meanval, std, statistic, parameter, p.value)%>%
+  arrange(timebin, eye_state) %>%
+  # mutate(p.value = p.adjust(p.value, method="holm")) %>%
+  mutate(CohensD = `statistic`/sqrt(parameter))%>%
+  mutate(
+    p.value = cell_spec(ifelse(round(p.value,4)<.001,"< .001",round(p.value,4)), 
+                        color = ifelse(is.nan(p.value),"blue", ifelse(p.value < .05, "green", "red")),
+                        bold = ifelse(is.nan(p.value),F, ifelse(p.value < .05, T,F)),
+                        align = "center")
+  ) %>%
+  kable(escape = F, digits = c(3,3,3,3,3,3,3,3,3), 
+        caption = c("planned t-tests against 0 | dv = pre to post amplitude modulation of alpha power in %")) %>%
+  kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8)) %>%
+  row_spec(c(1:4, 9:12), background = "white")%>%
+  row_spec(c(5:8, 13:16), background = "#F2F2F2")
+```
+
+
+<br>  
+
+1.  check posthoc effects main effect of post hoc  
+
+```{r plot_posthoc, echo=TRUE, fig.height=4, fig.width=10, warning=FALSE}
+
+theme_set(theme_bw())
+
+plot_data <- DATAAll_avg3%>%
+  ungroup()%>%
+  filter(time=="post-pre")%>%
+  filter(signal=="alpha_power_CSPpre")%>%
+  mutate(stimulation=as.factor(stimulation)) %>%
+  group_by(subjects, timebin) %>%
+  dplyr::summarise(amplitude = mean(amplitude), phase_prediction_accuracy = mean(phase_prediction_accuracy))
+
+ggplot(plot_data, aes(x=timebin, y = amplitude)) +
+  stat_summary(fun.data = mean_se, geom = "bar", position = "dodge") +
+  geom_point(size = 2.5, colour = "black",alpha = 0.3) +
+  stat_summary(fun.data = mean_se, geom = "errorbar",position=position_dodge(width=0.95),width=.4, size=.9,colour = "grey40") + 
+  geom_line(aes(group = subjects),alpha = 0.3, colour = "grey60") + 
+  ylab(expression(paste("pre to post modulation in %")))
+
+
+StatsOut <- DATAAll_avg3 %>%
+  ungroup()%>%
+  filter(time == "post-pre") %>%
+  filter(signal == "alpha_power_CSPpre") %>%
+  mutate(stimulation=as.factor(stimulation))%>%
+  aov_ez(id="subjects", dv = "amplitude", data = ., within = c("eye_state","stimulation","timebin"))
+
+
+# marginal means
+StatsOut.emm.s <- emmeans(StatsOut, "timebin")
+StatsOut.emm.s.summ2 <- pairs(StatsOut.emm.s)
+StatsOut.emm.s.summ <-summary(as.glht(pairs(StatsOut.emm.s)), test=adjusted("free"))
+
+StatsOut.emm.s.summ2 %>%
+  as.data.frame(.)%>%
+  mutate(CohensD = `t.ratio`/sqrt(df))%>%
+  mutate(
+    p.value = cell_spec(ifelse(round(p.value,4)<.001,"< .001",round(p.value,4)), 
+                        color = ifelse(is.nan(p.value),"blue", ifelse(p.value < .05, "green", "red")),
+                        bold = ifelse(is.nan(p.value),F, ifelse(p.value < .05, T,F)),
+                        align = "center")
+  ) %>%
+  kable(escape = F, digits = c(3,3,3,3,3,3,3,3,3), 
+        caption = c("planned comparisons of pairs of timebins | dv = pre to post amplitude modulation of alpha power in %")) %>%
+  kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
+
+# marginal means linear quadratic contrast etc.
+contrast(emmeans(StatsOut, "timebin"),method="poly") %>%
+  kable(escape = F, digits = c(3,3,3,3,3,3,3,3,3), caption = ("polynomial contrasts")) %>%
+  kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
+
+```
+
+
+### Actual modelling of alpha power with linear mixed models  
+<br>  
+
+**NOT YET IMPLEMENTED**  
+
+**IMPLEMENTATION IN PROGRESS**
+
+1.  Model selection: which models are "superior"?  
+<br>  
+    1.  Model selection via step function [`lmerTest::step`] with Kenward-Roger approximation
+        + from most complex model
+        + Create linear mixed models: model amplitude values
+        + Which parameters are systematically related to changes of SSVEP amplitude?
+            + (**model_postAtt_T_PreCueTask_T_alpha**) with random slopes for pre_cue_task X post_cue_attention and random intercepts are modelled
+            + post-cue SSVEP amplitude modulation is related intersubject differences
+            + post-cue SSVEP amplitude modulation is related to post-cue attention condition
+            + post-cue SSVEP amplitude modulation is related to pre-cue task condition
+            + post-cue SSVEP amplitude modulation is related to post-cue alpha amplitude modulation (dependent on relation of ipsi alpha to contra alpha represented in alpha bins)
+             
+<br>  
+
+```{r linear_mixed_model_model_selection_step, fig.height=6, fig.width=10, warning=FALSE, tidy.opts=list(blank=FALSE, width.cutoff=60), eval=FALSE }
+model_data <- DATAAll %>%
+  ungroup()%>%
+  filter(signal=="alpha_power_CSPpost")%>%
+  spread(time, amplitude)%>%
+  mutate(`post-pre`=post-pre)%>%
+  gather(time, amplitude, -subjects, -trials, -block, -eye_state, -stimulation, -phase_prediction_accuracy, -signal)%>%
+  mutate(stimulation=as.factor(stimulation))
+
+# create model
+# model_singletrial <-lmerTest::lmer(amplitude ~ eye_state * stimulation * time +(eye_state * stimulation * time | subjects),
+#                             data=model_data, REML=TRUE)
+
+# model_full <-lmerTest::lmer(amplitude ~ eye_state * stimulation * time * phase_prediction_accuracy +
+#                               (eye_state * stimulation * time * phase_prediction_accuracy | subjects),
+#                             data=model_data, REML=TRUE)
+
+
+
+
+
+# model_estimation <- lmerTest::step(model_full,ddf="Kenward-Roger",reduce.random=FALSE)
+# best_model <- get_model(model_estimation)
+# # print model estimation
+# # model_estimation$random %>%
+# #   kable(escape = F, digits = c(3,3,3,3), caption = c("random effects | stepwise elimintion")) %>%
+# #   kable_styling("striped", full_width = F, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8),position = "left")
+# model_estimation$fixed %>%
+#   mutate(
+#     `Pr(>F)` = cell_spec(ifelse(round(`Pr(>F)`,4)<.001,"< .001",round(`Pr(>F)`,4)), 
+#                         color = ifelse(is.nan(`Pr(>F)`),"blue", ifelse(`Pr(>F)` < .05, "green", "red")),
+#                         bold = ifelse(is.nan(`Pr(>F)`),F, ifelse(`Pr(>F)` < .05, T,F)),
+#                         align = "center")) %>%
+#   mutate(`eliminated factor` = rownames(model_estimation$fixed)) %>%
+#   dplyr::select(colnames(.)[c(8,1:7)]) %>%
+#   kable(escape = F, digits = c(3,3,3,3), caption = c("fixed effects | stepwise elimination")) %>%
+#   kable_styling("striped", full_width = F, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8),position = "left")
+```

@@ -1,0 +1,3 @@
+"0","# read in data"
+"0","DataIn <- read_excel(DATAPath)"
+"0","head(DataIn)"

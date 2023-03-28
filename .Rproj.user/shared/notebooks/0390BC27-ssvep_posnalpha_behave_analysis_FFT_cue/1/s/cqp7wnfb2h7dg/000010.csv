@@ -1,0 +1,5 @@
+"0","DATA.In_longer %>%
+  filter(post_hit == ""hit"", signal == ""visualAlpha"", time == ""[500 1500]ms"", pos_rel_target == ""contra_target"")%>%
+  mutate(post_cue_vis_alpha_contra_target = Zamplitude)
+"
+"0",""

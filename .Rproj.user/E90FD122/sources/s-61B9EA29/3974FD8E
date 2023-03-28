@@ -1,0 +1,25 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1580477960293.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "2424881195",
+    "id" : "3974FD8E",
+    "lastKnownWriteTime" : 1576241926,
+    "last_content_update" : 1576241926,
+    "path" : "C:/Users/psy05cvd/Dropbox/work/R-statistics/experiments/TACS_ClosedLoop_VisAlpha_3s/TACS_ClosedLoop_analysis_VisAlpha3s.Rmd",
+    "project_path" : null,
+    "properties" : {
+        "cursorPosition" : "92,51",
+        "scrollLine" : "0"
+    },
+    "read_only" : false,
+    "read_only_alternatives" : [
+    ],
+    "relative_order" : 5,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_markdown"
+}

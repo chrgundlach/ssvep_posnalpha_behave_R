@@ -1,0 +1,6 @@
+"0","Data_Collapsed%>%"
+"0","  filter(time==""post"")%>%"
+"0","  group_by(con_RDK_col_attended)%>%"
+"0","  dplyr::summarise(mean_modulation = mean(modulation_evoked), SD_modulation = SD(modulation_evoked))%>%"
+"0","  kable(escape = F, digits = c(3,3,3,3,3,3,3,3,3), caption = c(""descrioptives | by COLOR"")) %>%"
+"0","  kable_styling(""striped"", full_width = T, bootstrap_options = c(""striped"", ""hover"", ""condensed"", ""responsive"",font_size = 6))"

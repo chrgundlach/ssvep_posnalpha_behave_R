@@ -1,0 +1,1093 @@
+---
+title: "EmpPrak_Analysis across all years"
+author: '[Christopher Gundlach](https://www.researchgate.net/profile/Christopher_Gundlach)'
+date: '`r Sys.Date()`'
+output:
+  html_document:
+    code_folding: hide
+    toc: true
+    toc_float: true
+    toc_depth: 4
+    theme: flatly
+---
+# Initilisierung  
+**Setting up R libraries**
+
+```{r set up libraries,echo=FALSE,warning=FALSE,message=FALSE,results="hide"}
+# Setup the work environment
+options(width=120,scipen=0,digits=6) # change output width (for better printing), scientific notation (to disable it: scipen=999), constrain output to 3 decimals
+cat("\014") # clear console
+# dev.off() # clear plots (if no plots are present, comment it out or it will throw an error)
+rm(list=ls()) # clear environment
+wd="C:/Users/psy05cvd/Dropbox/work/R-statistics/experiments/EmpPrak/" # work directory
+setwd(wd) # set work directory
+
+# Load relevant libraries:
+library(plyr)
+library(psych)
+library(ez)
+library(ggplot2)
+library(schoRsch)
+library(lsr)
+library(kableExtra)
+library(ggbeeswarm)
+library(afex)
+library(lmerTest)
+library(emmeans)
+library(lsmeans)
+library(sjPlot)
+
+library(viridis)
+library(MetBrewer)
+
+library(cowplot)
+library(dplyr)
+library(readr)
+
+library(ggpol)
+
+library(multcomp)
+
+# linear mixed models effect size
+library("MuMIn")
+library("r2glmm")
+
+source('C:/Users/psy05cvd/Dropbox/work/R-statistics/general_functions/RainCloudPlots/tutorial_R/R_rainclouds.R')
+source('C:/Users/psy05cvd/Dropbox/work/R-statistics/general_functions/RainCloudPlots/tutorial_R/summarySE.R')
+source('C:/Users/psy05cvd/Dropbox/work/R-statistics/general_functions/RainCloudPlots/tutorial_R/simulateData.R')
+
+datafile1 <- "C:/Users/psy05cvd/Dropbox/work/R-statistics/experiments/EmpPrak/posner_data_allyears_long.csv"
+datafile2 <- "C:/Users/psy05cvd/Dropbox/work/R-statistics/experiments/EmpPrak/posner_data_allyears_singletrials_long.csv"
+
+```
+<style type="text/css">
+.main-container {
+  max-width: 1800px !important;
+  margin-left: auto;
+  margin-right: auto;
+}
+</style>
+
+# Analyse und Darstellung der EmpPrak-Daten (Posner Paradigma)  
+<br>  
+
+## subaveraged Daten werden geladen
+Loading data `r toString(datafile1)`
+
+The data has the following structure
++ UNIQUE_ID = participant ID
++ Gruppe = group
++ ID = number of computer
++ Alter = age in years
++ Geschlecht = sex (1 = female, 2 = male, 3 = divers)
++ Jahr
++ RT = reaction time <-- AV!!!
++ trials discarded = number of trials discarded (RT either too slow > 1000 ms or too fast < 200 ms)
++ total_trial_number = number of trials in total
++ Validitaet = Factor/condition validity <-- UV1!!!
++ Seite = Factor/condition side <-- UV2!!!
+
+## single-trial Daten werden geladen
+Loading data `r toString(datafile2)`
+
+The data has the following structure
++ UNIQUE_ID = participant ID
++ Gruppe = group
++ ID = number of computer
++ Alter = age in years
++ Geschlecht = sex (1 = female, 2 = male, 3 = divers)
++ Jahr
++ Block
++ blocktrial
++ total trial
++ validity
++ side
++ ISI
++ RT = reaction time <-- AV!!!
++ hit
+
+
+```{r load data,echo=FALSE,warning=FALSE,message=FALSE,results="hide"}
+# Load the data
+DATA.In_long <- read.csv(datafile1, header=TRUE,check.names=FALSE, sep =",", dec = ".")
+#str(DATA.In_long)
+DATA.In_long$UNIQUE_ID=as.factor(DATA.In_long$UNIQUE_ID);
+DATA.In_long$Geschlecht=as.factor(DATA.In_long$Geschlecht);
+DATA.In_long$RT=as.integer(DATA.In_long$RT);
+DATA.In_long$Validitaet = as.factor(DATA.In_long$Validitaet)
+DATA.In_long$Seite = as.factor(DATA.In_long$Seite)
+
+
+DATA.In_s_trials <- read.csv(datafile2, header=TRUE,check.names=FALSE, sep =",", dec = ".")
+#str(DATA.In_s_trials)
+DATA.In_s_trials$UNIQUE_ID=as.factor(DATA.In_s_trials$UNIQUE_ID);
+DATA.In_s_trials$gender=as.factor(DATA.In_s_trials$gender);
+DATA.In_s_trials$ISI=as.factor(DATA.In_s_trials$ISI)
+```
+
+## Zusammenfassung und deskriptive Darstellung der Daten  
+<br>  
+### Geschlechterverteilung und ALter
+
+
+```{r Geschlechterverteilung, echo=FALSE}
+sample = DATA.In_long[!duplicated(DATA.In_long$UNIQUE_ID),] #get only one line per subject
+
+# get frequencies of Geschlecht (1 = female, 2 = male)
+sample %>%
+  # mutate(Geschlecht = ifelse(Geschlecht == 1, Geschlecht, ifelse(Geschlecht == 2, Geschlecht, ifelse(Geschlecht==3,Geschlecht,"missing"))))%>%
+  {table(.$Geschlecht)} %>%
+  kable(escape = F, digits = c(3,3,3,3,3,3,3,3,3), caption = c("frequency of gender | 1 = female; 2 = male; 3 = diverse"),
+        col.names = c("gender","frequency")) %>%
+  kable_styling("striped", full_width = F, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
+
+# summarize age
+sample%>%
+  dplyr::summarize(n(), mean(Alter), sd(Alter), min(Alter), max(Alter))%>%
+  kable(escape = F, digits = c(3,3,3,3,3,3,3,3,3), caption = c("statistics age")) %>%
+  kable_styling("striped", full_width = F, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
+
+```
+### Reaktionszeiten
+
+Validität X Seite
+
+```{r Average Validität Seite, echo=FALSE}
+DATA.In_long%>%
+  group_by(Validitaet, Seite)%>%
+  dplyr::summarise(n(),mean(RT), sd(RT))%>%
+  kable(escape = F, digits = c(3,3,3,6,3,3,3,3,3), caption = c("average RT")) %>%
+  kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
+
+
+```
+
+Validität
+
+```{r Average Valdität, echo=FALSE}
+DATA.In_long%>%
+  group_by(UNIQUE_ID,Validitaet)%>%
+  dplyr::select(UNIQUE_ID, Validitaet, RT)%>%
+  summarise(RT = mean(RT))%>%
+  ungroup()%>%
+  group_by(Validitaet)%>%
+  dplyr::summarise(n(),mean(RT), sd(RT))%>%
+  kable(escape = F, digits = c(3,3,3,6,3,3,3,3,3), caption = c("average RT")) %>%
+  kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
+```
+
+Seite
+
+```{r Average Seite, echo=FALSE}
+DATA.In_long%>%
+  group_by(UNIQUE_ID, Seite)%>%
+  summarise(RT = mean(RT))%>%
+  ungroup()%>%
+  group_by(Seite)%>%
+  summarise(n(),mean(RT), sd(RT))%>%
+  kable(escape = F, digits = c(3,3,3,6,3,3,3,3,3), caption = c("average RT")) %>%
+  kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
+```
+## Inferenzstatistik  
+<br>  
+
+Das grundlegende Modell der Daten wird getestet:
+
+### ANOVA  
+<br>  
+
+ANOVA_RM: VALIDITÄT(invalide, neutral, valide) X SEITE (links, rechts)
+
+```{r ANOVA_ValXSei, message=FALSE, warning=FALSE, include=TRUE}
+#ANOVAe
+StatsOut <- DATA.In_long%>%
+  aov_ez(id="UNIQUE_ID", dv = "RT", data = ., within = c("Validitaet","Seite"), include_aov = TRUE)
+StatsOut%>%
+  .$anova_table %>%
+  mutate(factor = rownames(.))%>%
+  mutate(
+    `Pr(>F)` = cell_spec(ifelse(round(`Pr(>F)`,4)<.001,"< .001",round(`Pr(>F)`,4)), 
+                        color = ifelse(is.nan(`Pr(>F)`),"blue", ifelse(`Pr(>F)` < .05, "green", "red")),
+                        bold = ifelse(is.nan(`Pr(>F)`),F, ifelse(`Pr(>F)` < .05, T,F)),
+                        align = "center")
+  ) %>%
+  dplyr::select(factor, `num Df`, `den Df`, MSE, `F`, ges, `Pr(>F)`) %>%
+  kable(escape = F, digits = c(3,3,3,3,3,3,3,3,3), caption = c("repeated measures ANOVA | dv = RT")) %>%
+  kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
+
+```
+### Post-hoc t-Tests  
+<br>
+
+
+```{r post-hoc t_tests, echo=FALSE}
+# aggregate data
+
+
+post_hocs.ValXSeite <- emmeans(StatsOut$aov, c("Validitaet","Seite"), contr = "pairwise",adjust = "holm") # adjust = holm
+post_hocs.Validitaet <- emmeans(StatsOut$aov, c("Validitaet"), contr = "pairwise",adjust = "holm") # adjust = holm
+post_hocs.Seite <- emmeans(StatsOut$aov, c("Seite"), contr = "pairwise",adjust = "holm") # adjust = holm
+
+# report data
+post_hocs.Validitaet$emmeans %>%
+  kable(escape = F, digits = c(3,3,3,3,3,3,3,3,3), caption = c("estimated marginal means | by Validitaet | dv = RT")) %>%
+  kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
+
+summary(post_hocs.Validitaet$contrasts) %>%
+  mutate(
+    p.value = cell_spec(ifelse(round(p.value,4)<.001,"< .001",round(p.value,4)), 
+                        color = ifelse(is.nan(p.value),"blue", ifelse(p.value < .05, "green", "red")),
+                        bold = ifelse(is.nan(p.value),F, ifelse(p.value < .05, T,F)),
+                        align = "left")
+  ) %>%
+  mutate(CohensD = `t.ratio`/sqrt(df+1))%>%
+  kable(escape = F, digits = c(3,3,3,3,3,3,3,3,3), caption = c("contrasts for estimated marginal means | by Validitaet | dv = RT | corrected: Holm")) %>%
+  kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
+
+post_hocs.Seite$emmeans %>%
+  kable(escape = F, digits = c(3,3,3,3,3,3,3,3,3), caption = c("estimated marginal means | by Seite | dv = RT")) %>%
+  kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
+
+summary(post_hocs.Seite$contrasts) %>%
+  mutate(
+    p.value = cell_spec(ifelse(round(p.value,4)<.001,"< .001",round(p.value,4)), 
+                        color = ifelse(is.nan(p.value),"blue", ifelse(p.value < .05, "green", "red")),
+                        bold = ifelse(is.nan(p.value),F, ifelse(p.value < .05, T,F)),
+                        align = "left")
+  ) %>%
+  mutate(CohensD = `t.ratio`/sqrt(df+1))%>%
+  kable(escape = F, digits = c(3,3,3,3,3,3,3,3,3), caption = c("contrasts for estimated marginal means | by Seite | dv = RT | corrected: Holm")) %>%
+  kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
+
+post_hocs.ValXSeite$emmeans %>%
+  kable(escape = F, digits = c(3,3,3,3,3,3,3,3,3), caption = c("estimated marginal means | by Validitaet and Seite | dv = RT")) %>%
+  kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
+
+summary(post_hocs.ValXSeite$contrasts) %>%
+  mutate(
+    p.value = cell_spec(ifelse(round(p.value,4)<.001,"< .001",round(p.value,4)), 
+                        color = ifelse(is.nan(p.value),"blue", ifelse(p.value < .05, "green", "red")),
+                        bold = ifelse(is.nan(p.value),F, ifelse(p.value < .05, T,F)),
+                        align = "left")
+  ) %>%
+  mutate(CohensD = `t.ratio`/sqrt(df+1))%>%
+  kable(escape = F, digits = c(3,3,3,3,3,3,3,3,3), caption = c("contrasts for estimated marginal means | by Validitaet and Seite | dv = RT | corrected: Holm")) %>%
+  kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
+  
+  
+
+
+```
+
+## Graphical Display
+
+
+Violine Plot
+
+```{r display, echo=FALSE, message=FALSE}
+
+data_summary <- function(x) {
+   m <- mean(x)
+   ymin <- m-sd(x)
+   ymax <- m+sd(x)
+   return(c(y=m,ymin=ymin,ymax=ymax))
+}
+
+
+ggplot(DATA.In_long, aes(x=Validitaet, y=RT, fill=Validitaet, color = Validitaet)) +
+  geom_violin(trim=FALSE, alpha=0.4, color="white")+
+  geom_line(aes(group = UNIQUE_ID),alpha = 0.3, colour = "grey60") +
+  geom_beeswarm(cex=1.0, size = 4, shape=21,alpha=1,fill="grey40",shape=21)+
+  stat_summary(fun=mean, aes(ymin=..y.., ymax=..y.., color =Validitaet), geom='errorbar', width=0.9, size=1.5) +
+  stat_summary(fun.data=mean_se, geom="errorbar", width=0.5,lwd=1)+
+    # geom_boxplot(width=0.4, fill="white", alpha=0, lwd=1, color="grey60")+
+  facet_grid(.~Seite)+
+  theme(legend.position="bottom")+
+  theme_classic()+
+  scale_color_manual(values=c("#F1831A", "#293C4A", "#198A83"))+
+  scale_fill_manual(values=c("#F1831A", "#293C4A", "#198A83"))
+
+ggplot(DATA.In_long, aes(x=Seite, y=RT, fill=Seite, color = Seite)) +
+  geom_violin(trim=FALSE, alpha=0.4, color="white")+
+  geom_line(aes(group = UNIQUE_ID),alpha = 0.3, colour = "grey40") +
+  geom_beeswarm(cex=1.5, size = 4, shape=21,alpha=1,fill="grey40",shape=21)+
+  stat_summary(fun=mean, aes(ymin=..y.., ymax=..y.., color =Seite), geom='errorbar', width=0.9, size=1.5) +
+  stat_summary(fun.data=mean_se, geom="errorbar", width=0.5,lwd=1)+
+  facet_grid(.~Validitaet)+
+  theme(legend.position="bottom")+
+  theme_classic()+
+  scale_color_manual(values=c( "#193A3D", "#F03F3F"))+
+  scale_fill_manual(values=c( "#193A3D", "#F03F3F"))
+
+sumrepdat <- summarySE(DATA.In_long, measurevar = "RT", groupvars=c("Seite", "Validitaet"))
+
+ggplot(DATA.In_long, aes(x = Validitaet, y = RT, fill = Seite)) +
+  geom_flat_violin(aes(fill = Seite),position = position_nudge(x = .1, y = 0), adjust = 0.7, trim = FALSE, alpha = .5, colour = NA)+
+  # geom_beeswarm(aes(x = as.numeric(Validitaet)-0.15, y = RT, fill = Seite),cex=0.5, size = 1, shape=21,color="grey60",alpha=0.3)+
+  geom_point(aes(x = as.numeric(Validitaet)-0.15, y = RT, colour = Seite),position = position_jitter(width = .05), size = 1, shape = 21, alpha=0.3)+
+  geom_boxplot(aes(x = Validitaet, y = RT, fill = Seite),outlier.shape = NA, alpha = .5, width = .1, colour = "black")+
+  geom_line(data = sumrepdat, aes(x = as.numeric(Validitaet)+.1, y = RT_mean, group = Seite, colour = Seite), linetype = 1)+
+  geom_point(data = sumrepdat, aes(x = as.numeric(Validitaet)+.1, y = RT_mean, group = Seite, colour = Seite), shape = 18) +
+  geom_errorbar(data = sumrepdat, aes(x = as.numeric(Validitaet)+.1, y = RT_mean, group = Seite, colour = Seite, ymin = RT_mean-se, ymax = RT_mean+se), width = .05, lwd = 1)+
+  scale_colour_brewer(palette = "Dark2")+
+  scale_fill_brewer(palette = "Dark2")+
+  ggtitle("reaction times")+
+  theme_classic()+
+  scale_color_manual(values=c( "#193A3D", "#F03F3F"))+
+  scale_fill_manual(values=c( "#193A3D", "#F03F3F"))
+  # theme(legend.position="bottom")
+
+PosnerModel <- aov_ez(id="UNIQUE_ID", dv = "RT", data = DATA.In_long, within = c("Validitaet","Seite"), include_aov = afex_options("include_aov"))
+
+afex_plot(PosnerModel, x = "Validitaet", trace = "Seite", error = "within",
+          mapping = c("shape", "fill"), dodge = 0.7,
+          data_geom = ggpol::geom_boxjitter, 
+          data_arg = list(
+            width = 0.5, 
+            jitter.width = 0.05,
+            jitter.height = 10,
+            outlier.intersect = TRUE),
+          data_alpha = 0.3,
+          point_arg = list(size = 2.5), 
+          error_arg = list(size = 1, width = 0.3),
+          # factor_levels = list(angle = c("0°", "4°", "8°"),
+          #                      noise = c("Absent", "Present")), 
+          legend_title = "reaction times") +
+  theme_bw(base_size = 15) + 
+  theme(legend.position="bottom", panel.grid.major.x = element_blank())+
+  scale_color_manual(values=c( "#193A3D", "#F03F3F"))+
+  scale_fill_manual(values=c( "#193A3D", "#F03F3F"))
+
+```
+
+
+histogram
+
+```{r display_2, echo=FALSE, message=FALSE}
+mu <- ddply(DATA.In_s_trials, "validity", summarise, grp.mean=mean(RT, na.rm = TRUE))
+
+
+
+theme_set(theme_bw())
+ggplot(DATA.In_s_trials, aes(x=RT)) + 
+  geom_histogram(color="black", fill="grey60", bins = 50)
+
+ggplot(DATA.In_s_trials, aes(x=RT,fill= validity)) + 
+  # geom_histogram(color="black",position="dodge")+
+  # geom_histogram(color="black",position="identity", alpha=0.3, bins = 50)+
+  geom_density(alpha=0.4, lwd=0.5, adjust=0.8)+
+  geom_vline(data=mu, aes(xintercept=grp.mean, color=validity),
+             linetype="dashed")
+
+
+```
+
+## Additional models
+<br>
+
+### linear mixed models
+<br>
+
+1.  **estimating model**
+<br>
+
+linear mixed model of standard effects based on averaged data
+
+testing **reaction time ~ Validitaet * Seite + ( 1 | subjects)**
+
+
+```{r linear mixed model 01 - estimation, echo=FALSE, message=FALSE}
+
+lmer_model_data <- DATA.In_long %>%
+  ungroup()
+
+model_ValXSeite <-lmerTest::lmer(RT ~ Validitaet * Seite + ( 1 | UNIQUE_ID),
+                  data=lmer_model_data, REML=TRUE)
+model_estimation <- lmerTest::step(model_ValXSeite, ddf="Kenward-Roger", reduce.random=FALSE)
+best_model <- get_model(model_estimation)
+
+# print model estimation
+model_estimation$fixed %>%
+  mutate(
+    `Pr(>F)` = cell_spec(ifelse(round(`Pr(>F)`,4)<.001,"< .001",round(`Pr(>F)`,4)), 
+                        color = ifelse(is.nan(`Pr(>F)`),"blue", ifelse(`Pr(>F)` < .05, "green", "red")),
+                        bold = ifelse(is.nan(`Pr(>F)`),F, ifelse(`Pr(>F)` < .05, T,F)),
+                        align = "center")) %>%
+  mutate(`eliminated factor` = rownames(model_estimation$fixed)) %>%
+  dplyr::select(colnames(.)[c(8,1:7)]) %>%
+  kable(escape = F, digits = c(3,3,3,3), caption = c("fixed effects | stepwise elimination")) %>%
+  kable_styling("striped", full_width = F, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8),position = "left")
+```
+2.  model description of best model
+    + Best model is `r toString(best_model@call)`  
+<br>
+
+``` {r linear mixed model 01 - display, fig.height=6, fig.width=10, warning=FALSE}
+
+model2test = best_model
+
+## validity
+anova_lsmeans_c <- lsmeans(model2test, c("Validitaet")) 
+CLD_obj = cld(anova_lsmeans_c,
+          alpha=0.05,
+          Letters=letters,      ### Use lower-case letters for .group
+          adjust="holm")
+CLD_obj$.group=gsub(" ", "", CLD_obj$.group)
+
+ggplot(CLD_obj, aes(x = Validitaet, y = lsmean, color = Validitaet, fill = Validitaet, label = .group)) +
+  stat_summary(fun.data = mean_se, geom = "bar", position = "dodge") +
+  geom_hline(yintercept=0, show.legend = FALSE) +
+  geom_errorbar(aes(ymin = lower.CL, ymax = upper.CL), width=.4, size=.9, position = position_dodge(0.4),color = "black") +
+  theme_bw() +
+  theme(axis.title = element_text(face = "bold"), axis.text = element_text(face = "bold"),plot.caption = element_text(hjust = 0)) +
+  ylab("reaction time in ms") +
+  ggtitle("modelled reaction times", 
+           subtitle="separate for validity") +
+  scale_x_discrete("validity") +
+  labs(caption  = paste0("\nMeans sharing a letter are ",
+                         "not significantly different.",
+                         "(holm corrected comparisons)."), hjust=0.5) +
+  geom_text(nudge_x = c(0, -0),
+            nudge_y = c(26.7,  26.7),
+            color   = "black")+ 
+  scale_fill_brewer(palette = "Dark2")+
+  scale_color_brewer(palette = "Dark2")
+  
+## Seite
+anova_lsmeans_c <- lsmeans(model2test, c("Seite")) 
+CLD_obj = cld(anova_lsmeans_c,
+          alpha=0.05,
+          Letters=letters,      ### Use lower-case letters for .group
+          adjust="holm")
+CLD_obj$.group=gsub(" ", "", CLD_obj$.group)
+
+ggplot(CLD_obj, aes(x = Seite, y = lsmean, color = Seite, fill = Seite, label = .group)) +
+  stat_summary(fun.data = mean_se, geom = "bar", position = "dodge") +
+  geom_hline(yintercept=0, show.legend = FALSE) +
+  geom_errorbar(aes(ymin = lower.CL, ymax = upper.CL), width=.4, size=.9, position = position_dodge(0.4),color = "black") +
+  theme_bw() +
+  theme(axis.title = element_text(face = "bold"), axis.text = element_text(face = "bold"),plot.caption = element_text(hjust = 0)) +
+  ylab("reaction time in ms") +
+  ggtitle("modelled reaction times", 
+           subtitle="separate for side") +
+  scale_x_discrete("validity") +
+  labs(caption  = paste0("\nMeans sharing a letter are ",
+                         "not significantly different.",
+                         "(holm corrected comparisons)."), hjust=0.5) +
+  geom_text(nudge_x = c(0, -0),
+            nudge_y = c(26.7,  26.7),
+            color   = "black")+ 
+  scale_fill_brewer(palette = "Dark2")+
+  scale_color_brewer(palette = "Dark2")
+
+## Validiaet X Seite
+anova_lsmeans_c <- lsmeans(model2test, c("Seite","Validitaet")) 
+CLD_obj = cld(anova_lsmeans_c,
+          alpha=0.05,
+          Letters=letters,      ### Use lower-case letters for .group
+          adjust="holm")
+CLD_obj$.group=gsub(" ", "", CLD_obj$.group)
+
+ggplot(CLD_obj, aes(x = Validitaet, y = lsmean, color = Seite, fill = Seite, label = .group)) +
+  stat_summary(fun.data = mean_se, geom = "bar", position = "dodge") +
+  geom_hline(yintercept=0, show.legend = FALSE) +
+  geom_errorbar(aes(ymin = lower.CL, ymax = upper.CL), width=.4, size=.9, position = position_dodge(0.9),color = "black") +
+  theme_bw() +
+  theme(axis.title = element_text(face = "bold"), axis.text = element_text(face = "bold"),plot.caption = element_text(hjust = 0)) +
+  ylab("reaction time in ms") +
+  ggtitle("modelled reaction times", 
+           subtitle="separate for side") +
+  scale_x_discrete("validity") +
+  labs(caption  = paste0("\nMeans sharing a letter are ",
+                         "not significantly different.",
+                         "(holm corrected comparisons)."), hjust=0.5) +
+  geom_text(nudge_x = c(0.22, -0.22, 0.22, -0.22),
+            nudge_y = c(26.7,  26.7,26.7,  26.7),
+            color   = "black")+ 
+  scale_fill_brewer(palette = "Dark2")+
+  scale_color_brewer(palette = "Dark2")
+
+
+plot_model(model2test, bpe.style = "dot",show.values = TRUE)
+plot_model(model2test, type = "pred", terms = c("Seite","Validitaet"))
+plot_model(model2test, type = "pred", terms = c("Validitaet","Seite"))
+
+```
+
+### linear mixed models II
+<br>
+
+1.  **estimating model**
+<br>
+
+linear mixed model of standard effects based on single trial data
+
+testing **reaction time ~ Validitaet * Seite + ( 1 | subjects)**
+
+
+```{r linear mixed model 02 - estimation, echo=FALSE, message=FALSE}
+lmer_model_data2 <- DATA.In_s_trials %>%
+  ungroup()
+
+model2_ValXSeite <-lmerTest::lmer(RT ~ validity * side + ( 1 | UNIQUE_ID),
+                  data=lmer_model_data2, REML=TRUE)
+model_estimation2 <- lmerTest::step(model2_ValXSeite, ddf="Satterthwaite", reduce.random=FALSE)
+best_model2 <- get_model(model_estimation2)
+
+# print model estimation
+model_estimation2$fixed %>%
+  mutate(
+    `Pr(>F)` = cell_spec(ifelse(round(`Pr(>F)`,4)<.001,"< .001",round(`Pr(>F)`,4)), 
+                        color = ifelse(is.nan(`Pr(>F)`),"blue", ifelse(`Pr(>F)` < .05, "green", "red")),
+                        bold = ifelse(is.nan(`Pr(>F)`),F, ifelse(`Pr(>F)` < .05, T,F)),
+                        align = "center")) %>%
+  mutate(`eliminated factor` = rownames(model_estimation2$fixed)) %>%
+  dplyr::select(colnames(.)[c(8,1:7)]) %>%
+  kable(escape = F, digits = c(3,3,3,3), caption = c("fixed effects | stepwise elimination")) %>%
+  kable_styling("striped", full_width = F, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8),position = "left")
+
+
+```
+
+2.  model description of best model
+    + Best model is **`r toString(best_model2@call)`**
+<br>
+
+``` {r linear mixed model 02 - display, fig.height=6, fig.width=10, warning=FALSE}
+
+model2test = best_model2
+
+plot_model(model2test, bpe.style = "dot",show.values = TRUE)
+plot_model(model2test, type = "pred", terms = c("side","validity"))
+plot_model(model2test, type = "pred", terms = c("validity","side"))
+
+
+```
+
+
+### linear mixed models III
+<br>
+
+1.  **estimating model**
+<br>
+
+linear mixed model of effects based on single trial data
+
+testing **reaction time ~ Validitaet * Seite * ISI + ( 1 | subjects)**
+
+
+```{r linear mixed model 03 - estimation, echo=FALSE, message=FALSE}
+lmer_model_data3 <- DATA.In_s_trials %>%
+  ungroup() %>%
+  filter(year != c("WS1516") & year != c("WS1617") )%>%
+  mutate(ISI = as.factor(ISI))%>%
+  group_by(UNIQUE_ID, validity, side, ISI) %>%
+  dplyr::summarise(RT = mean(RT))
+
+model_ValXSeitexISI <-lmerTest::lmer(RT ~ validity * side * ISI + ( 1 | UNIQUE_ID),
+                  data=lmer_model_data3, REML=TRUE)
+# model_estimation3 <- lmerTest::step(model_ValXSeitexISI, ddf="Kenward-Roger", reduce.random=FALSE)
+model_estimation3 <- lmerTest::step(model_ValXSeitexISI, ddf="Satterthwaite", reduce.random=FALSE)
+best_model3 <- get_model(model_estimation3)
+
+# print model estimation
+model_estimation3$fixed %>%
+  mutate(
+    `Pr(>F)` = cell_spec(ifelse(round(`Pr(>F)`,4)<.001,"< .001",round(`Pr(>F)`,4)), 
+                        color = ifelse(is.nan(`Pr(>F)`),"blue", ifelse(`Pr(>F)` < .05, "green", "red")),
+                        bold = ifelse(is.nan(`Pr(>F)`),F, ifelse(`Pr(>F)` < .05, T,F)),
+                        align = "center")) %>%
+  mutate(`eliminated factor` = rownames(model_estimation3$fixed)) %>%
+  dplyr::select(colnames(.)[c(8,1:7)]) %>%
+  kable(escape = F, digits = c(3,3,3,3), caption = c("fixed effects | stepwise elimination")) %>%
+  kable_styling("striped", full_width = F, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8),position = "left")
+```
+
+
+2.  model description of best model
+    + Best model is **`r toString(best_model3@call)`**
+<br>
+
+``` {r linear mixed model 03 - display, fig.height=4, fig.width=6, warning=FALSE}
+
+model2test = best_model3
+# model2test2 = lsmeans(best_model3,pbkrtest.limit = 10000)
+# Means_val = emmeans(best_model3, c("validity"), contr = "pairwise",adjust = "holm",pbkrtest.limit = 10000)
+# Means_ISI = emmeans(best_model3, c("ISI"))
+
+# plot_model(model2test, bpe.style = "dot",show.values = TRUE)
+# plot_model(model2test, type = "pred", terms = c("side","validity","ISI"))
+# plot_model(model2test, type = "pred", terms = c("validity","side","ISI"))
+
+# illustrate main effect ISI
+data2plot <- DATA.In_s_trials %>%
+  ungroup() %>%
+  filter(year != c("WS1516") & year != c("WS1617") )%>%
+  mutate(ISI = as.factor(ISI))%>%
+  group_by(UNIQUE_ID, validity, side, ISI) %>%
+  dplyr::summarise(RT = mean(RT,na.rm = TRUE)) %>%
+  group_by(UNIQUE_ID, ISI) %>%
+  dplyr::summarise(RT = mean(RT,na.rm = TRUE))
+
+ggplot(data2plot, aes(x = ISI, y = RT, fill = ISI)) +
+  # geom_beeswarm(aes(color = ISI, x = ISI, group = ISI), cex=0.5, size = 2, shape=21, fill="grey60",alpha=0.6)+
+  geom_beeswarm(aes(fill = ISI, x = ISI, group = ISI), cex=0.6, size = 2, shape=21, color="grey60",alpha=0.3)+
+  geom_boxplot(alpha=0.3, width=0.3,color="black")+
+  stat_summary(fun.y=mean, aes(ymin=..y.., ymax=..y.., color =ISI), geom='errorbar', width=0.9, size=1.5) + 
+  #facet_grid(.~datatype)+
+  theme_bw()+
+  theme(legend.position="bottom") +
+  scale_color_viridis(discrete = TRUE, option = "D")+
+  scale_fill_viridis(discrete = TRUE, option = "D")+
+  # scale_color_brewer(palette = "magma") +
+  ylab("RT in ms")+ 
+  ggtitle("main effect ISI")
+
+# illustrate main effect vlidity
+data2plot <- DATA.In_s_trials %>%
+  ungroup() %>%
+  filter(year != c("WS1516") & year != c("WS1617") )%>%
+  mutate(ISI = as.factor(ISI))%>%
+  group_by(UNIQUE_ID, validity, side, ISI) %>%
+  dplyr::summarise(RT = mean(RT,na.rm = TRUE)) %>%
+  group_by(UNIQUE_ID, validity) %>%
+  dplyr::summarise(RT = mean(RT,na.rm = TRUE))
+
+ggplot(data2plot, aes(x = validity, y = RT)) +
+  geom_line(aes(group = UNIQUE_ID),alpha = 0.4, colour = "grey") +
+  geom_beeswarm(aes(x = validity, group = validity), cex=0.9, size = 3, shape=21, color="grey60", fill = "grey30",alpha=0.3)+
+  geom_boxplot(alpha=0, width=0.2,color="black")+
+  stat_summary(fun.y=mean, aes(ymin=..y.., ymax=..y..), color = "grey30", geom='errorbar', width=0.9, size=1.5) +
+  #facet_grid(.~datatype)+
+  theme_bw()+
+  theme(legend.position="bottom") +
+  scale_color_viridis(discrete = TRUE, option = "D")+
+  scale_fill_viridis(discrete = TRUE, option = "D")+
+  # scale_color_brewer(palette = "magma") +
+  ylab("RT in ms")+ 
+  ggtitle("main effect validity")
+
+# illustrate main effect of side
+data2plot <- DATA.In_s_trials %>%
+  ungroup() %>%
+  filter(year != c("WS1516") & year != c("WS1617") )%>%
+  mutate(ISI = as.factor(ISI))%>%
+  group_by(UNIQUE_ID, validity, side, ISI) %>%
+  dplyr::summarise(RT = mean(RT,na.rm = TRUE)) %>%
+  group_by(UNIQUE_ID, side) %>%
+  dplyr::summarise(RT = mean(RT,na.rm = TRUE))
+
+ggplot(data2plot, aes(x = side, y = RT)) +
+  geom_line(aes(group = UNIQUE_ID),alpha = 0.4, colour = "grey")+
+  # geom_line(aes(group = c(UNIQUE_ID, side)),alpha = 0.4, colour = "grey") +
+  geom_beeswarm(aes(x = side, group = side), cex=0.9, size = 3, shape=21, color="grey60", fill = "grey30",alpha=0.3)+
+  geom_boxplot(alpha=0, width=0.2,color="black")+
+  stat_summary(fun.y=mean, aes(ymin=..y.., ymax=..y..), color = "grey30", geom='errorbar', width=0.9, size=1.5) +
+  #facet_grid(.~datatype)+
+  theme_bw()+
+  theme(legend.position="bottom") +
+  scale_color_viridis(discrete = TRUE, option = "D")+
+  scale_fill_viridis(discrete = TRUE, option = "D")+
+  # scale_color_brewer(palette = "magma") +
+  ylab("RT in ms")+ 
+  ggtitle("main effect side")
+
+# illustrate potential interaction of ISI and validity
+data2plot <- DATA.In_s_trials %>%
+  ungroup() %>%
+  filter(year != c("WS1516") & year != c("WS1617") )%>%
+  mutate(ISI = as.factor(ISI))%>%
+  group_by(UNIQUE_ID, validity, side, ISI) %>%
+  dplyr::summarise(RT = mean(RT,na.rm = TRUE)) %>%
+  group_by(UNIQUE_ID, ISI, validity) %>%
+  dplyr::summarise(RT = mean(RT,na.rm = TRUE))
+
+ggplot(data2plot, aes(x = validity, y = RT, fill = ISI)) +
+  # geom_beeswarm(aes(color = ISI, x = ISI, group = ISI), cex=0.5, size = 2, shape=21, fill="grey60",alpha=0.6)+
+  geom_beeswarm(aes(fill = ISI, x = validity, group = ISI), cex=0.6, size = 2, shape=21, color="grey60",alpha=0.3, dodge.width = 0.8)+
+  geom_boxplot(alpha=0.3, width=0.3,color="black", position = position_dodge(width = 0.8),outlier.shape = NA)+
+  stat_summary(fun.y=mean, aes(ymin=..y.., ymax=..y.., color =ISI), geom='errorbar', 
+               width=1, size=1.5,position = position_dodge(width = 0.8),) + 
+  #facet_grid(.~datatype)+
+  theme_bw()+
+  theme(legend.position="bottom") +
+  scale_color_manual(values = met.brewer("Degas", n=length(unique(data2plot$ISI))))+
+  scale_fill_manual(values = met.brewer("Degas", n=length(unique(data2plot$ISI))))+
+  # scale_color_viridis(discrete = TRUE, option = "D")+
+  # scale_fill_viridis(discrete = TRUE, option = "D")+
+  # scale_color_brewer(palette = "magma") +
+  ylab("RT in ms")+ 
+  ggtitle("interaction ISI and validity")
+
+# illustrate interaction of side and validity
+data2plot <- DATA.In_s_trials %>%
+  ungroup() %>%
+  filter(year != c("WS1516") & year != c("WS1617") )%>%
+  mutate(ISI = as.factor(ISI))%>%
+  group_by(UNIQUE_ID, validity, side, ISI) %>%
+  dplyr::summarise(RT = mean(RT,na.rm = TRUE)) %>%
+  group_by(UNIQUE_ID, side, validity) %>%
+  dplyr::summarise(RT = mean(RT,na.rm = TRUE))
+data2plot.summary <- data2plot %>%
+  group_by(side, validity) %>%
+  dplyr::summarise(RT = mean(RT,na.rm = TRUE))
+  
+
+ggplot(data2plot, aes(x = validity, y = RT, fill = side)) +
+  geom_line(aes(group = interaction(UNIQUE_ID,side), color = side),alpha = 0.15, position = position_dodge(width = 0.2))+
+  # geom_beeswarm(aes(color = ISI, x = ISI, group = ISI), cex=0.5, size = 2, shape=21, fill="grey60",alpha=0.6)+
+  geom_beeswarm(aes(fill = side, x = validity, group = side), cex=0.8, size = 2, shape=21, color="grey60",alpha=0.3, dodge.width = 0.4)+
+  geom_boxplot(alpha=0.3, width=0.2, color="black", position = position_dodge(width = 0.4),outlier.shape = NA)+
+  stat_summary(fun.y=mean, aes(ymin=..y.., ymax=..y..), geom='errorbar', 
+               width=0.5, size=1.5,position = position_dodge(width = 0.4),) +
+  geom_line(aes(x = validity, color = side, group = side), data = data2plot.summary, size = 1)+
+  # facet_grid(.~datatype)+
+  theme_bw()+
+  theme(legend.position="bottom") +
+  # scale_color_viridis(discrete = TRUE, option = "D")+
+  # scale_fill_viridis(discrete = TRUE, option = "D")+
+  # scale_color_brewer(palette = "magma") +
+  ylab("RT in ms")+ 
+  ggtitle("interaction side and validity")
+
+```
+
+### linear mixed models IV
+<br>
+
+1.  **estimating model**
+<br>
+
+linear mixed model of effects based on single trial data
+
+testing **reaction time ~ Validitaet * Seite * Alter * Geschlecht + ( 1 | subjects)**
+
+
+```{r linear mixed model 04 - estimation, echo=FALSE, message=FALSE}
+lmer_model_data4 <- DATA.In_s_trials %>%
+  ungroup() %>%
+  group_by(UNIQUE_ID, validity, side, age, gender) %>%
+  dplyr::summarise(RT = mean(RT, na.rm = TRUE)) %>%
+  filter(gender == "w" | gender == "m")
+
+model_ValXSeitexISIxagexgender <-lmerTest::lmer(RT ~ validity * side * age * gender+ ( 1 | UNIQUE_ID),
+                  data=lmer_model_data4, REML=TRUE)
+# model_estimation3 <- lmerTest::step(model_ValXSeitexISI, ddf="Kenward-Roger", reduce.random=FALSE)
+model_estimation4 <- lmerTest::step(model_ValXSeitexISIxagexgender, ddf="Satterthwaite", reduce.random=FALSE)
+best_model4 <- get_model(model_estimation4)
+
+# print model estimation
+model_estimation4$fixed %>%
+  mutate(
+    `Pr(>F)` = cell_spec(ifelse(round(`Pr(>F)`,4)<.001,"< .001",round(`Pr(>F)`,4)), 
+                        color = ifelse(is.nan(`Pr(>F)`),"blue", ifelse(`Pr(>F)` < .05, "green", "red")),
+                        bold = ifelse(is.nan(`Pr(>F)`),F, ifelse(`Pr(>F)` < .05, T,F)),
+                        align = "center")) %>%
+  mutate(`eliminated factor` = rownames(model_estimation4$fixed)) %>%
+  dplyr::select(colnames(.)[c(8,1:7)]) %>%
+  kable(escape = F, digits = c(3,3,3,3), caption = c("fixed effects | stepwise elimination")) %>%
+  kable_styling("striped", full_width = F, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8),position = "left")
+```
+
+
+2.  model description of best model
+    + Best model is **`r toString(best_model4@call)`**
+<br>
+
+``` {r linear mixed model 04 - display, fig.height=4, fig.width=6, warning=FALSE}
+
+model2test = best_model4
+# model2test2 = lsmeans(best_model3,pbkrtest.limit = 10000)
+# Means_val = emmeans(best_model3, c("validity"), contr = "pairwise",adjust = "holm",pbkrtest.limit = 10000)
+# Means_ISI = emmeans(best_model3, c("ISI"))
+
+# plot_model(model2test, bpe.style = "dot",show.values = TRUE)
+# plot_model(model2test, type = "pred", terms = c("side","validity","ISI"))
+# plot_model(model2test, type = "pred", terms = c("validity","side","ISI"))
+
+# illustrate main effect age
+data2plot <- DATA.In_s_trials %>%
+  ungroup() %>%
+  group_by(UNIQUE_ID, validity, side, age, gender) %>%
+  dplyr::summarise(RT = mean(RT, na.rm = TRUE)) %>%
+  filter(gender == "w" | gender == "m")%>%
+  group_by(UNIQUE_ID, age) %>%
+  dplyr::summarise(RT = mean(RT,na.rm = TRUE))
+
+ggplot(data2plot, aes(x = age, y = RT, fill = age)) +
+  # geom_beeswarm(aes(color = ISI, x = ISI, group = ISI), cex=0.5, size = 2, shape=21, fill="grey60",alpha=0.6)+
+  geom_beeswarm(aes(fill = age, x = age), cex=0.6, size = 2, shape=21, color="grey60",alpha=0.3)+
+  # geom_boxplot(alpha=0.3, width=0.3,color="black")+
+  stat_summary(fun.y=mean, aes(ymin=..y.., ymax=..y.., color =age), geom='errorbar', width=0.9, size=1.5) + 
+  #facet_grid(.~datatype)+
+  theme_bw()+
+  theme(legend.position="bottom") +
+  scale_color_viridis(option = "D")+
+  scale_fill_viridis(option = "D")+
+  # scale_color_brewer(palette = "magma") +
+  ylab("RT in ms")+ 
+  ggtitle("main effect age")
+
+# illustrate potential interaction of age and validity
+data2plot <- DATA.In_s_trials %>%
+  ungroup() %>%
+  group_by(UNIQUE_ID, validity, side, age, gender) %>%
+  dplyr::summarise(RT = mean(RT, na.rm = TRUE)) %>%
+  filter(gender == "w" | gender == "m")%>%
+  group_by(UNIQUE_ID, age, validity) %>%
+  dplyr::summarise(RT = mean(RT,na.rm = TRUE))
+data2plot.summary <- data2plot %>%
+  group_by(age, validity) %>%
+  dplyr::summarise(RT = mean(RT,na.rm = TRUE))
+
+ggplot(data2plot, aes(x = validity, y = RT, fill = age)) +
+  # geom_beeswarm(aes(color = ISI, x = ISI, group = ISI), cex=0.5, size = 2, shape=21, fill="grey60",alpha=0.6)+
+  geom_beeswarm(aes(fill = age, x = validity, group = age), cex=0.6, size = 2, shape=21, color="grey60",alpha=0.3, dodge.width = 0.8)+
+  stat_summary(fun.y=mean, aes(ymin=..y.., ymax=..y.., color =age,group = age), geom='errorbar', 
+               width=1, size=1.5,position = position_dodge(width = 0.8),) +
+  # geom_line(aes(x = age, group = validity), data = data2plot.summary, size = 1, position = position_dodge(width = 0.8))+
+  #facet_grid(.~datatype)+
+  theme_bw()+
+  theme(legend.position="bottom") +
+  scale_color_viridis(option = "D")+
+  scale_fill_viridis(option = "D")+
+  # scale_color_brewer(palette = "magma") +
+  ylab("RT in ms")+ 
+  ggtitle("interaction age and validity")
+
+ggplot(data2plot, aes(x = age, y = RT, fill = validity, color = validity)) +
+  # geom_beeswarm(aes(color = ISI, x = ISI, group = ISI), cex=0.5, size = 2, shape=21, fill="grey60",alpha=0.6)+
+  geom_beeswarm(aes(fill = validity, x = age, group = age), cex=0.6, size = 2, shape=21, color="grey60",alpha=0.3)+
+  stat_summary(fun.y=mean, aes(ymin=..y.., ymax=..y.., color =validity,group = validity), geom='errorbar', 
+               width=1, size=1.5) +
+  geom_line(aes(x = age, group = validity, color = validity), data = data2plot.summary, size = 1)+
+  #facet_grid(.~datatype)+
+  theme_bw()+
+  theme(legend.position="bottom") +
+  scale_color_manual(values = met.brewer("Degas", n=3, type="discrete"))+
+  scale_fill_manual(values = met.brewer("Degas", n=3,type="discrete"))+
+  # scale_color_viridis(discrete = TRUE,option = "D")+
+  # scale_fill_viridis(discrete = TRUE,option = "D")+
+  # scale_color_brewer(palette = "magma") +
+  ylab("RT in ms")+ 
+  ggtitle("interaction age and validity")
+
+
+# illustrate main effect of gender
+data2plot <- DATA.In_s_trials %>%
+  ungroup() %>%
+  group_by(UNIQUE_ID, validity, side, age, gender) %>%
+  dplyr::summarise(RT = mean(RT, na.rm = TRUE)) %>%
+  filter(gender == "w" | gender == "m")%>%
+  group_by(UNIQUE_ID, gender) %>%
+  dplyr::summarise(RT = mean(RT,na.rm = TRUE))
+
+ggplot(data2plot, aes(x = gender, y = RT)) +
+  # geom_line(aes(group = c(UNIQUE_ID, side)),alpha = 0.4, colour = "grey") +
+  geom_beeswarm(aes(x = gender, group = gender), cex=0.9, size = 3, shape=21, color="grey60", fill = "grey30",alpha=0.3)+
+  geom_boxplot(alpha=0, width=0.2,color="black")+
+  stat_summary(fun.y=mean, aes(ymin=..y.., ymax=..y..), color = "grey30", geom='errorbar', width=0.9, size=1.5) +
+  #facet_grid(.~datatype)+
+  theme_bw()+
+  theme(legend.position="bottom") +
+  scale_color_viridis(discrete = TRUE, option = "D")+
+  scale_fill_viridis(discrete = TRUE, option = "D")+
+  # scale_color_brewer(palette = "magma") +
+  ylab("RT in ms")+ 
+  ggtitle("main effect gender")+ 
+  scale_x_discrete(breaks=c("1","2"),
+                   labels=c("female", "male"))
+
+# illustrate interaction of side and validity
+data2plot <- DATA.In_s_trials %>%
+  ungroup() %>%
+  group_by(UNIQUE_ID, validity, side, age, gender) %>%
+  dplyr::summarise(RT = mean(RT, na.rm = TRUE)) %>%
+  filter(gender == "w" | gender == "m")%>%
+  group_by(UNIQUE_ID, gender, validity) %>%
+  dplyr::summarise(RT = mean(RT,na.rm = TRUE))
+data2plot.summary <- data2plot %>%
+  group_by(gender, validity) %>%
+  dplyr::summarise(RT = mean(RT,na.rm = TRUE))
+  
+
+ggplot(data2plot, aes(x = validity, y = RT, fill = gender)) +
+  geom_line(aes(group = interaction(UNIQUE_ID,gender), color = gender),alpha = 0.15, position = position_dodge(width = 0.2))+
+  # geom_beeswarm(aes(color = ISI, x = ISI, group = ISI), cex=0.5, size = 2, shape=21, fill="grey60",alpha=0.6)+
+  geom_beeswarm(aes(fill = gender, x = validity, group = gender), cex=0.8, size = 2, shape=21, color="grey60",alpha=0.3, dodge.width = 0.4)+
+  geom_boxplot(alpha=0.3, width=0.2, color="black", position = position_dodge(width = 0.4),outlier.shape = NA)+
+  stat_summary(fun.y=mean, aes(ymin=..y.., ymax=..y..), geom='errorbar', 
+               width=0.5, size=1.5,position = position_dodge(width = 0.4),) +
+  geom_line(aes(x = validity, color = gender, group = gender), data = data2plot.summary, size = 1,position = position_dodge(width = 0.4))+
+  # facet_grid(.~datatype)+
+  theme_bw()+
+  theme(legend.position="bottom") +
+  # scale_color_viridis(discrete = TRUE, option = "D")+
+  # scale_fill_viridis(discrete = TRUE, option = "D")+
+  # scale_color_brewer(palette = "magma") +
+  ylab("RT in ms")+ 
+  ggtitle("interaction gender and validity")+
+  scale_color_manual(values=c( "#193A3D", "#F03F3F"),breaks=c("1","2"), labels=c("female", "male"))+
+  scale_fill_manual(values=c( "#193A3D", "#F03F3F"),breaks=c("1","2"), labels=c("female", "male"))
+
+``` 
+
+
+### linear mixed models V
+<br>
+
+1.  **estimating model**
+<br>
+
+linear mixed model of effects based on single trial data
+
+testing **reaction time ~ Validitaet * Seite * Jahr + ( 1 | subjects)**
+
+
+```{r linear mixed model 05 - estimation, echo=FALSE, message=FALSE}
+lmer_model_data5 <- DATA.In_s_trials %>%
+  ungroup() %>%
+  group_by(UNIQUE_ID, validity, side, year) %>%
+  dplyr::summarise(RT = mean(RT, na.rm = TRUE))
+
+model_ValXSeitexYear <-lmerTest::lmer(RT ~ validity * side * year + ( 1 | UNIQUE_ID),
+                  data=lmer_model_data5, REML=TRUE)
+# model_estimation3 <- lmerTest::step(model_ValXSeitexISI, ddf="Kenward-Roger", reduce.random=FALSE)
+model_estimation5 <- lmerTest::step(model_ValXSeitexYear, ddf="Satterthwaite", reduce.random=FALSE)
+best_model5 <- get_model(model_estimation5)
+
+# print model estimation
+model_estimation5$fixed %>%
+  mutate(
+    `Pr(>F)` = cell_spec(ifelse(round(`Pr(>F)`,4)<.001,"< .001",round(`Pr(>F)`,4)), 
+                        color = ifelse(is.nan(`Pr(>F)`),"blue", ifelse(`Pr(>F)` < .05, "green", "red")),
+                        bold = ifelse(is.nan(`Pr(>F)`),F, ifelse(`Pr(>F)` < .05, T,F)),
+                        align = "center")) %>%
+  mutate(`eliminated factor` = rownames(model_estimation5$fixed)) %>%
+  dplyr::select(colnames(.)[c(8,1:7)]) %>%
+  kable(escape = F, digits = c(3,3,3,3), caption = c("fixed effects | stepwise elimination")) %>%
+  kable_styling("striped", full_width = F, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8),position = "left")
+```
+
+
+2.  model description of best model
+    + Best model is `r toString(best_model5@call)`  
+<br>
+
+``` {r linear mixed model 05 - display, fig.height=4, fig.width=6, warning=FALSE}
+
+model2test = best_model5
+# model2test2 = lsmeans(best_model3,pbkrtest.limit = 10000)
+# Means_val = emmeans(best_model3, c("validity"), contr = "pairwise",adjust = "holm",pbkrtest.limit = 10000)
+# Means_ISI = emmeans(best_model3, c("ISI"))
+
+# plot_model(model2test, bpe.style = "dot",show.values = TRUE)
+# plot_model(model2test, type = "pred", terms = c("side","validity","ISI"))
+# plot_model(model2test, type = "pred", terms = c("validity","side","ISI"))
+
+# illustrate main effect year
+data2plot <- DATA.In_s_trials %>%
+  ungroup() %>%
+  group_by(UNIQUE_ID, validity, side, year) %>%
+  dplyr::summarise(RT = mean(RT, na.rm = TRUE)) %>%
+  group_by(UNIQUE_ID, year) %>%
+  dplyr::summarise(RT = mean(RT,na.rm = TRUE))
+
+ggplot(data2plot, aes(x = year, y = RT, fill = year)) +
+  # geom_beeswarm(aes(color = ISI, x = ISI, group = ISI), cex=0.5, size = 2, shape=21, fill="grey60",alpha=0.6)+
+  geom_beeswarm(aes(fill = year, x = year), cex=0.6, size = 2, shape=21, color="grey60",alpha=0.3)+
+  # geom_boxplot(alpha=0.3, width=0.3,color="black")+
+  stat_summary(fun.y=mean, aes(ymin=..y.., ymax=..y.., color = year), geom='errorbar', width=0.9, size=1.5) + 
+  #facet_grid(.~datatype)+
+  theme_bw()+
+  theme(legend.position="bottom") +
+  scale_color_viridis(discrete = TRUE, option = "D")+
+  scale_fill_viridis(discrete = TRUE, option = "D")+
+  # scale_color_brewer(palette = "magma") +
+  ylab("RT in ms")+ 
+  ggtitle("main effect year")
+
+# illustrate potential interaction of year and validity
+data2plot <- DATA.In_s_trials %>%
+  ungroup() %>%
+  group_by(UNIQUE_ID, validity, side, year) %>%
+  dplyr::summarise(RT = mean(RT, na.rm = TRUE)) %>%
+  group_by(UNIQUE_ID, year, validity) %>%
+  dplyr::summarise(RT = mean(RT,na.rm = TRUE))
+data2plot.summary <- data2plot %>%
+  group_by(year, validity) %>%
+  dplyr::summarise(RT = mean(RT,na.rm = TRUE))
+
+
+ggplot(data2plot, aes(x = validity, y = RT, fill = year)) +
+  # geom_beeswarm(aes(color = ISI, x = ISI, group = ISI), cex=0.5, size = 2, shape=21, fill="grey60",alpha=0.6)+
+  geom_beeswarm(aes(fill = year, x = validity, group = year), cex=0.6, size = 2, shape=21, color="grey60",alpha=0.3, dodge.width = 0.8, )+
+  stat_summary(fun.y=mean, aes(ymin=..y.., ymax=..y.., color =year,group = year), geom='errorbar', 
+               width=1, size=1.5,position = position_dodge(width = 0.8),) +
+  # geom_line(aes(x = age, group = validity), data = data2plot.summary, size = 1, position = position_dodge(width = 0.8))+
+  #facet_grid(.~datatype)+
+  theme_bw()+
+  theme(legend.position="bottom") +
+  scale_color_viridis(discrete = TRUE, option = "D")+
+  scale_fill_viridis(discrete = TRUE, option = "D")+
+  # scale_color_brewer(palette = "magma") +
+  ylab("RT in ms")+ 
+  ggtitle("interaction year and validity")
+
+ggplot(data2plot, aes(x = year, y = RT, fill = validity, color = validity)) +
+  # geom_beeswarm(aes(color = ISI, x = ISI, group = ISI), cex=0.5, size = 2, shape=21, fill="grey60",alpha=0.6)+
+  geom_beeswarm(aes(fill = validity, x = year, group = validity), cex=0.8, size = 2.5, shape=21, color="grey60",alpha=0.3, dodge.width = 0.6)+
+  stat_summary(fun.y=mean, aes(ymin=..y.., ymax=..y.., color =validity,group = validity), geom='errorbar', 
+               width=0.6, size=1.5, position = position_dodge(width = 0.6)) +
+  geom_line(aes(x = year, group = validity, color = validity), data = data2plot.summary, size = 1,position = position_dodge(width = 0.6))+
+  #facet_grid(.~datatype)+
+  theme_bw()+
+  theme(legend.position="bottom") +
+  scale_color_manual(values=c("#F1831A", "#293C4A", "#198A83"))+
+  scale_fill_manual(values=c("#F1831A", "#293C4A", "#198A83"))+
+  # scale_color_brewer(palette = "magma") +
+  ylab("RT in ms")+ 
+  ggtitle("interaction year and validity")
+
+``` 
+
+
+### linear mixed models VI
+<br>
+
+1.  **estimating most complex model**
+<br>
+
+linear mixed model of standard effects based on single trial data
+
+testing **reaction time ~ Validitaet * Seite * Alter * Geschlect * Jahr * ISI + ( 1 | subjects)**
+
+
+```{r linear mixed model 06 - estimation, echo=FALSE, message=FALSE}
+lmer_model_data6 <- DATA.In_s_trials %>%
+  ungroup() %>%
+  filter(year != c("WS1516") & year != c("WS1617") )%>%
+  mutate(ISI = as.factor(ISI))%>%
+  group_by(UNIQUE_ID, validity, side, age, gender, year, ISI) %>%
+  filter(gender == "w" | gender == "m")%>%
+  dplyr::summarise(RT = mean(RT, na.rm = TRUE))
+
+model6_complex <-lmerTest::lmer(RT ~ validity * side * age * gender * year + ( 1 | UNIQUE_ID),
+                  data=lmer_model_data6, REML=TRUE)
+model_estimation6 <- lmerTest::step(model6_complex, ddf="Satterthwaite", reduce.random=FALSE)
+best_model6 <- get_model(model_estimation6)
+
+# print model estimation
+model_estimation6$fixed %>%
+  mutate(
+    `Pr(>F)` = cell_spec(ifelse(round(`Pr(>F)`,4)<.001,"< .001",round(`Pr(>F)`,4)), 
+                        color = ifelse(is.nan(`Pr(>F)`),"blue", ifelse(`Pr(>F)` < .05, "green", "red")),
+                        bold = ifelse(is.nan(`Pr(>F)`),F, ifelse(`Pr(>F)` < .05, T,F)),
+                        align = "center")) %>%
+  mutate(`eliminated factor` = rownames(model_estimation6$fixed)) %>%
+  dplyr::select(colnames(.)[c(8,1:7)]) %>%
+  kable(escape = F, digits = c(3,3,3,3), caption = c("fixed effects | stepwise elimination")) %>%
+  kable_styling("striped", full_width = F, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8),position = "left")
+
+
+```

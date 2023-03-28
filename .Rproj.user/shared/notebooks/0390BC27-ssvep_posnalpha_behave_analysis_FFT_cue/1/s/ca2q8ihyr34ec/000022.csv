@@ -1,0 +1,12 @@
+"0",""
+"0","# rhat"
+"0","brms::rhat(fit_validity_alpha1_alpha2)[""b_Intercept""]"
+"1","b_Intercept "
+"1","
+"
+"1","    1.02075 "
+"1","
+"
+"0","pp_check(fit_validity_alpha1_alpha2)"
+"2","Using 10 posterior draws for ppc type 'dens_overlay' by default.
+"

@@ -1,0 +1,3571 @@
+---
+title: "FFT_collapsedRDK_analysis"
+author: "Christopher"
+date: "31 8 2020"
+output:
+  html_document:
+    code_folding: hide
+    toc: true
+    toc_float: true
+    toc_depth: 4
+    theme: flatly
+---
+
+Modelling of ~~raw~~ [*CSD based*] amplitude values from ft-based data
+via linear mixed models
+via standard anova models
+
+
+```{r load_package, message = FALSE, warning = FALSE}
+library(lme4)
+library(readxl)
+library(tidyverse)
+library(data.table)
+library(tidyverse)
+library(afex)
+library(broom)
+library(apa)
+library(kableExtra)
+library(lmerTest)
+library(pbkrtest)
+library(effects)
+library(visreg)
+library(sjPlot)
+library(broom.mixed)
+library(pander)
+library(mediation)
+library(multcomp)
+library(multcompView)
+library(magrittr)
+library(multipanelfigure)
+library(ggbeeswarm)
+library(lsmeans)
+library(BayesFactor)
+library(ggpubr)
+library(gpairs)
+library(DescTools)
+library(cowplot)
+library(ggpol)
+
+source('C:/Users/psy05cvd/Dropbox/work/R-statistics/general_functions/RainCloudPlots/tutorial_R/R_rainclouds.R')
+
+
+
+
+
+# broad cluster
+# CSD based normalized to pre-cue baseline in %
+# 
+# DATAPath = "data/FFT_Amp_data_collapsed_largeclust_09-03-2020_09-57.csv"
+# t_baseline = c(-1000, 0)
+
+# broad cluster
+# CSD based normalized to pre-cue baseline in %
+# trials include events
+# 
+DATAPath = "data/FFT_Amp_data_withBehavior_collapsed_largeclust_09-23-2020_13-17.csv"
+t_baseline = c(-1000, 0)
+
+# broad cluster
+# CSD based normalized to pre-cue baseline in %
+# trials include events
+# last 2/3 of trials
+# 
+# DATAPath = "data/FFT_Amp_data_withBehavior_collapsed_largeclust_twothirds_10-13-2020_11-35.csv"
+# t_baseline = c(-1000, 0)
+
+# broad cluster
+# CSD based normalized to pre-cue baseline in %
+# trials include events
+# based on RESS components
+# 
+# DATAPath = "data/FFT_Amp_data_withBehavior_RESS_collapsed_largeclust_09-04-2020_14-51.csv"
+# t_baseline = c(-1000, 0)
+
+
+
+# load behavioral data
+DATAPath1 = "data/behavior_events.csv"
+DATAPath2 = "data/behavior_FAs.csv"
+
+
+
+options(scipen=1, digits=7)
+```
+<style type="text/css">
+.main-container {
+  max-width: 1800px !important;
+  margin-left: auto;
+  margin-right: auto;
+}
+</style>
+
+
+## Prepare data  
+<br>  
+
+1.  Read in data: 
+    + `r DATAPath`
+    + with pre-cue  [`r toString(t_baseline)`] ms
+    
+<br>  
+
+```{r load_data,results = "hide", fig.show = "hide", warning = FALSE}
+# read in data
+DataIn <- read_excel(DATAPath)
+head(DataIn)
+str(DataIn)
+
+DataIn_beh1 <- read_csv(DATAPath1)
+DataIn_beh2 <- read_csv(DATAPath2)
+
+```
+
+## Illustrate Data
+
+### 1a  Illustrate Data as is
+
+<br>  
+
+```{r plot_data_st, results = "hide",  fig.height=4, fig.width=7, warning = FALSE}
+#induced raw####
+dat2plot <- DataIn %>%
+  mutate(condition = factor(condition, levels=c('attended','unattended','irrelevant'), ordered = T))
+
+
+# theme_set(theme_bw())
+# ggplot(dat2plot, aes(x = interaction(time,condition), y = amplitude_induced, fill = condition)) +
+#   # geom_hline(yintercept=0, show.legend = FALSE) +
+#   geom_line(aes(group = interaction(subjects,condition)),colour = "grey60",alpha = 0.4,size =1) +
+#   geom_beeswarm(aes(color = condition, x = interaction(time,condition),
+#                     group = condition), cex=1.5, size = 4,alpha=0.4,fill="grey40",shape=21)+
+#   # geom_point(aes(color = condition, x = interaction(time,condition),
+#   #                   group = condition), size = 4,alpha=0.4)+
+#   stat_summary(fun.y=mean, aes(ymin=..y.., ymax=..y.., color =condition), geom='errorbar', width=0.9, size=1.5) +
+#   scale_x_discrete("time windows in s", breaks=waiver(), labels = rep(c("[-1 0]","[0 1]","[0.5 1.5]","[1 2]"),1,12)) +
+#   theme(legend.position="bottom") +
+#   ylab(expression(paste("amplitude in muV")))+
+#   labs(title=sprintf("SSVEP amplitudes | induced"),
+#        subtitle="collapsed across frequencies")+
+#   scale_fill_brewer(palette = "Dark2")+
+#   scale_color_brewer(palette = "Dark2")
+
+#evoked raw####
+dat2plot <- DataIn %>%
+  mutate(condition = factor(condition, levels=c('attended','unattended','irrelevant'), ordered = T))
+
+theme_set(theme_bw())
+ggplot(dat2plot, aes(x = interaction(time,condition), y = amplitude_evoked, fill = condition)) +
+  # geom_hline(yintercept=0, show.legend = FALSE) +
+  geom_line(aes(group = interaction(subjects,condition)),colour = "grey60",alpha = 0.4,size =1) +
+  geom_beeswarm(aes(color = condition, x = interaction(time,condition),
+                    group = condition), cex=1.5, size = 4,alpha=0.4,fill="grey40",shape=21)+
+  # geom_point(aes(color = condition, x = interaction(time,condition),
+  #                   group = condition), size = 4,alpha=0.4)+
+  stat_summary(fun.y=mean, aes(ymin=..y.., ymax=..y.., color =condition), geom='errorbar', width=0.9, size=1.5) +
+  scale_x_discrete("time windows in s", breaks=waiver(), labels = rep(c("[-1 0]","[0 1]","[0.5 1.5]","[1 2]"),1,12)) +
+  theme(legend.position="bottom") +
+  ylab(expression(paste("amplitude in muV")))+
+  labs(title=sprintf("SSVEP amplitudes | evoked"),
+       subtitle="collapsed across frequencies")+
+  scale_fill_brewer(palette = "Dark2")+
+  scale_color_brewer(palette = "Dark2")
+
+
+# #induced baseline corrected####
+# dat2plot <- DataIn %>%
+#   filter(time!="[-1 0]")%>%
+#   mutate(condition = factor(condition, levels=c('attended','unattended','irrelevant'), ordered = T))
+# 
+# 
+# theme_set(theme_bw())
+# ggplot(dat2plot, aes(x = interaction(time,condition), y = modulation_induced, fill = condition)) +
+#   geom_hline(yintercept=0, show.legend = FALSE) +
+#   geom_line(aes(group = interaction(subjects,condition)),colour = "grey60",alpha = 0.4,size =1) +
+#   geom_beeswarm(aes(color = condition, x = interaction(time,condition),
+#                     group = condition), cex=1.5, size = 4,alpha=0.4,fill="grey40",shape=21)+
+#   # geom_point(aes(color = condition, x = interaction(time,condition),
+#   #                   group = condition), size = 4,alpha=0.4)+
+#   stat_summary(fun.y=mean, aes(ymin=..y.., ymax=..y.., color =condition), geom='errorbar', width=0.9, size=1.5) +
+#   scale_x_discrete("time windows in s", breaks=waiver(), labels = rep(c("[0 1]","[0.5 1.5]","[1 2]"),1,9)) +
+#   theme(legend.position="bottom") +
+#   ylab(expression(paste("amplitude in muV")))+
+#   labs(title=sprintf("SSVEP amplitude modulations | induced"),
+#        subtitle="collapsed across frequencies")+
+#   scale_fill_brewer(palette = "Dark2")+
+#   scale_color_brewer(palette = "Dark2")
+
+#evoked baseline corrected####
+dat2plot <- DataIn %>%
+  filter(time!="[-1 0]")%>%
+  mutate(condition = factor(condition, levels=c('attended','unattended','irrelevant'), ordered = T))
+
+
+theme_set(theme_bw())
+ggplot(dat2plot, aes(x = interaction(time,condition), y = modulation_evoked, fill = condition)) +
+  geom_hline(yintercept=0, show.legend = FALSE) +
+  geom_line(aes(group = interaction(subjects,condition)),colour = "grey60",alpha = 0.4,size =1) +
+  geom_beeswarm(aes(color = condition, x = interaction(time,condition),
+                    group = condition), cex=1.5, size = 4,alpha=0.4,fill="grey40",shape=21)+
+  # geom_point(aes(color = condition, x = interaction(time,condition),
+  #                   group = condition), size = 4,alpha=0.4)+
+  stat_summary(fun.y=mean, aes(ymin=..y.., ymax=..y.., color =condition), geom='errorbar', width=0.9, size=1.5) +
+  scale_x_discrete("time windows in s", breaks=waiver(), labels = rep(c("[0 1]","[0.5 1.5]","[1 2]"),1,9)) +
+  theme(legend.position="bottom") +
+  ylab(expression(paste("amplitude in muV")))+
+  labs(title=sprintf("SSVEP modulations | evoked"),
+       subtitle="collapsed across frequencies")+
+  scale_fill_brewer(palette = "Dark2")+
+  scale_color_brewer(palette = "Dark2")
+
+```
+
+
+### 1b Average post-cue data and illustrate Data
+
+<br>  
+
+```{r plot_data_avg, results = "hide",  fig.height=5, fig.width=4, warning = FALSE}
+
+dat2plot <- DataIn %>%
+  dplyr::select(-freq_irr, -color_irr)%>%
+  pivot_longer(c(-subjects, -condition, -time ),names_to = "signal", values_to = "amplitude")%>%
+  pivot_wider(names_from = "time", values_from = "amplitude")%>%
+  rename(pre = '[-1 0]')%>%
+  rowwise()%>%
+  mutate(post = mean(c(`[0.5 1.5]`,`[1 2]`))) %>%
+  mutate(post_diff = mean(c(`[0.5 1.5]`,`[1 2]`)) - pre)%>%
+  dplyr::select(., subjects, condition, pre, post, post_diff, signal)%>%
+  pivot_longer(c(-subjects, -condition, -signal),names_to = "time", values_to = "amplitude")%>%
+  pivot_wider(names_from = "signal", values_from = "amplitude")%>%
+  mutate(condition = factor(condition, levels=c('attended','unattended','irrelevant'), ordered = T))%>%
+  mutate(time = factor(time, levels=c('pre','post','post_diff'), ordered = T))
+
+
+
+  
+# #induced raw####
+# theme_set(theme_bw())
+# ggplot(dat2plot, aes(x = interaction(time,condition), y = amplitude_induced, fill = condition)) +
+#   # geom_hline(yintercept=0, show.legend = FALSE) +
+#   geom_line(aes(group = interaction(subjects,condition)),colour = "grey60",alpha = 0.4,size =1) +
+#   geom_beeswarm(aes(color = condition, x = interaction(time,condition),
+#                     group = condition), cex=1.5, size = 4,alpha=0.4,fill="grey40",shape=21)+
+#   # geom_point(aes(color = condition, x = interaction(time,condition),
+#   #                   group = condition), size = 4,alpha=0.4)+
+#   stat_summary(fun.y=mean, aes(ymin=..y.., ymax=..y.., color =condition), geom='errorbar', width=0.9, size=1.5) +
+#   scale_x_discrete("time window", breaks=waiver(), labels = rep(c("pre-cue","post-cue"),1,6)) +
+#   theme(legend.position="bottom") +
+#   ylab(expression(paste("amplitude in muV")))+
+#   labs(title=sprintf("SSVEP amplitudes | induced"),
+#        subtitle="collapsed across frequencies")+
+#   scale_fill_brewer(palette = "Dark2")+
+#   scale_color_brewer(palette = "Dark2")
+
+#evoked raw####
+dat2plot1 <- dat2plot%>%
+  filter(time!="post_diff")
+theme_set(theme_bw())
+ggplot(dat2plot1, aes(x = interaction(time,condition), y = amplitude_evoked, fill = condition)) +
+  # geom_hline(yintercept=0, show.legend = FALSE) +
+  geom_line(aes(group = interaction(subjects,condition)),colour = "grey60",alpha = 0.4,size =1) +
+  geom_beeswarm(aes(color = condition, x = interaction(time,condition),
+                    group = condition), cex=1.5, size = 4,alpha=0.4,fill="grey40",shape=21)+
+  # geom_point(aes(color = condition, x = interaction(time,condition),
+  #                   group = condition), size = 4,alpha=0.4)+
+  stat_summary(fun.y=mean, aes(ymin=..y.., ymax=..y.., color =condition), geom='errorbar', width=0.9, size=1.5) +
+  scale_x_discrete("time window", breaks=waiver(), labels = rep(c("pre","post"),1,6)) +
+  # theme(legend.position="bottom") +
+  ylab(expression(paste("amplitude in muV")))+
+  labs(title=sprintf("SSVEP amplitudes | evoked"),
+       subtitle="collapsed across frequencies")+
+  scale_fill_brewer(palette = "Dark2")+
+  scale_color_brewer(palette = "Dark2")
+
+# #induced baseline corrected####
+# dat2plot2 <- dat2plot%>%
+#   filter(time=="post")
+#   
+# theme_set(theme_bw())
+# ggplot(dat2plot2, aes(x = condition, y = modulation_induced, fill = condition)) +
+#   geom_hline(yintercept=0, show.legend = FALSE) +
+#   geom_line(aes(group = interaction(subjects,time)),colour = "grey60",alpha = 0.4,size =1) +
+#   geom_beeswarm(aes(color = condition, x = condition,
+#                     group = condition), cex=2.5, size = 5,alpha=0.4,fill="grey40",shape=21)+
+#   # geom_point(aes(color = condition, x = interaction(time,condition),
+#   #                   group = condition), size = 4,alpha=0.4)+
+#   stat_summary(fun.y=mean, aes(ymin=..y.., ymax=..y.., color =condition), geom='errorbar', width=0.9, size=1.5) +
+#   scale_x_discrete("time", breaks=waiver(), labels = rep(c("pre-to-post"),1,3)) +
+#   theme(legend.position="bottom") +
+#   ylab(expression(paste("amplitude modulation in %")))+
+#   labs(title=sprintf("SSVEP amplitude modulation | induced"),
+#        subtitle="collapsed across frequencies")+
+#   scale_fill_brewer(palette = "Dark2")+
+#   scale_color_brewer(palette = "Dark2")
+
+#evoked baseline corrected####
+dat2plot2 <- dat2plot%>%
+  filter(time=="post")
+  
+theme_set(theme_bw())
+ggplot(dat2plot2, aes(x = condition, y = modulation_evoked, fill = condition)) +
+  geom_hline(yintercept=0, show.legend = FALSE) +
+  geom_line(aes(group = interaction(subjects,time)),colour = "grey60",alpha = 0.4,size =1) +
+  geom_beeswarm(aes(color = condition, x = condition,
+                    group = condition), cex=2.5, size = 5,alpha=0.4,fill="grey40",shape=21)+
+  # geom_point(aes(color = condition, x = interaction(time,condition),
+  #                   group = condition), size = 4,alpha=0.4)+
+  stat_summary(fun.y=mean, aes(ymin=..y.., ymax=..y.., color =condition), geom='errorbar', width=0.9, size=1.5) +
+  scale_x_discrete("time", breaks=waiver(), labels = rep(c("pre-to-post"),1,3)) +
+  # theme(legend.position="bottom") +
+  ylab(expression(paste("amplitude modulation in %")))+
+  labs(title=sprintf("SSVEP modulation | evoked"),
+       subtitle="collapsed across frequencies")+
+  scale_fill_brewer(palette = "Dark2")+
+  scale_color_brewer(palette = "Dark2")
+
+#evoked baseline corrected####
+dat2plot3 <- dat2plot%>%
+  filter(time=="post_diff")
+  
+theme_set(theme_bw())
+ggplot(dat2plot3, aes(x = condition, y = amplitude_evoked, fill = condition)) +
+  geom_hline(yintercept=0, show.legend = FALSE) +
+  geom_line(aes(group = interaction(subjects,time)),colour = "grey60",alpha = 0.4,size =1) +
+  geom_beeswarm(aes(color = condition, x = condition,
+                    group = condition), cex=2.5, size = 5,alpha=0.4,fill="grey40",shape=21)+
+  # geom_point(aes(color = condition, x = interaction(time,condition),
+  #                   group = condition), size = 4,alpha=0.4)+
+  stat_summary(fun.y=mean, aes(ymin=..y.., ymax=..y.., color =condition), geom='errorbar', width=0.9, size=1.5) +
+  scale_x_discrete("time", breaks=waiver(), labels = rep(c("pre-to-post"),1,3)) +
+  # theme(legend.position="bottom") +
+  ylab(expression(paste("amplitude difference in ", mu, "V")))+
+  labs(title=sprintf("SSVEP difference | evoked"),
+       subtitle="collapsed across frequencies")+
+  scale_fill_brewer(palette = "Dark2")+
+  scale_color_brewer(palette = "Dark2")
+
+```
+compound figure
+
+<br>  
+
+```{r plot_data_avg_compound, results = "hide",  fig.height=6, fig.width=4, warning = FALSE}
+dat2plot <- DataIn %>%
+  dplyr::select(-freq_irr, -color_irr)%>%
+  pivot_longer(c(-subjects, -condition, -time),names_to = "signal", values_to = "amplitude")%>%
+  pivot_wider(names_from = "time", values_from = "amplitude")%>%
+  rename(pre = '[-1 0]')%>%
+  rowwise()%>%
+  mutate(post = mean(c(`[0.5 1.5]`,`[1 2]`))) %>%
+  mutate(post_diff = mean(c(`[0.5 1.5]`,`[1 2]`)) - pre)%>%
+  dplyr::select(., subjects, condition, pre, post, post_diff, signal)%>%
+  pivot_longer(c(-subjects, -condition, -signal),names_to = "time", values_to = "amplitude")%>%
+  pivot_wider(names_from = "signal", values_from = "amplitude")%>%
+  mutate(condition = factor(condition, levels=c('attended','unattended','irrelevant'), ordered = T))%>%
+  mutate(time = factor(time, levels=c('pre','post','post_diff'), ordered = T))
+
+#evoked baseline corrected####
+dat2plot2 <- dat2plot%>%
+  filter(time=="post")
+
+plot1 <- ggplot(dat2plot2, aes(x = condition, y = modulation_evoked, fill = condition)) +
+  geom_hline(yintercept=0, show.legend = FALSE) +
+  geom_line(aes(group = interaction(subjects,time)),colour = "grey60",alpha = 0.4,size =1) +
+  geom_beeswarm(aes(color = condition, x = condition,
+                    group = condition), cex=2.5, size = 5,alpha=0.4,fill="grey40",shape=21)+
+  # geom_point(aes(color = condition, x = interaction(time,condition),
+  #                   group = condition), size = 4,alpha=0.4)+
+  stat_summary(fun.y=mean, aes(ymin=..y.., ymax=..y.., color =condition), geom='errorbar', width=0.9, size=1.5) +
+  scale_x_discrete("condition", breaks=waiver(), labels = rep(c(""),1,3)) +
+  # theme(legend.position="bottom") +
+  ylab(expression(paste("amplitude modulation in %")))+
+  # labs(title=sprintf("SSVEP modulation | evoked"),
+  #      subtitle="collapsed across frequencies")+
+  scale_fill_manual(values=c("#F1831A", "#293C4A", "#198A83"))+
+  # scale_fill_brewer(palette = "Dark2")+
+  scale_color_manual(values=c("#F1831A", "#293C4A", "#198A83"))+
+  # scale_color_brewer(palette = "Dark2")+
+  theme(legend.position="none")+
+  # scale_y_continuous(limits=c(-60, 140))
+  scale_y_continuous(limits=c(-40, 80))
+
+
+plot2 <- ggplot(dat2plot2, aes(y = modulation_evoked, fill = condition, x = 1)) +
+  geom_flat_violin(aes(fill = condition),position = position_nudge(x = .1, y = 0), adjust = 1.3, trim = FALSE, alpha = .5, colour = NA)+
+  scale_fill_manual(values=c("#F1831A", "#293C4A", "#198A83"))+
+  # scale_fill_brewer(palette = "Dark2")+
+  scale_color_manual(values=c("#F1831A", "#293C4A", "#198A83"))+
+  # scale_color_brewer(palette = "Dark2")+
+  theme(axis.title.y=element_blank(),
+         axis.text.y=element_blank(),
+         axis.ticks.y=element_blank())+
+  theme(axis.title.x=element_blank(),
+         axis.text.x=element_blank(),
+         axis.ticks.x=element_blank())+
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())+
+  # scale_y_continuous(limits=c(-60, 140))
+  scale_y_continuous(limits=c(-40, 80))
+
+  
+
+# cowplot::plot_grid(plot1, plot2, plot3, ncol = 3,labels = "AUTO")
+plotttitle <- ggdraw() + draw_label("SVEP modulation | evoked", fontface='bold')
+plotplots <- ggarrange(plot1, plot2,ncol = 2,common.legend = TRUE,align = "h", widths=c(3,1))
+ggarrange(plotttitle, plotplots, nrow = 2, heights=c(0.2, 1))
+
+
+
+#evoked baseline corrected####
+dat2plot3 <- dat2plot%>%
+  filter(time=="post_diff")
+
+plot1 <- ggplot(dat2plot3, aes(x = condition, y = amplitude_evoked, fill = condition)) +
+  geom_hline(yintercept=0, show.legend = FALSE) +
+  geom_line(aes(group = interaction(subjects,time)),colour = "grey60",alpha = 0.4,size =1) +
+  geom_beeswarm(aes(color = condition, x = condition,
+                    group = condition), cex=2.5, size = 5,alpha=0.4,fill="grey40",shape=21)+
+  # geom_point(aes(color = condition, x = interaction(time,condition),
+  #                   group = condition), size = 4,alpha=0.4)+
+  stat_summary(fun.y=mean, aes(ymin=..y.., ymax=..y.., color =condition), geom='errorbar', width=0.9, size=1.5) +
+  scale_x_discrete("condition", breaks=waiver(), labels = rep(c(""),1,3)) +
+  # theme(legend.position="bottom") +
+  ylab(expression(paste("amplitude difference in ", mu, "V")))+
+  # labs(title=sprintf("SSVEP difference | evoked"),
+  #      subtitle="collapsed across frequencies")+
+  scale_fill_manual(values=c("#F1831A", "#293C4A", "#198A83"))+
+  # scale_fill_brewer(palette = "Dark2")+
+  scale_color_manual(values=c("#F1831A", "#293C4A", "#198A83"))+
+  # scale_color_brewer(palette = "Dark2")+
+  theme(legend.position="none")+
+  scale_y_continuous(limits=c(-1.5, 1.5))
+
+
+plot2 <- ggplot(dat2plot3, aes(y = amplitude_evoked, fill = condition, x = 1)) +
+  geom_flat_violin(aes(fill = condition),position = position_nudge(x = .1, y = 0), adjust = 1.3, trim = FALSE, alpha = .5, colour = NA)+
+  scale_fill_manual(values=c("#F1831A", "#293C4A", "#198A83"))+
+  # scale_fill_brewer(palette = "Dark2")+
+  scale_color_manual(values=c("#F1831A", "#293C4A", "#198A83"))+
+  # scale_color_brewer(palette = "Dark2")+
+  theme(axis.title.y=element_blank(),
+         axis.text.y=element_blank(),
+         axis.ticks.y=element_blank())+
+  theme(axis.title.x=element_blank(),
+         axis.text.x=element_blank(),
+         axis.ticks.x=element_blank())+
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())+
+  scale_y_continuous(limits=c(-1.5, 1.5))
+  
+
+# cowplot::plot_grid(plot1, plot2, plot3, ncol = 3,labels = "AUTO")
+plotttitle <- ggdraw() + draw_label("SVEP difference | evoked", fontface='bold')
+plotplots <- ggarrange(plot1, plot2,ncol = 2,common.legend = TRUE,align = "h", widths=c(3,1))
+ggarrange(plotttitle, plotplots, nrow = 2, heights=c(0.2, 1))
+
+
+### for saving with alpha = 1
+#evoked baseline corrected####
+dat2plot2 <- dat2plot%>%
+  filter(time=="post")
+
+plot1 <- ggplot(dat2plot2, aes(x = condition, y = modulation_evoked, fill = condition)) +
+  geom_hline(yintercept=0, show.legend = FALSE) +
+  geom_line(aes(group = interaction(subjects,time)),colour = "grey60",alpha = 1,size =1) +
+  geom_beeswarm(aes(color = condition, x = condition,
+                    group = condition), cex=2.5, size = 5,alpha=1,fill="grey40",shape=21)+
+  # geom_point(aes(color = condition, x = interaction(time,condition),
+  #                   group = condition), size = 4,alpha=0.4)+
+  stat_summary(fun.y=mean, aes(ymin=..y.., ymax=..y.., color =condition), geom='errorbar', width=0.9, size=1.5) +
+  scale_x_discrete("condition", breaks=waiver(), labels = rep(c(""),1,3)) +
+  # theme(legend.position="bottom") +
+  ylab(expression(paste("amplitude modulation in %")))+
+  # labs(title=sprintf("SSVEP modulation | evoked"),
+  #      subtitle="collapsed across frequencies")+
+  scale_fill_manual(values=c("#F1831A", "#293C4A", "#198A83"))+
+  # scale_fill_brewer(palette = "Dark2")+
+  scale_color_manual(values=c("#F1831A", "#293C4A", "#198A83"))+
+  # scale_color_brewer(palette = "Dark2")+
+  theme(legend.position="none")+
+  # scale_y_continuous(limits=c(-60, 140))
+  scale_y_continuous(limits=c(-40, 80))
+
+
+plot2 <- ggplot(dat2plot2, aes(y = modulation_evoked, fill = condition, x = 1)) +
+  geom_flat_violin(aes(fill = condition),position = position_nudge(x = .1, y = 0), adjust = 1.3, trim = FALSE, alpha = 1, colour = NA)+
+  scale_fill_manual(values=c("#F1831A", "#293C4A", "#198A83"))+
+  # scale_fill_brewer(palette = "Dark2")+
+  scale_color_manual(values=c("#F1831A", "#293C4A", "#198A83"))+
+  # scale_color_brewer(palette = "Dark2")+
+  theme(axis.title.y=element_blank(),
+         axis.text.y=element_blank(),
+         axis.ticks.y=element_blank())+
+  theme(axis.title.x=element_blank(),
+         axis.text.x=element_blank(),
+         axis.ticks.x=element_blank())+
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())+
+  # scale_y_continuous(limits=c(-60, 140))
+  scale_y_continuous(limits=c(-40, 80))
+
+  
+
+# cowplot::plot_grid(plot1, plot2, plot3, ncol = 3,labels = "AUTO")
+plotttitle <- ggdraw() + draw_label("SVEP modulation | evoked", fontface='bold')
+plotplots <- ggarrange(plot1, plot2,ncol = 2,common.legend = TRUE,align = "h", widths=c(3,1))
+
+savefig <- multi_panel_figure(columns = 1, rows = 1, panel_label_type = "none", width = 4, height = 6, unit = "in")
+saveplot <- ggarrange(plotttitle, plotplots, nrow = 2, heights=c(0.2, 1))
+
+savefig %<>%
+  fill_panel(saveplot, column = 1, row = 1)
+savefig
+save_multi_panel_figure(savefig, "AMPS_collapsed.eps")
+
+
+
+```
+check for color/frequency dependency
+
+<br>  
+
+```{r plot_data_avg_colfreq, results = "hide",  fig.height=5, fig.width=4, warning = FALSE}
+
+dat2plot <- DataIn %>%
+  # dplyr::select(-freq_irr, -color_irr)%>%
+  pivot_longer(c(-subjects, -condition, -time, -freq_irr, -color_irr),names_to = "signal", values_to = "amplitude")%>%
+  pivot_wider(names_from = "time", values_from = "amplitude")%>%
+  rename(pre = '[-1 0]')%>%
+  rowwise()%>%
+  mutate(post = mean(c(`[0.5 1.5]`,`[1 2]`))) %>%
+  mutate(post_diff = mean(c(`[0.5 1.5]`,`[1 2]`)) - pre)%>%
+  dplyr::select(., subjects, condition, pre, post, post_diff, signal, freq_irr, color_irr)%>%
+  pivot_longer(c(-subjects, -condition, -signal, -freq_irr, -color_irr),names_to = "time", values_to = "amplitude")%>%
+  pivot_wider(names_from = "signal", values_from = "amplitude")%>%
+  mutate(condition = factor(condition, levels=c('attended','unattended','irrelevant'), ordered = T), freq_irr=factor(freq_irr))%>%
+  mutate(time = factor(time, levels=c('pre','post','post_diff'), ordered = T))
+
+#evoked baseline corrected####
+dat2plot2 <- dat2plot%>%
+  filter(time=="post")
+  
+theme_set(theme_bw())
+ggplot(dat2plot2, aes(x = condition, y = modulation_evoked)) +
+  geom_hline(yintercept=0, show.legend = FALSE) +
+  geom_line(aes(group = interaction(subjects,time)),colour = "grey60",alpha = 0.4,size =1) +
+  geom_beeswarm(aes(color = color_irr, x = condition, fill= color_irr,
+                    group = condition), cex=2.5, size = 5,alpha=0.4,shape=21)+
+  # geom_point(aes(color = condition, x = interaction(time,condition),
+  #                   group = condition), size = 4,alpha=0.4)+
+  stat_summary(fun.y=mean, aes(ymin=..y.., ymax=..y..), color ="grey60", geom='errorbar', width=0.9, size=1.5) +
+  scale_x_discrete("condition", breaks=waiver(), labels = c("attended","unattended","irrelevant")) +
+  # theme(legend.position="bottom") +
+  ylab(expression(paste("amplitude modulation in %")))+
+  labs(title=sprintf("SSVEP modulation | evoked"),
+       subtitle="separate for irrelevant color")+
+  scale_fill_manual(values=c("darkcyan", "darkgreen", "darkorange"))+
+  scale_color_manual(values=c("darkcyan", "darkgreen", "darkorange"))
+  # scale_fill_brewer(palette = "Dark2")+
+  # scale_color_brewer(palette = "Dark2")
+
+theme_set(theme_bw())
+ggplot(dat2plot2, aes(x = condition, y = modulation_evoked)) +
+  geom_hline(yintercept=0, show.legend = FALSE) +
+  geom_line(aes(group = interaction(subjects,time)),colour = "grey60",alpha = 0.4,size =1) +
+  geom_beeswarm(aes(color = freq_irr, x = condition, fill= freq_irr,
+                    group = condition), cex=2.5, size = 5,alpha=0.4,shape=21)+
+  # geom_point(aes(color = condition, x = interaction(time,condition),
+  #                   group = condition), size = 4,alpha=0.4)+
+  stat_summary(fun.y=mean, aes(ymin=..y.., ymax=..y..), color ="grey60", geom='errorbar', width=0.9, size=1.5) +
+  scale_x_discrete("condition", breaks=waiver(), labels = c("attended","unattended","irrelevant")) +
+  # theme(legend.position="bottom") +
+  ylab(expression(paste("amplitude modulation in %")))+
+  labs(title=sprintf("SSVEP modulation | evoked"),
+       subtitle="separate for irrelevant frequency")+
+  scale_fill_brewer(palette = "Dark2")+
+  scale_color_brewer(palette = "Dark2")
+
+#evoked baseline corrected####
+dat2plot3 <- dat2plot%>%
+  filter(time=="post_diff")
+
+theme_set(theme_bw())
+ggplot(dat2plot3, aes(x = condition, y = amplitude_evoked)) +
+  geom_hline(yintercept=0, show.legend = FALSE) +
+  geom_line(aes(group = interaction(subjects,time)),colour = "grey60",alpha = 0.4,size =1) +
+  geom_beeswarm(aes(color = color_irr, x = condition, fill= color_irr,
+                    group = condition), cex=2.5, size = 5,alpha=0.4,shape=21)+
+  # geom_point(aes(color = condition, x = interaction(time,condition),
+  #                   group = condition), size = 4,alpha=0.4)+
+  stat_summary(fun.y=mean, aes(ymin=..y.., ymax=..y..), color ="grey60", geom='errorbar', width=0.9, size=1.5) +
+  scale_x_discrete("condition", breaks=waiver(), labels = c("attended","unattended","irrelevant")) +
+  # theme(legend.position="bottom") +
+  ylab(expression(paste("amplitude difference in ", mu, "V")))+
+  labs(title=sprintf("SSVEP modulation | evoked"),
+       subtitle="separate for irrelevant color")+
+  scale_fill_manual(values=c("darkcyan", "darkgreen", "darkorange"))+
+  scale_color_manual(values=c("darkcyan", "darkgreen", "darkorange"))
+  # scale_fill_brewer(palette = "Dark2")+
+  # scale_color_brewer(palette = "Dark2")
+
+theme_set(theme_bw())
+ggplot(dat2plot3, aes(x = condition, y = amplitude_evoked)) +
+  geom_hline(yintercept=0, show.legend = FALSE) +
+  geom_line(aes(group = interaction(subjects,time)),colour = "grey60",alpha = 0.4,size =1) +
+  geom_beeswarm(aes(color = freq_irr, x = condition, fill= freq_irr,
+                    group = condition), cex=2.5, size = 5,alpha=0.4,shape=21)+
+  # geom_point(aes(color = condition, x = interaction(time,condition),
+  #                   group = condition), size = 4,alpha=0.4)+
+  stat_summary(fun.y=mean, aes(ymin=..y.., ymax=..y..), color ="grey60", geom='errorbar', width=0.9, size=1.5) +
+  scale_x_discrete("condition", breaks=waiver(), labels = c("attended","unattended","irrelevant")) +
+  # theme(legend.position="bottom") +
+  ylab(expression(paste("amplitude difference in ", mu, "V")))+
+  labs(title=sprintf("SSVEP modulation | evoked"),
+       subtitle="separate for irrelevant frequency")+
+  scale_fill_brewer(palette = "Dark2")+
+  scale_color_brewer(palette = "Dark2")
+
+```
+
+### display data [descriptives]
+
+#### all time windows
+
+**condition X time**
+
+<br> 
+
+```{r DescriptivesI, echo=FALSE}
+DataIn%>%
+  dplyr::select(-freq_irr, -color_irr)%>%
+  pivot_longer(c(-subjects, -condition, -time),names_to = "signal", values_to = "amplitude")%>%
+  # filter(signal=="amplitude_evoked" | signal=="amplitude_induced")%>%
+  filter(signal=="amplitude_evoked")%>%
+  mutate(condition = factor(condition, levels=c('attended','unattended','irrelevant'), ordered = T))%>%
+  # group_by(signal, condition, time)%>%
+  dplyr::select(-signal)%>%
+  group_by(condition, time)%>%
+  summarise(N=n(),M=mean(amplitude), STD=sd(amplitude),SE=sd(amplitude)/sqrt(n()))%>%
+  kable(escape = F, digits = c(3,3,3,6,3,3,3,3,3), caption = c("SSVEP amplitudes")) %>%
+  kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
+
+DataIn%>%
+  dplyr::select(-freq_irr, -color_irr)%>%
+  pivot_longer(c(-subjects, -condition, -time),names_to = "signal", values_to = "amplitude")%>%
+  # filter(signal=="modulation_evoked" | signal=="modulation_induced")%>%
+  filter(signal=="modulation_evoked")%>%
+  filter(time != "[-1 0]")%>%
+  mutate(condition = factor(condition, levels=c('attended','unattended','irrelevant'), ordered = T))%>%
+  # group_by(signal, condition, time)%>%
+  dplyr::select(-signal)%>%
+  group_by(condition, time)%>%
+  summarise(N=n(),M=mean(amplitude), STD=sd(amplitude),SE=sd(amplitude)/sqrt(n()))%>%
+  kable(escape = F, digits = c(3,3,3,6,3,3,3,3,3), caption = c("SSVEP amplitude modulations")) %>%
+  kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
+
+
+```
+
+
+#### collapsed across post-cue time windows
+
+**condition**
+
+<br> 
+
+```{r DescriptivesII, echo=FALSE}
+dat2plot <- DataIn %>%
+  dplyr::select(-freq_irr, -color_irr)%>%
+  pivot_longer(c(-subjects, -condition, -time),names_to = "signal", values_to = "amplitude")%>%
+  pivot_wider(names_from = "time", values_from = "amplitude")%>%
+  rename(pre = '[-1 0]')%>%
+  rowwise()%>%
+  mutate(post = mean(c(`[0.5 1.5]`,`[1 2]`))) %>%
+  mutate(post_diff = mean(c(`[0.5 1.5]`,`[1 2]`)) - pre)%>%
+  dplyr::select(., subjects, condition, pre, post, post_diff, signal)%>%
+  pivot_longer(c(-subjects, -condition, -signal),names_to = "time", values_to = "amplitude")%>%
+  mutate(condition = factor(condition, levels=c('attended','unattended','irrelevant'), ordered = T))%>%
+  mutate(time = factor(time, levels=c('pre','post','post_diff'), ordered = T))
+
+dat2plot%>%
+  # filter((signal=="amplitude_evoked" | signal=="amplitude_induced") & time!="post_diff")%>%
+  filter(signal=="amplitude_evoked" & time!="post_diff")%>%
+  mutate(condition = factor(condition, levels=c('attended','unattended','irrelevant'), ordered = T))%>%
+  # group_by(signal, condition, time)%>%
+  dplyr::select(-signal)%>%
+  group_by(condition, time)%>%
+  summarise(N=n(),M=mean(amplitude), STD=sd(amplitude),SE=sd(amplitude)/sqrt(n()))%>%
+  kable(escape = F, digits = c(3,3,3,6,3,3,3,3,3), caption = c("SSVEP amplitudes")) %>%
+  kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
+
+dat2plot%>%
+  # filter(signal=="modulation_evoked" | signal=="modulation_induced")%>%
+  filter(signal=="modulation_evoked")%>%
+  filter(time == "post")%>%
+  mutate(condition = factor(condition, levels=c('attended','unattended','irrelevant'), ordered = T))%>%
+  # group_by(signal, condition, time)%>%
+  dplyr::select(-signal)%>%
+  group_by(condition, time)%>%
+  summarise(N=n(),M=mean(amplitude), STD=sd(amplitude),SE=sd(amplitude)/sqrt(n()))%>%
+  dplyr::select(., condition, N, M, STD, SE)%>%
+  kable(escape = F, digits = c(3,3,3,6,3,3,3,3,3), caption = c("SSVEP amplitude modulations in %")) %>%
+  kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
+
+dat2plot%>%
+  # filter(signal=="modulation_evoked" | signal=="modulation_induced")%>%
+  filter(signal=="amplitude_evoked")%>%
+  filter(time == "post_diff")%>%
+  mutate(condition = factor(condition, levels=c('attended','unattended','irrelevant'), ordered = T))%>%
+  # group_by(signal, condition, time)%>%
+  dplyr::select(-signal)%>%
+  group_by(condition, time)%>%
+  summarise(N=n(),M=mean(amplitude), STD=sd(amplitude),SE=sd(amplitude)/sqrt(n()))%>%
+  dplyr::select(., condition, N, M, STD, SE)%>%
+  kable(escape = F, digits = c(3,3,3,6,3,3,3,3,3), caption = c("SSVEP amplitude differences in $\\mu$V")) %>%
+  kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
+
+
+```
+
+
+## Statistical analysis
+
+### ANOVA models
+
+#### test evoked amplitudes collapsed across post-cue time windows
+
+factors: **condition X time**
+
+<br> 
+
+```{r ANOVA_V1, fig.show = "hide", warning = FALSE, fig.height=4, fig.width=10}
+StatsOut <- DataIn %>%
+  dplyr::select(-freq_irr, -color_irr)%>%
+  pivot_longer(c(-subjects, -condition, -time),names_to = "signal", values_to = "amplitude")%>%
+  pivot_wider(names_from = "time", values_from = "amplitude")%>%
+  rename(pre = '[-1 0]')%>%
+  rowwise()%>%
+  mutate(post = mean(c(`[0.5 1.5]`,`[1 2]`))) %>%
+  dplyr::select(., subjects, condition, pre, post, signal)%>%
+  pivot_longer(c(-subjects, -condition, -signal),names_to = "time", values_to = "amplitude")%>%
+  mutate(condition = factor(condition, levels=c('attended','unattended','irrelevant'), ordered = T))%>%
+  mutate(time = factor(time, levels=c('pre','post'), ordered = T))%>%
+  filter(signal == "amplitude_evoked")%>%
+  aov_ez(id="subjects", dv = "amplitude", data = ., within = c("condition","time"), include_aov = afex_options("include_aov"))
+
+test_sphericity(StatsOut)%>%
+  as.data.frame.array(.)%>%
+  mutate(factor = rownames(.))%>%
+  dplyr::select(., factor, `Test statistic`, `p-value`)%>%
+  mutate(
+    `p-value` = cell_spec(ifelse(round(`p-value`,4)<.001,"< .001",round(`p-value`,4)), 
+                        color = ifelse(is.nan(`p-value`),"blue", ifelse(`p-value` < .05, "green", "red")),
+                        bold = ifelse(is.nan(`p-value`),F, ifelse(`p-value` < .05, T,F)),
+                        align = "center")
+  ) %>%
+  kable(escape = F, digits = c(3,3,3,3,3,3,3,3,3), caption = c("Mauchly test for Sphericity")) %>%
+  kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
+
+StatsOut%>%
+  .$anova_table %>%
+  mutate(factor = rownames(.))%>%
+  mutate(
+    `Pr(>F)` = cell_spec(ifelse(round(`Pr(>F)`,4)<.001,"< .001",round(`Pr(>F)`,4)), 
+                        color = ifelse(is.nan(`Pr(>F)`),"blue", ifelse(`Pr(>F)` < .05, "green", "red")),
+                        bold = ifelse(is.nan(`Pr(>F)`),F, ifelse(`Pr(>F)` < .05, T,F)),
+                        align = "center")
+  ) %>%
+  dplyr::select(factor, `num Df`, `den Df`, MSE, `F`, ges, `Pr(>F)`) %>%
+  kable(escape = F, digits = c(3,3,3,3,3,3,3,3,3), caption = c("repeated measures ANOVA | dv = evoked SSVEP amplitude")) %>%
+  kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
+
+```
+
+dv: **amplitude modulation in %**
+factors: **condition**
+
+<br> 
+
+```{r ANOVA_V2, fig.show = "hide", warning = FALSE, fig.height=4, fig.width=10}
+StatsOut <- DataIn %>%
+  dplyr::select(-freq_irr, -color_irr)%>%
+  pivot_longer(c(-subjects, -condition, -time),names_to = "signal", values_to = "amplitude")%>%
+  pivot_wider(names_from = "time", values_from = "amplitude")%>%
+  rename(pre = '[-1 0]')%>%
+  rowwise()%>%
+  mutate(post = mean(c(`[0.5 1.5]`,`[1 2]`))) %>%
+  dplyr::select(., subjects, condition, pre, post, signal)%>%
+  pivot_longer(c(-subjects, -condition, -signal),names_to = "time", values_to = "amplitude")%>%
+  mutate(condition = factor(condition, levels=c('attended','unattended','irrelevant'), ordered = T))%>%
+  mutate(time = factor(time, levels=c('pre','post'), ordered = T))%>%
+  filter(signal == "modulation_evoked", time=="post")%>%
+  aov_ez(id="subjects", dv = "amplitude", data = ., within = c("condition"), include_aov = afex_options("include_aov"))
+
+test_sphericity(StatsOut)%>%
+  as.data.frame.array(.)%>%
+  mutate(factor = rownames(.))%>%
+  dplyr::select(., factor, `Test statistic`, `p-value`)%>%
+  mutate(
+    `p-value` = cell_spec(ifelse(round(`p-value`,4)<.001,"< .001",round(`p-value`,4)), 
+                        color = ifelse(is.nan(`p-value`),"blue", ifelse(`p-value` < .05, "green", "red")),
+                        bold = ifelse(is.nan(`p-value`),F, ifelse(`p-value` < .05, T,F)),
+                        align = "center")
+  ) %>%
+  kable(escape = F, digits = c(3,3,3,3,3,3,3,3,3), caption = c("Mauchly test for Sphericity")) %>%
+  kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
+
+StatsOut%>%
+  .$anova_table %>%
+  mutate(factor = rownames(.))%>%
+  mutate(
+    `Pr(>F)` = cell_spec(ifelse(round(`Pr(>F)`,4)<.001,"< .001",round(`Pr(>F)`,4)), 
+                        color = ifelse(is.nan(`Pr(>F)`),"blue", ifelse(`Pr(>F)` < .05, "green", "red")),
+                        bold = ifelse(is.nan(`Pr(>F)`),F, ifelse(`Pr(>F)` < .05, T,F)),
+                        align = "center")
+  ) %>%
+  dplyr::select(factor, `num Df`, `den Df`, MSE, `F`, ges, `Pr(>F)`) %>%
+  kable(escape = F, digits = c(3,3,3,3,3,3,3,3,3), caption = c("repeated measures ANOVA | dv = evoked SSVEP amplitude modulation")) %>%
+  kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
+
+```
+
+
+dv: **amplitude difference**
+factors: **condition**
+
+<br> 
+
+```{r ANOVA_V2b, fig.show = "hide", warning = FALSE, fig.height=4, fig.width=10}
+StatsOut2 <- DataIn %>%
+  dplyr::select(-freq_irr, -color_irr)%>%
+  pivot_longer(c(-subjects, -condition, -time),names_to = "signal", values_to = "amplitude")%>%
+  pivot_wider(names_from = "time", values_from = "amplitude")%>%
+  rename(pre = '[-1 0]')%>%
+  rowwise()%>%
+  mutate(post = mean(c(`[0.5 1.5]`,`[1 2]`))-pre) %>%
+  dplyr::select(., subjects, condition, pre, post, signal)%>%
+  pivot_longer(c(-subjects, -condition, -signal),names_to = "time", values_to = "amplitude")%>%
+  mutate(condition = factor(condition, levels=c('attended','unattended','irrelevant'), ordered = T))%>%
+  mutate(time = factor(time, levels=c('pre','post'), ordered = T))%>%
+  filter(signal == "amplitude_evoked", time=="post")%>%
+  aov_ez(id="subjects", dv = "amplitude", data = ., within = c("condition"), include_aov = afex_options("include_aov"))
+
+test_sphericity(StatsOut2)%>%
+  as.data.frame.array(.)%>%
+  mutate(factor = rownames(.))%>%
+  dplyr::select(., factor, `Test statistic`, `p-value`)%>%
+  mutate(
+    `p-value` = cell_spec(ifelse(round(`p-value`,4)<.001,"< .001",round(`p-value`,4)), 
+                        color = ifelse(is.nan(`p-value`),"blue", ifelse(`p-value` < .05, "green", "red")),
+                        bold = ifelse(is.nan(`p-value`),F, ifelse(`p-value` < .05, T,F)),
+                        align = "center")
+  ) %>%
+  kable(escape = F, digits = c(3,3,3,3,3,3,3,3,3), caption = c("Mauchly test for Sphericity")) %>%
+  kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
+
+StatsOut2%>%
+  .$anova_table %>%
+  mutate(factor = rownames(.))%>%
+  mutate(
+    `Pr(>F)` = cell_spec(ifelse(round(`Pr(>F)`,4)<.001,"< .001",round(`Pr(>F)`,4)), 
+                        color = ifelse(is.nan(`Pr(>F)`),"blue", ifelse(`Pr(>F)` < .05, "green", "red")),
+                        bold = ifelse(is.nan(`Pr(>F)`),F, ifelse(`Pr(>F)` < .05, T,F)),
+                        align = "center")
+  ) %>%
+  dplyr::select(factor, `num Df`, `den Df`, MSE, `F`, ges, `Pr(>F)`) %>%
+  kable(escape = F, digits = c(3,3,3,3,3,3,3,3,3), caption = c("repeated measures ANOVA | dv = evoked SSVEP amplitude differences")) %>%
+  kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
+
+```
+
+### Post-hoc tests
+
+#### Post-hoc t-Tests SSVEP amplitude (emmeans)
+dv = amplitude modulation
+
+<br>
+
+```{r post-hoc t_tests emmeans mod, echo=FALSE}
+# aggregate data
+
+# according to https://osf.io/u9k8d/download
+# create grid
+post_hocs.grid <- emmeans(StatsOut, c("condition"))
+# calculate degrees of freedom
+post_hocs.edf <- StatsOut$anova_table["condition", "den Df"]
+# calculate sigma
+post_hocs.sigma <- sqrt(StatsOut$anova_table["condition", "MSE"])
+
+# report data emmeans against 0
+merge(tidy(contrast(post_hocs.grid,method = "identity",adjust = "holm")), 
+      tidy(eff_size(post_hocs.grid, sigma = post_hocs.sigma, edf = post_hocs.edf, method = "identity",djust = "holm")), by = "contrast")%>%
+  rename(mean = estimate,  SE = `std.error.x`, df = `df.x`, `t-value` = statistic.x, `cohen's d` = `effect.size`) %>%
+  dplyr::select(., contrast, mean, SE, df, `t-value`, `p.value`, `cohen's d`)%>%
+  mutate(
+    p.value = cell_spec(ifelse(round(p.value,4)<.001,"< .001",round(p.value,4)), 
+                        color = ifelse(is.nan(p.value),"blue", ifelse(p.value < .05, "green", "red")),
+                        bold = ifelse(is.nan(p.value),F, ifelse(p.value < .05, T,F)),
+                        align = "left")
+  ) %>%
+  kable(escape = F, digits = c(3,3,3,3,3,3,3,3,3), caption = c("estimated marginal means | by condition | dv = evoked SSVEP amplitude modulation")) %>%
+  kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
+
+# report data emmeans contrast between conditions
+merge(tidy(contrast(post_hocs.grid,method = "pairwise", adjust = "holm")), 
+      tidy(eff_size(post_hocs.grid, sigma = post_hocs.sigma, edf = post_hocs.edf, method = "pairwise")), by = c("contrast"))%>%
+  # mutate(contrast = sprintf('%s vs %s', level1, level2))%>%
+  rename(mean = estimate,  SE = `std.error.x`, df = `df.x`, `t-value` = statistic.x, `cohen's d` = `effect.size`) %>%
+  dplyr::select(., contrast, mean, SE, df, `t-value`, `p.value`, `cohen's d`)%>%
+  mutate(
+    p.value = cell_spec(ifelse(round(p.value,4)<.001,"< .001",round(p.value,4)), 
+                        color = ifelse(is.nan(p.value),"blue", ifelse(p.value < .05, "green", "red")),
+                        bold = ifelse(is.nan(p.value),F, ifelse(p.value < .05, T,F)),
+                        align = "left")
+  ) %>%
+  kable(escape = F, digits = c(3,3,3,3,3,3,3,3,3), caption = c("estimated marginal means | by condition | dv = evoked SSVEP amplitude modulation")) %>%
+  kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
+  
+
+      
+      
+# contrast(post_hocs.grid,method = "identity",djust = "holm")
+# eff_size(post_hocs.grid, sigma = post_hocs.sigma, edf = post_hocs.edf, method = "identity")
+# contrast(post_hocs.grid,method = "pairwise",djust = "holm")
+# eff_size(post_hocs.grid, sigma = post_hocs.sigma, edf = post_hocs.edf, method = "pairwise")
+
+
+
+
+```
+
+
+dv = amplitude difference
+
+<br>
+
+```{r post-hoc t_tests emmeans amp, echo=FALSE}
+# aggregate data
+
+# according to https://osf.io/u9k8d/download
+# create grid
+post_hocs.grid <- emmeans(StatsOut2, c("condition"))
+# calculate degrees of freedom
+post_hocs.edf <- StatsOut2$anova_table["condition", "den Df"]
+# calculate sigma
+post_hocs.sigma <- sqrt(StatsOut2$anova_table["condition", "MSE"])
+
+# report data emmeans against 0
+merge(tidy(contrast(post_hocs.grid,method = "identity",adjust = "holm")), 
+      tidy(eff_size(post_hocs.grid, sigma = post_hocs.sigma, edf = post_hocs.edf, method = "identity",djust = "holm")), by = "contrast")%>%
+  rename(mean = estimate,  SE = `std.error.x`, df = `df.x`, `t-value` = statistic.x, `cohen's d` = `effect.size`) %>%
+  dplyr::select(., contrast, mean, SE, df, `t-value`, `p.value`, `cohen's d`)%>%
+  mutate(
+    p.value = cell_spec(ifelse(round(p.value,4)<.001,"< .001",round(p.value,4)), 
+                        color = ifelse(is.nan(p.value),"blue", ifelse(p.value < .05, "green", "red")),
+                        bold = ifelse(is.nan(p.value),F, ifelse(p.value < .05, T,F)),
+                        align = "left")
+  ) %>%
+  kable(escape = F, digits = c(3,3,3,3,3,3,3,3,3), caption = c("estimated marginal means | by condition | dv = evoked SSVEP amplitude difference")) %>%
+  kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
+
+# report data emmeans contrast between conditions
+merge(tidy(contrast(post_hocs.grid,method = "pairwise", adjust = "holm")), 
+      tidy(eff_size(post_hocs.grid, sigma = post_hocs.sigma, edf = post_hocs.edf, method = "pairwise")), by = c("contrast"))%>%
+  # mutate(contrast = sprintf('%s vs %s', level1, level2))%>%
+  rename(mean = estimate,  SE = `std.error.x`, df = `df.x`, `t-value` = statistic.x, `cohen's d` = `effect.size`) %>%
+  dplyr::select(., contrast, mean, SE, df, `t-value`, `p.value`, `cohen's d`)%>%
+  mutate(
+    p.value = cell_spec(ifelse(round(p.value,4)<.001,"< .001",round(p.value,4)), 
+                        color = ifelse(is.nan(p.value),"blue", ifelse(p.value < .05, "green", "red")),
+                        bold = ifelse(is.nan(p.value),F, ifelse(p.value < .05, T,F)),
+                        align = "left")
+  ) %>%
+  kable(escape = F, digits = c(3,3,3,3,3,3,3,3,3), caption = c("estimated marginal means | by condition | dv = evoked SSVEP amplitude difference")) %>%
+  kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
+  
+
+      
+      
+# contrast(post_hocs.grid,method = "identity",djust = "holm")
+# eff_size(post_hocs.grid, sigma = post_hocs.sigma, edf = post_hocs.edf, method = "identity")
+# contrast(post_hocs.grid,method = "pairwise",djust = "holm")
+# eff_size(post_hocs.grid, sigma = post_hocs.sigma, edf = post_hocs.edf, method = "pairwise")
+
+
+
+
+```
+
+
+#### Post-hoc t-Tests SSVEP amplitude (traditional based on descriptives)
+
+dv = amplitude modulation
+
+<br>
+
+```{r post-hoc t_tests descriptives mod, echo=FALSE}
+# aggregate data
+data2test <- DataIn %>%
+  dplyr::select(-freq_irr, -color_irr)%>%
+  pivot_longer(c(-subjects, -condition, -time),names_to = "signal", values_to = "amplitude")%>%
+  pivot_wider(names_from = "time", values_from = "amplitude")%>%
+  rename(pre = '[-1 0]')%>%
+  rowwise()%>%
+  mutate(post = mean(c(`[0.5 1.5]`,`[1 2]`))) %>%
+  dplyr::select(., subjects, condition, pre, post, signal)%>%
+  pivot_longer(c(-subjects, -condition, -signal),names_to = "time", values_to = "amplitude")%>%
+  mutate(condition = factor(condition, levels=c('attended','unattended','irrelevant'), ordered = T))%>%
+  # mutate(condition = factor(condition, levels=c('irrelevant','attended','unattended'), ordered = T))%>%
+  mutate(time = factor(time, levels=c('pre','post'), ordered = T))%>%
+  filter(signal == "modulation_evoked", time=="post")
+
+data2test%>%
+  group_by(condition)%>%
+  nest()%>%
+  mutate(stats = map(data, ~broom::tidy(
+    t.test(.x$amplitude)
+  ))) %>%
+  mutate(meanval = map(data, ~ mean(.x$amplitude))) %>%
+  mutate(std = map(data, ~ sd(.x$amplitude))) %>%
+  dplyr::select(-data) %>%
+  unnest(cols = c(stats, meanval, std))%>%
+  dplyr::select(condition, meanval, std, statistic, parameter, p.value)%>%
+  mutate(p.value = p.adjust(p.value, method="bonferroni")) %>%
+  mutate(CohensD = `statistic`/sqrt(parameter))%>%
+  mutate(
+    p.value = cell_spec(ifelse(round(p.value,4)<.001,"< .001",round(p.value,4)), 
+                        color = ifelse(is.nan(p.value),"blue", ifelse(p.value < .05, "green", "red")),
+                        bold = ifelse(is.nan(p.value),F, ifelse(p.value < .05, T,F)),
+                        align = "center")
+  ) %>%
+  kable(escape = F, digits = c(3,3,3,3,3,3,3,3,3), caption = c("planned t-tests against 0 | dv = evoked SSVEP amplitude modulation")) %>%
+  kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
+
+
+data2test <- DataIn %>%
+  dplyr::select(-freq_irr, -color_irr)%>%
+  pivot_longer(c(-subjects, -condition, -time),names_to = "signal", values_to = "amplitude")%>%
+  pivot_wider(names_from = "time", values_from = "amplitude")%>%
+  rename(pre = '[-1 0]')%>%
+  rowwise()%>%
+  mutate(post = mean(c(`[0.5 1.5]`,`[1 2]`))) %>%
+  dplyr::select(., subjects, condition, pre, post, signal)%>%
+  pivot_longer(c(-subjects, -condition, -signal),names_to = "time", values_to = "amplitude")%>%
+  # mutate(condition = factor(condition, levels=c('attended','unattended','irrelevant'), ordered = T))%>%
+  # mutate(time = factor(time, levels=c('pre','post'), ordered = T))%>%
+  filter(signal == "modulation_evoked", time=="post")%>%
+  dplyr::select(., -time, -signal)%>%
+  mutate(condition=as.factor(condition), subjects=as.factor(subjects))%>%
+  pivot_wider(names_from = "condition", values_from = "amplitude")%>%
+  mutate(`attended vs unattended` = attended - unattended,
+         `attended vs irrelevant` = attended - irrelevant,
+         `unattended vs irrelevant` = unattended - irrelevant)%>%
+  dplyr::select(., -attended, -unattended, -irrelevant)%>%
+  pivot_longer(c(-subjects),names_to = "condition", values_to = "amplitude")
+  
+
+data2test%>%
+  group_by(condition)%>%
+  nest()%>%
+  mutate(stats = map(data, ~broom::tidy(
+    t.test(.x$amplitude)
+  ))) %>%
+  mutate(meanval = map(data, ~ mean(.x$amplitude))) %>%
+  mutate(std = map(data, ~ sd(.x$amplitude))) %>%
+  dplyr::select(-data) %>%
+  unnest(cols = c(stats, meanval, std))%>%
+  dplyr::select(condition, meanval, std, statistic, parameter, p.value)%>%
+  mutate(p.value = p.adjust(p.value, method="bonferroni")) %>%
+  mutate(CohensD = `statistic`/sqrt(parameter))%>%
+  mutate(
+    p.value = cell_spec(ifelse(round(p.value,4)<.001,"< .001",round(p.value,4)), 
+                        color = ifelse(is.nan(p.value),"blue", ifelse(p.value < .05, "green", "red")),
+                        bold = ifelse(is.nan(p.value),F, ifelse(p.value < .05, T,F)),
+                        align = "center")
+  ) %>%
+  kable(escape = F, digits = c(3,3,3,3,3,3,3,3,3), caption = c("planned t-tests between levels | dv = evoked SSVEP amplitude modulation")) %>%
+  kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
+
+
+```
+
+dv = amplitude difference
+
+<br>
+
+```{r post-hoc t_tests descriptives amp, echo=FALSE}
+# aggregate data
+data2test <- DataIn %>%
+  dplyr::select(-freq_irr, -color_irr)%>%
+  pivot_longer(c(-subjects, -condition, -time),names_to = "signal", values_to = "amplitude")%>%
+  pivot_wider(names_from = "time", values_from = "amplitude")%>%
+  rename(pre = '[-1 0]')%>%
+  rowwise()%>%
+  mutate(post = mean(c(`[0.5 1.5]`,`[1 2]`))-pre) %>%
+  dplyr::select(., subjects, condition, pre, post, signal)%>%
+  pivot_longer(c(-subjects, -condition, -signal),names_to = "time", values_to = "amplitude")%>%
+  mutate(condition = factor(condition, levels=c('attended','unattended','irrelevant'), ordered = T))%>%
+  mutate(time = factor(time, levels=c('pre','post'), ordered = T))%>%
+  filter(signal == "amplitude_evoked", time=="post")
+
+data2test%>%
+  group_by(condition)%>%
+  nest()%>%
+  mutate(stats = map(data, ~broom::tidy(
+    t.test(.x$amplitude)
+  ))) %>%
+  mutate(meanval = map(data, ~ mean(.x$amplitude))) %>%
+  mutate(std = map(data, ~ sd(.x$amplitude))) %>%
+  dplyr::select(-data) %>%
+  unnest(cols = c(stats, meanval, std))%>%
+  dplyr::select(condition, meanval, std, statistic, parameter, p.value)%>%
+  mutate(p.value = p.adjust(p.value, method="bonferroni")) %>%
+  mutate(CohensD = `statistic`/sqrt(parameter))%>%
+  mutate(
+    p.value = cell_spec(ifelse(round(p.value,4)<.001,"< .001",round(p.value,4)), 
+                        color = ifelse(is.nan(p.value),"blue", ifelse(p.value < .05, "green", "red")),
+                        bold = ifelse(is.nan(p.value),F, ifelse(p.value < .05, T,F)),
+                        align = "center")
+  ) %>%
+  kable(escape = F, digits = c(3,3,3,3,3,3,3,3,3), caption = c("planned t-tests against 0 | dv = evoked SSVEP amplitude difference")) %>%
+  kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
+
+
+data2test <- DataIn %>%
+  dplyr::select(-freq_irr, -color_irr)%>%
+  pivot_longer(c(-subjects, -condition, -time),names_to = "signal", values_to = "amplitude")%>%
+  pivot_wider(names_from = "time", values_from = "amplitude")%>%
+  rename(pre = '[-1 0]')%>%
+  rowwise()%>%
+  mutate(post = mean(c(`[0.5 1.5]`,`[1 2]`))-pre) %>%
+  dplyr::select(., subjects, condition, pre, post, signal)%>%
+  pivot_longer(c(-subjects, -condition, -signal),names_to = "time", values_to = "amplitude")%>%
+  # mutate(condition = factor(condition, levels=c('attended','unattended','irrelevant'), ordered = T))%>%
+  # mutate(time = factor(time, levels=c('pre','post'), ordered = T))%>%
+  filter(signal == "amplitude_evoked", time=="post")%>%
+  dplyr::select(., -time, -signal)%>%
+  mutate(condition=as.factor(condition), subjects=as.factor(subjects))%>%
+  pivot_wider(names_from = "condition", values_from = "amplitude")%>%
+  mutate(`attended vs unattended` = attended - unattended,
+         `attended vs irrelevant` = attended - irrelevant,
+         `unattended vs irrelevant` = unattended - irrelevant)%>%
+  dplyr::select(., -attended, -unattended, -irrelevant)%>%
+  pivot_longer(c(-subjects),names_to = "condition", values_to = "amplitude")
+  
+
+data2test%>%
+  group_by(condition)%>%
+  nest()%>%
+  mutate(stats = map(data, ~broom::tidy(
+    t.test(.x$amplitude)
+  ))) %>%
+  mutate(meanval = map(data, ~ mean(.x$amplitude))) %>%
+  mutate(std = map(data, ~ sd(.x$amplitude))) %>%
+  dplyr::select(-data) %>%
+  unnest(cols = c(stats, meanval, std))%>%
+  dplyr::select(condition, meanval, std, statistic, parameter, p.value)%>%
+  mutate(p.value = p.adjust(p.value, method="bonferroni")) %>%
+  mutate(CohensD = `statistic`/sqrt(parameter))%>%
+  mutate(
+    p.value = cell_spec(ifelse(round(p.value,4)<.001,"< .001",round(p.value,4)), 
+                        color = ifelse(is.nan(p.value),"blue", ifelse(p.value < .05, "green", "red")),
+                        bold = ifelse(is.nan(p.value),F, ifelse(p.value < .05, T,F)),
+                        align = "center")
+  ) %>%
+  kable(escape = F, digits = c(3,3,3,3,3,3,3,3,3), caption = c("planned t-tests between levels | dv = evoked SSVEP amplitude difference")) %>%
+  kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
+
+
+```
+
+
+### Bayesian analysis
+
+#### Bayesian ANOVA
+
+with factor **TIME X CONDITION**:
+
+Assuming a wide prior d~Cauchy(0,1):
+
+<br> 
+
+```{r BF-ANOVA TIME X CONDITION Cauchy(1),echo=FALSE}
+num.iter=10000 # the number of MonteCarlo iterations (default: 10000) can be changed here
+data2test <- DataIn %>%
+  dplyr::select(-freq_irr, -color_irr)%>%
+  pivot_longer(c(-subjects, -condition, -time),names_to = "signal", values_to = "amplitude")%>%
+  pivot_wider(names_from = "time", values_from = "amplitude")%>%
+  rename(pre = '[-1 0]')%>%
+  rowwise()%>%
+  mutate(post = mean(c(`[0.5 1.5]`,`[1 2]`))) %>%
+  dplyr::select(., subjects, condition, pre, post, signal)%>%
+  pivot_longer(c(-subjects, -condition, -signal),names_to = "time", values_to = "amplitude")%>%
+  mutate(condition = factor(condition),time = factor(time),subjects=factor(subjects))%>%
+  filter(signal == "amplitude_evoked")
+
+anovaBF_TIMEXCONDITION_bf_r1 <- data2test %>%
+  anovaBF(amplitude~condition*time+subjects,data=.,iterations=num.iter,whichRandom = NULL,rscaleRandom="nuisance",rscaleFixed=1)
+  
+sort(anovaBF_TIMEXCONDITION_bf_r1,decreasing = TRUE)%>%
+  as.data.frame(.[,1:2]) %>%
+  mutate(factor = rownames(.))%>%
+  dplyr::select(., factor, bf)%>%
+  kable(escape = F, digits = c(3,3,3,3,3,3,3,3,3), caption = c("BF-Anova comparison against denominator")) %>%
+  kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
+
+sort(anovaBF_TIMEXCONDITION_bf_r1/anovaBF_TIMEXCONDITION_bf_r1[18], decreasing = TRUE)%>%
+  as.data.frame(.[,1:2]) %>%
+  mutate(factor = rownames(.))%>%
+  dplyr::select(., factor, bf)%>%
+  kable(escape = F, digits = c(3,3,3,3,3,3,3,3,3), caption = c("BF-Anova comparison against most complex model")) %>%
+  kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
+
+
+```
+
+
+Assuming a medium prior d~Cauchy(0,.707):
+
+<br> 
+
+```{r BF-ANOVA TIME X CONDITION Cauchy(.707),echo=FALSE}
+anovaBF_TIMEXCONDITION_bf_r0707 <- data2test %>%
+  anovaBF(amplitude~condition*time+subjects,data=.,iterations=num.iter,whichRandom = NULL,rscaleRandom="nuisance",rscaleFixed=sqrt(2)/2)
+  
+sort(anovaBF_TIMEXCONDITION_bf_r0707,decreasing = TRUE)%>%
+  as.data.frame(.[,1:2]) %>%
+  mutate(factor = rownames(.))%>%
+  dplyr::select(., factor, bf)%>%
+  kable(escape = F, digits = c(3,3,3,3,3,3,3,3,3), caption = c("BF-Anova comparison against denominator")) %>%
+  kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
+
+sort(anovaBF_TIMEXCONDITION_bf_r0707/anovaBF_TIMEXCONDITION_bf_r0707[18], decreasing = TRUE)%>%
+  as.data.frame(.[,1:2]) %>%
+  mutate(factor = rownames(.))%>%
+  dplyr::select(., factor, bf)%>%
+  kable(escape = F, digits = c(3,3,3,3,3,3,3,3,3), caption = c("BF-Anova comparison against most complex model")) %>%
+  kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
+
+```
+
+
+Assuming a narrow prior d~Cauchy(0,.5):
+
+<br> 
+
+```{r BF-ANOVA TIME X CONDITION Cauchy(.5),echo=FALSE}
+anovaBF_TIMEXCONDITION_bf_r05 <- data2test %>%
+  anovaBF(amplitude~condition*time+subjects,data=.,iterations=num.iter,whichRandom = NULL,rscaleRandom="nuisance",rscaleFixed=0.5)
+  
+sort(anovaBF_TIMEXCONDITION_bf_r05,decreasing = TRUE)%>%
+  as.data.frame(.[,1:2]) %>%
+  mutate(factor = rownames(.))%>%
+  dplyr::select(., factor, bf)%>%
+  kable(escape = F, digits = c(3,3,3,3,3,3,3,3,3), caption = c("BF-Anova comparison against denominator")) %>%
+  kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
+
+sort(anovaBF_TIMEXCONDITION_bf_r05/anovaBF_TIMEXCONDITION_bf_r05[18], decreasing = TRUE)%>%
+  as.data.frame(.[,1:2]) %>%
+  mutate(factor = rownames(.))%>%
+  dplyr::select(., factor, bf)%>%
+  kable(escape = F, digits = c(3,3,3,3,3,3,3,3,3), caption = c("BF-Anova comparison against most complex model")) %>%
+  kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
+```
+
+
+Bayesian ANOVA with factor CONDITION:
+
+Assuming a wide prior d~Cauchy(0,1):
+
+<br> 
+
+```{r BF-ANOVA CONDITION Cauchy(1),echo=FALSE}
+num.iter=10000 # the number of MonteCarlo iterations (default: 10000) can be changed here
+data2test <- DataIn %>%
+  dplyr::select(-freq_irr, -color_irr)%>%
+  pivot_longer(c(-subjects, -condition, -time),names_to = "signal", values_to = "amplitude")%>%
+  pivot_wider(names_from = "time", values_from = "amplitude")%>%
+  rename(pre = '[-1 0]')%>%
+  rowwise()%>%
+  mutate(post = mean(c(`[0.5 1.5]`,`[1 2]`))) %>%
+  dplyr::select(., subjects, condition, pre, post, signal)%>%
+  pivot_longer(c(-subjects, -condition, -signal),names_to = "time", values_to = "amplitude")%>%
+  mutate(condition = factor(condition),time = factor(time),subjects=factor(subjects))%>%
+  filter(signal == "modulation_evoked", time=="post")
+
+anovaBF_CONDITION_bf_r1 <- data2test %>%
+  anovaBF(amplitude~condition+subjects,data=.,iterations=num.iter,whichRandom = NULL,rscaleRandom="nuisance",rscaleFixed=1)
+  
+sort(anovaBF_CONDITION_bf_r1,decreasing = TRUE)%>%
+  as.data.frame(.[,1:2]) %>%
+  mutate(factor = rownames(.))%>%
+  dplyr::select(., factor, bf)%>%
+  kable(escape = F, digits = c(3,3,3,3,3,3,3,3,3), caption = c("BF-Anova comparison against denominator")) %>%
+  kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
+
+sort(anovaBF_CONDITION_bf_r1/anovaBF_CONDITION_bf_r1[4], decreasing = TRUE)%>%
+  as.data.frame(.[,1:2]) %>%
+  mutate(factor = rownames(.))%>%
+  dplyr::select(., factor, bf)%>%
+  kable(escape = F, digits = c(3,3,3,3,3,3,3,3,3), caption = c("BF-Anova comparison against most complex model")) %>%
+  kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
+
+```
+
+
+Assuming a medium prior d~Cauchy(0,.707):
+
+<br> 
+
+```{r BF-ANOVA CONDITION Cauchy(.707),echo=FALSE}
+anovaBF_CONDITION_bf_r0707 <- data2test %>%
+  anovaBF(amplitude~condition+subjects,data=.,iterations=num.iter,whichRandom = NULL,rscaleRandom="nuisance",rscaleFixed=sqrt(2)/2)
+  
+sort(anovaBF_CONDITION_bf_r0707,decreasing = TRUE)%>%
+  as.data.frame(.[,1:2]) %>%
+  mutate(factor = rownames(.))%>%
+  dplyr::select(., factor, bf)%>%
+  kable(escape = F, digits = c(3,3,3,3,3,3,3,3,3), caption = c("BF-Anova comparison against denominator")) %>%
+  kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
+
+sort(anovaBF_CONDITION_bf_r0707/anovaBF_CONDITION_bf_r0707[4], decreasing = TRUE)%>%
+  as.data.frame(.[,1:2]) %>%
+  mutate(factor = rownames(.))%>%
+  dplyr::select(., factor, bf)%>%
+  kable(escape = F, digits = c(3,3,3,3,3,3,3,3,3), caption = c("BF-Anova comparison against most complex model")) %>%
+  kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
+
+```
+
+
+Assuming a narrow prior d~Cauchy(0,.5):
+
+<br> 
+
+```{r BF-ANOVA CONDITION Cauchy(.5),echo=FALSE}
+anovaBF_CONDITION_bf_r05 <- data2test %>%
+  anovaBF(amplitude~condition+subjects,data=.,iterations=num.iter,whichRandom = NULL,rscaleRandom="nuisance",rscaleFixed=0.5)
+  
+sort(anovaBF_CONDITION_bf_r05,decreasing = TRUE)%>%
+  as.data.frame(.[,1:2]) %>%
+  mutate(factor = rownames(.))%>%
+  dplyr::select(., factor, bf)%>%
+  kable(escape = F, digits = c(3,3,3,3,3,3,3,3,3), caption = c("BF-Anova comparison against denominator")) %>%
+  kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
+
+sort(anovaBF_CONDITION_bf_r05/anovaBF_CONDITION_bf_r05[4], decreasing = TRUE)%>%
+  as.data.frame(.[,1:2]) %>%
+  mutate(factor = rownames(.))%>%
+  dplyr::select(., factor, bf)%>%
+  kable(escape = F, digits = c(3,3,3,3,3,3,3,3,3), caption = c("BF-Anova comparison against most complex model")) %>%
+  kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
+```
+
+
+#### Post-hoc tests with Bayesian two-sample t-test
+
+Assuming a wide prior d~Cauchy(0,1):
+
+<br> 
+
+```{r BF-TTEST Cauchy(1),echo=FALSE,warning=FALSE,message=FALSE}
+# modulation
+# BF against 0
+data2test <- DataIn %>%
+  dplyr::select(-freq_irr, -color_irr)%>%
+  pivot_longer(c(-subjects, -condition, -time),names_to = "signal", values_to = "amplitude")%>%
+  pivot_wider(names_from = "time", values_from = "amplitude")%>%
+  rename(pre = '[-1 0]')%>%
+  rowwise()%>%
+  mutate(post = mean(c(`[0.5 1.5]`,`[1 2]`))) %>%
+  dplyr::select(., subjects, condition, pre, post, signal)%>%
+  pivot_longer(c(-subjects, -condition, -signal),names_to = "time", values_to = "amplitude")%>%
+  mutate(condition = factor(condition, levels=c('attended','unattended','irrelevant'), ordered = T))%>%
+  mutate(time = factor(time, levels=c('pre','post'), ordered = T))%>%
+  filter(signal == "modulation_evoked", time=="post")
+
+data2test%>%
+  group_by(condition)%>%
+  nest()%>%
+  mutate(
+    t_test_bf = map(data, ~{extractBF(ttestBF(x = .$amplitude, data = .,iterations=num.iter,rscale=1))})
+  )%>%
+  mutate(meanval = map(data, ~ mean(.x$amplitude))) %>%
+  mutate(std = map(data, ~ sd(.x$amplitude))) %>%
+  dplyr::select(-data) %>%
+  unnest()%>%
+  dplyr::select(condition, meanval, std, bf, error)%>%
+  kable(escape = F, digits = c(3,3,3,3,3,3,3,3,3), 
+        caption = c("BF ttest against 0 | dv = evoked SSVEP amplitude modulation | wide prior d~Cauchy(0,1)"),
+        col.names = c("condition", "M", "STD", "BF10", "Error")) %>%
+  kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
+
+# BF between conditions
+data2test <- DataIn %>%
+  dplyr::select(-freq_irr, -color_irr)%>%
+  pivot_longer(c(-subjects, -condition, -time),names_to = "signal", values_to = "amplitude")%>%
+  pivot_wider(names_from = "time", values_from = "amplitude")%>%
+  rename(pre = '[-1 0]')%>%
+  rowwise()%>%
+  mutate(post = mean(c(`[0.5 1.5]`,`[1 2]`))) %>%
+  dplyr::select(., subjects, condition, pre, post, signal)%>%
+  pivot_longer(c(-subjects, -condition, -signal),names_to = "time", values_to = "amplitude")%>%
+  # mutate(condition = factor(condition, levels=c('attended','unattended','irrelevant'), ordered = T))%>%
+  # mutate(time = factor(time, levels=c('pre','post'), ordered = T))%>%
+  filter(signal == "modulation_evoked", time=="post")%>%
+  dplyr::select(., -time, -signal)%>%
+  mutate(condition=as.factor(condition), subjects=as.factor(subjects))%>%
+  pivot_wider(names_from = "condition", values_from = "amplitude")%>%
+  mutate(`attended vs unattended` = attended - unattended,
+         `attended vs irrelevant` = attended - irrelevant,
+         `unattended vs irrelevant` = unattended - irrelevant)%>%
+  dplyr::select(., -attended, -unattended, -irrelevant)%>%
+  pivot_longer(c(-subjects),names_to = "condition", values_to = "amplitude")
+
+data2test%>%
+  group_by(condition)%>%
+  nest()%>%
+  mutate(
+    t_test_bf = map(data, ~{extractBF(ttestBF(x = .$amplitude, data = .,iterations=num.iter,rscale=1))})
+  )%>%
+  mutate(meanval = map(data, ~ mean(.x$amplitude))) %>%
+  mutate(std = map(data, ~ sd(.x$amplitude))) %>%
+  dplyr::select(-data) %>%
+  unnest()%>%
+  dplyr::select(condition, meanval, std, bf, error)%>%
+  kable(escape = F, digits = c(3,3,3,3,3,3,3,3,3), 
+        caption = c("BF ttest between conditions | dv = evoked SSVEP amplitude modulation | wide prior d~Cauchy(0,1)"),
+        col.names = c("condition", "M", "STD", "BF10", "Error")) %>%
+  kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
+
+# amplitude difference
+# BF against 0
+data2test <- DataIn %>%
+  dplyr::select(-freq_irr, -color_irr)%>%
+  pivot_longer(c(-subjects, -condition, -time),names_to = "signal", values_to = "amplitude")%>%
+  pivot_wider(names_from = "time", values_from = "amplitude")%>%
+  rename(pre = '[-1 0]')%>%
+  rowwise()%>%
+  mutate(post = mean(c(`[0.5 1.5]`,`[1 2]`)) - pre) %>%
+  dplyr::select(., subjects, condition, pre, post, signal)%>%
+  pivot_longer(c(-subjects, -condition, -signal),names_to = "time", values_to = "amplitude")%>%
+  mutate(condition = factor(condition, levels=c('attended','unattended','irrelevant'), ordered = T))%>%
+  mutate(time = factor(time, levels=c('pre','post'), ordered = T))%>%
+  filter(signal == "amplitude_evoked", time=="post")
+
+data2test%>%
+  group_by(condition)%>%
+  nest()%>%
+  mutate(
+    t_test_bf = map(data, ~{extractBF(ttestBF(x = .$amplitude, data = .,iterations=num.iter,rscale=1))})
+  )%>%
+  mutate(meanval = map(data, ~ mean(.x$amplitude))) %>%
+  mutate(std = map(data, ~ sd(.x$amplitude))) %>%
+  dplyr::select(-data) %>%
+  unnest()%>%
+  dplyr::select(condition, meanval, std, bf, error)%>%
+  kable(escape = F, digits = c(3,3,3,3,3,3,3,3,3), 
+        caption = c("BF ttest against 0 | dv = evoked SSVEP amplitude difference | wide prior d~Cauchy(0,1)"),
+        col.names = c("condition", "M", "STD", "BF10", "Error")) %>%
+  kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
+
+# BF between conditions
+data2test <- DataIn %>%
+  dplyr::select(-freq_irr, -color_irr)%>%
+  pivot_longer(c(-subjects, -condition, -time),names_to = "signal", values_to = "amplitude")%>%
+  pivot_wider(names_from = "time", values_from = "amplitude")%>%
+  rename(pre = '[-1 0]')%>%
+  rowwise()%>%
+  mutate(post = mean(c(`[0.5 1.5]`,`[1 2]`)) - pre) %>%
+  dplyr::select(., subjects, condition, pre, post, signal)%>%
+  pivot_longer(c(-subjects, -condition, -signal),names_to = "time", values_to = "amplitude")%>%
+  # mutate(condition = factor(condition, levels=c('attended','unattended','irrelevant'), ordered = T))%>%
+  # mutate(time = factor(time, levels=c('pre','post'), ordered = T))%>%
+  filter(signal == "amplitude_evoked", time=="post")%>%
+  dplyr::select(., -time, -signal)%>%
+  mutate(condition=as.factor(condition), subjects=as.factor(subjects))%>%
+  pivot_wider(names_from = "condition", values_from = "amplitude")%>%
+  mutate(`attended vs unattended` = attended - unattended,
+         `attended vs irrelevant` = attended - irrelevant,
+         `unattended vs irrelevant` = unattended - irrelevant)%>%
+  dplyr::select(., -attended, -unattended, -irrelevant)%>%
+  pivot_longer(c(-subjects),names_to = "condition", values_to = "amplitude")
+
+data2test%>%
+  group_by(condition)%>%
+  nest()%>%
+  mutate(
+    t_test_bf = map(data, ~{extractBF(ttestBF(x = .$amplitude, data = .,iterations=num.iter,rscale=1))})
+  )%>%
+  mutate(meanval = map(data, ~ mean(.x$amplitude))) %>%
+  mutate(std = map(data, ~ sd(.x$amplitude))) %>%
+  dplyr::select(-data) %>%
+  unnest()%>%
+  dplyr::select(condition, meanval, std, bf, error)%>%
+  kable(escape = F, digits = c(3,3,3,3,3,3,3,3,3), 
+        caption = c("BF ttest between conditions | dv = evoked SSVEP amplitude difference | wide prior d~Cauchy(0,1)"),
+        col.names = c("condition", "M", "STD", "BF10", "Error")) %>%
+  kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
+
+  
+```
+
+
+Assuming a medium prior d~Cauchy(0,.707):
+
+<br> 
+
+```{r BF-TTEST Cauchy(.707),echo=FALSE,warning=FALSE,message=FALSE}
+
+# modulation
+# BF against 0
+data2test <- DataIn %>%
+  dplyr::select(-freq_irr, -color_irr)%>%
+  pivot_longer(c(-subjects, -condition, -time),names_to = "signal", values_to = "amplitude")%>%
+  pivot_wider(names_from = "time", values_from = "amplitude")%>%
+  rename(pre = '[-1 0]')%>%
+  rowwise()%>%
+  mutate(post = mean(c(`[0.5 1.5]`,`[1 2]`))) %>%
+  dplyr::select(., subjects, condition, pre, post, signal)%>%
+  pivot_longer(c(-subjects, -condition, -signal),names_to = "time", values_to = "amplitude")%>%
+  mutate(condition = factor(condition, levels=c('attended','unattended','irrelevant'), ordered = T))%>%
+  mutate(time = factor(time, levels=c('pre','post'), ordered = T))%>%
+  filter(signal == "modulation_evoked", time=="post")
+
+data2test%>%
+  group_by(condition)%>%
+  nest()%>%
+  mutate(
+    t_test_bf = map(data, ~{extractBF(ttestBF(x = .$amplitude, data = .,iterations=num.iter,rscale=sqrt(2)/2))})
+  )%>%
+  mutate(meanval = map(data, ~ mean(.x$amplitude))) %>%
+  mutate(std = map(data, ~ sd(.x$amplitude))) %>%
+  dplyr::select(-data) %>%
+  unnest()%>%
+  dplyr::select(condition, meanval, std, bf, error)%>%
+  kable(escape = F, digits = c(3,3,3,3,3,3,3,3,3), 
+        caption = c("BF ttest against 0 | dv = evoked SSVEP amplitude modulation | wide prior d~Cauchy(0,.707)"),
+        col.names = c("condition", "M", "STD", "BF10", "Error")) %>%
+  kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
+
+# BF between conditions
+data2test <- DataIn %>%
+  dplyr::select(-freq_irr, -color_irr)%>%
+  pivot_longer(c(-subjects, -condition, -time),names_to = "signal", values_to = "amplitude")%>%
+  pivot_wider(names_from = "time", values_from = "amplitude")%>%
+  rename(pre = '[-1 0]')%>%
+  rowwise()%>%
+  mutate(post = mean(c(`[0.5 1.5]`,`[1 2]`))) %>%
+  dplyr::select(., subjects, condition, pre, post, signal)%>%
+  pivot_longer(c(-subjects, -condition, -signal),names_to = "time", values_to = "amplitude")%>%
+  # mutate(condition = factor(condition, levels=c('attended','unattended','irrelevant'), ordered = T))%>%
+  # mutate(time = factor(time, levels=c('pre','post'), ordered = T))%>%
+  filter(signal == "modulation_evoked", time=="post")%>%
+  dplyr::select(., -time, -signal)%>%
+  mutate(condition=as.factor(condition), subjects=as.factor(subjects))%>%
+  pivot_wider(names_from = "condition", values_from = "amplitude")%>%
+  mutate(`attended vs unattended` = attended - unattended,
+         `attended vs irrelevant` = attended - irrelevant,
+         `unattended vs irrelevant` = unattended - irrelevant)%>%
+  dplyr::select(., -attended, -unattended, -irrelevant)%>%
+  pivot_longer(c(-subjects),names_to = "condition", values_to = "amplitude")
+
+data2test%>%
+  group_by(condition)%>%
+  nest()%>%
+  mutate(
+    t_test_bf = map(data, ~{extractBF(ttestBF(x = .$amplitude, data = .,iterations=num.iter,rscale=sqrt(2)/2))})
+  )%>%
+  mutate(meanval = map(data, ~ mean(.x$amplitude))) %>%
+  mutate(std = map(data, ~ sd(.x$amplitude))) %>%
+  dplyr::select(-data) %>%
+  unnest()%>%
+  dplyr::select(condition, meanval, std, bf, error)%>%
+  kable(escape = F, digits = c(3,3,3,3,3,3,3,3,3), 
+        caption = c("BF ttest between conditions | dv = evoked SSVEP amplitude modulation | wide prior d~Cauchy(0,.707)"),
+        col.names = c("condition", "M", "STD", "BF10", "Error")) %>%
+  kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
+
+
+# difference
+# BF against 0
+data2test <- DataIn %>%
+  dplyr::select(-freq_irr, -color_irr)%>%
+  pivot_longer(c(-subjects, -condition, -time),names_to = "signal", values_to = "amplitude")%>%
+  pivot_wider(names_from = "time", values_from = "amplitude")%>%
+  rename(pre = '[-1 0]')%>%
+  rowwise()%>%
+  mutate(post = mean(c(`[0.5 1.5]`,`[1 2]`))-pre) %>%
+  dplyr::select(., subjects, condition, pre, post, signal)%>%
+  pivot_longer(c(-subjects, -condition, -signal),names_to = "time", values_to = "amplitude")%>%
+  mutate(condition = factor(condition, levels=c('attended','unattended','irrelevant'), ordered = T))%>%
+  mutate(time = factor(time, levels=c('pre','post'), ordered = T))%>%
+  filter(signal == "amplitude_evoked", time=="post")
+
+data2test%>%
+  group_by(condition)%>%
+  nest()%>%
+  mutate(
+    t_test_bf = map(data, ~{extractBF(ttestBF(x = .$amplitude, data = .,iterations=num.iter,rscale=sqrt(2)/2))})
+  )%>%
+  mutate(meanval = map(data, ~ mean(.x$amplitude))) %>%
+  mutate(std = map(data, ~ sd(.x$amplitude))) %>%
+  dplyr::select(-data) %>%
+  unnest()%>%
+  dplyr::select(condition, meanval, std, bf, error)%>%
+  kable(escape = F, digits = c(3,3,3,3,3,3,3,3,3), 
+        caption = c("BF ttest against 0 | dv = evoked SSVEP amplitude difference | wide prior d~Cauchy(0,.707)"),
+        col.names = c("condition", "M", "STD", "BF10", "Error")) %>%
+  kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
+
+# BF between conditions
+data2test <- DataIn %>%
+  dplyr::select(-freq_irr, -color_irr)%>%
+  pivot_longer(c(-subjects, -condition, -time),names_to = "signal", values_to = "amplitude")%>%
+  pivot_wider(names_from = "time", values_from = "amplitude")%>%
+  rename(pre = '[-1 0]')%>%
+  rowwise()%>%
+  mutate(post = mean(c(`[0.5 1.5]`,`[1 2]`))-pre) %>%
+  dplyr::select(., subjects, condition, pre, post, signal)%>%
+  pivot_longer(c(-subjects, -condition, -signal),names_to = "time", values_to = "amplitude")%>%
+  # mutate(condition = factor(condition, levels=c('attended','unattended','irrelevant'), ordered = T))%>%
+  # mutate(time = factor(time, levels=c('pre','post'), ordered = T))%>%
+  filter(signal == "amplitude_evoked", time=="post")%>%
+  dplyr::select(., -time, -signal)%>%
+  mutate(condition=as.factor(condition), subjects=as.factor(subjects))%>%
+  pivot_wider(names_from = "condition", values_from = "amplitude")%>%
+  mutate(`attended vs unattended` = attended - unattended,
+         `attended vs irrelevant` = attended - irrelevant,
+         `unattended vs irrelevant` = unattended - irrelevant)%>%
+  dplyr::select(., -attended, -unattended, -irrelevant)%>%
+  pivot_longer(c(-subjects),names_to = "condition", values_to = "amplitude")
+
+data2test%>%
+  group_by(condition)%>%
+  nest()%>%
+  mutate(
+    t_test_bf = map(data, ~{extractBF(ttestBF(x = .$amplitude, data = .,iterations=num.iter,rscale=sqrt(2)/2))})
+  )%>%
+  mutate(meanval = map(data, ~ mean(.x$amplitude))) %>%
+  mutate(std = map(data, ~ sd(.x$amplitude))) %>%
+  dplyr::select(-data) %>%
+  unnest()%>%
+  dplyr::select(condition, meanval, std, bf, error)%>%
+  kable(escape = F, digits = c(3,3,3,3,3,3,3,3,3), 
+        caption = c("BF ttest between conditions | dv = evoked SSVEP amplitude difference | wide prior d~Cauchy(0,.707)"),
+        col.names = c("condition", "M", "STD", "BF10", "Error")) %>%
+  kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
+
+  
+```
+
+
+Assuming a medium prior d~Cauchy(0,.5):
+
+<br> 
+
+```{r BF-TTEST Cauchy(.5),echo=FALSE,warning=FALSE,message=FALSE}
+
+# modulation
+# BF against 0
+data2test <- DataIn %>%
+  dplyr::select(-freq_irr, -color_irr)%>%
+  pivot_longer(c(-subjects, -condition, -time),names_to = "signal", values_to = "amplitude")%>%
+  pivot_wider(names_from = "time", values_from = "amplitude")%>%
+  rename(pre = '[-1 0]')%>%
+  rowwise()%>%
+  mutate(post = mean(c(`[0.5 1.5]`,`[1 2]`))) %>%
+  dplyr::select(., subjects, condition, pre, post, signal)%>%
+  pivot_longer(c(-subjects, -condition, -signal),names_to = "time", values_to = "amplitude")%>%
+  mutate(condition = factor(condition, levels=c('attended','unattended','irrelevant'), ordered = T))%>%
+  mutate(time = factor(time, levels=c('pre','post'), ordered = T))%>%
+  filter(signal == "modulation_evoked", time=="post")
+
+data2test%>%
+  group_by(condition)%>%
+  nest()%>%
+  mutate(
+    t_test_bf = map(data, ~{extractBF(ttestBF(x = .$amplitude, data = .,iterations=num.iter,rscale=.5))})
+  )%>%
+  mutate(meanval = map(data, ~ mean(.x$amplitude))) %>%
+  mutate(std = map(data, ~ sd(.x$amplitude))) %>%
+  dplyr::select(-data) %>%
+  unnest()%>%
+  dplyr::select(condition, meanval, std, bf, error)%>%
+  kable(escape = F, digits = c(3,3,3,3,3,3,3,3,3), 
+        caption = c("BF ttest against 0 | dv = evoked SSVEP amplitude modulation | wide prior d~Cauchy(0,5)"),
+        col.names = c("condition", "M", "STD", "BF10", "Error")) %>%
+  kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
+
+# BF between conditions
+data2test <- DataIn %>%
+  dplyr::select(-freq_irr, -color_irr)%>%
+  pivot_longer(c(-subjects, -condition, -time),names_to = "signal", values_to = "amplitude")%>%
+  pivot_wider(names_from = "time", values_from = "amplitude")%>%
+  rename(pre = '[-1 0]')%>%
+  rowwise()%>%
+  mutate(post = mean(c(`[0.5 1.5]`,`[1 2]`))) %>%
+  dplyr::select(., subjects, condition, pre, post, signal)%>%
+  pivot_longer(c(-subjects, -condition, -signal),names_to = "time", values_to = "amplitude")%>%
+  # mutate(condition = factor(condition, levels=c('attended','unattended','irrelevant'), ordered = T))%>%
+  # mutate(time = factor(time, levels=c('pre','post'), ordered = T))%>%
+  filter(signal == "modulation_evoked", time=="post")%>%
+  dplyr::select(., -time, -signal)%>%
+  mutate(condition=as.factor(condition), subjects=as.factor(subjects))%>%
+  pivot_wider(names_from = "condition", values_from = "amplitude")%>%
+  mutate(`attended vs unattended` = attended - unattended,
+         `attended vs irrelevant` = attended - irrelevant,
+         `unattended vs irrelevant` = unattended - irrelevant)%>%
+  dplyr::select(., -attended, -unattended, -irrelevant)%>%
+  pivot_longer(c(-subjects),names_to = "condition", values_to = "amplitude")
+
+data2test%>%
+  group_by(condition)%>%
+  nest()%>%
+  mutate(
+    t_test_bf = map(data, ~{extractBF(ttestBF(x = .$amplitude, data = .,iterations=num.iter,rscale=.5))})
+  )%>%
+  mutate(meanval = map(data, ~ mean(.x$amplitude))) %>%
+  mutate(std = map(data, ~ sd(.x$amplitude))) %>%
+  dplyr::select(-data) %>%
+  unnest()%>%
+  dplyr::select(condition, meanval, std, bf, error)%>%
+  kable(escape = F, digits = c(3,3,3,3,3,3,3,3,3), 
+        caption = c("BF ttest between conditions | dv = evoked SSVEP amplitude modulation | wide prior d~Cauchy(0,.5)"),
+        col.names = c("condition", "M", "STD", "BF10", "Error")) %>%
+  kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
+
+
+# difference
+# BF against 0
+data2test <- DataIn %>%
+  dplyr::select(-freq_irr, -color_irr)%>%
+  pivot_longer(c(-subjects, -condition, -time),names_to = "signal", values_to = "amplitude")%>%
+  pivot_wider(names_from = "time", values_from = "amplitude")%>%
+  rename(pre = '[-1 0]')%>%
+  rowwise()%>%
+  mutate(post = mean(c(`[0.5 1.5]`,`[1 2]`))-pre) %>%
+  dplyr::select(., subjects, condition, pre, post, signal)%>%
+  pivot_longer(c(-subjects, -condition, -signal),names_to = "time", values_to = "amplitude")%>%
+  mutate(condition = factor(condition, levels=c('attended','unattended','irrelevant'), ordered = T))%>%
+  mutate(time = factor(time, levels=c('pre','post'), ordered = T))%>%
+  filter(signal == "amplitude_evoked", time=="post")
+
+data2test%>%
+  group_by(condition)%>%
+  nest()%>%
+  mutate(
+    t_test_bf = map(data, ~{extractBF(ttestBF(x = .$amplitude, data = .,iterations=num.iter,rscale=.5))})
+  )%>%
+  mutate(meanval = map(data, ~ mean(.x$amplitude))) %>%
+  mutate(std = map(data, ~ sd(.x$amplitude))) %>%
+  dplyr::select(-data) %>%
+  unnest()%>%
+  dplyr::select(condition, meanval, std, bf, error)%>%
+  kable(escape = F, digits = c(3,3,3,3,3,3,3,3,3), 
+        caption = c("BF ttest against 0 | dv = evoked SSVEP amplitude difference | wide prior d~Cauchy(0,5)"),
+        col.names = c("condition", "M", "STD", "BF10", "Error")) %>%
+  kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
+
+# BF between conditions
+data2test <- DataIn %>%
+  dplyr::select(-freq_irr, -color_irr)%>%
+  pivot_longer(c(-subjects, -condition, -time),names_to = "signal", values_to = "amplitude")%>%
+  pivot_wider(names_from = "time", values_from = "amplitude")%>%
+  rename(pre = '[-1 0]')%>%
+  rowwise()%>%
+  mutate(post = mean(c(`[0.5 1.5]`,`[1 2]`))-pre) %>%
+  dplyr::select(., subjects, condition, pre, post, signal)%>%
+  pivot_longer(c(-subjects, -condition, -signal),names_to = "time", values_to = "amplitude")%>%
+  # mutate(condition = factor(condition, levels=c('attended','unattended','irrelevant'), ordered = T))%>%
+  # mutate(time = factor(time, levels=c('pre','post'), ordered = T))%>%
+  filter(signal == "amplitude_evoked", time=="post")%>%
+  dplyr::select(., -time, -signal)%>%
+  mutate(condition=as.factor(condition), subjects=as.factor(subjects))%>%
+  pivot_wider(names_from = "condition", values_from = "amplitude")%>%
+  mutate(`attended vs unattended` = attended - unattended,
+         `attended vs irrelevant` = attended - irrelevant,
+         `unattended vs irrelevant` = unattended - irrelevant)%>%
+  dplyr::select(., -attended, -unattended, -irrelevant)%>%
+  pivot_longer(c(-subjects),names_to = "condition", values_to = "amplitude")
+
+data2test%>%
+  group_by(condition)%>%
+  nest()%>%
+  mutate(
+    t_test_bf = map(data, ~{extractBF(ttestBF(x = .$amplitude, data = .,iterations=num.iter,rscale=.5))})
+  )%>%
+  mutate(meanval = map(data, ~ mean(.x$amplitude))) %>%
+  mutate(std = map(data, ~ sd(.x$amplitude))) %>%
+  dplyr::select(-data) %>%
+  unnest()%>%
+  dplyr::select(condition, meanval, std, bf, error)%>%
+  kable(escape = F, digits = c(3,3,3,3,3,3,3,3,3), 
+        caption = c("BF ttest between conditions | dv = evoked SSVEP amplitude difference | wide prior d~Cauchy(0,.5)"),
+        col.names = c("condition", "M", "STD", "BF10", "Error")) %>%
+  kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))  
+```
+
+
+### Correlations
+
+dv = modulation
+
+<br>  
+
+
+```{r correlation mod, echo=TRUE, fig.height=3, fig.width=8, warning=FALSE}
+# def.cormethod ="pearson"
+def.cormethod ="spearman"
+num.iter = 10000
+
+# ssvep amplitude correlation between pre-cue tasks
+corrdata <- DataIn %>%
+  dplyr::select(-freq_irr, -color_irr)%>%
+  pivot_longer(c(-subjects, -condition, -time),names_to = "signal", values_to = "amplitude")%>%
+  pivot_wider(names_from = "time", values_from = "amplitude")%>%
+  rename(pre = '[-1 0]')%>%
+  rowwise()%>%
+  mutate(post = mean(c(`[0.5 1.5]`,`[1 2]`))) %>%
+  dplyr::select(., subjects, condition, pre, post, signal)%>%
+  pivot_longer(c(-subjects, -condition, -signal),names_to = "time", values_to = "amplitude")%>%
+  mutate(condition = factor(condition, levels=c('attended','unattended','irrelevant'), ordered = T))%>%
+  mutate(time = factor(time, levels=c('pre','post'), ordered = T))%>%
+  filter(signal == "modulation_evoked", time=="post")%>%
+  pivot_wider(names_from = "condition", values_from = "amplitude")%>%
+  dplyr::select(., attended, unattended, irrelevant)
+
+# calculate correlations
+# calculate confidence intervals
+corrRho1 = SpearmanRho(x = corrdata$attended, y = corrdata$unattended, conf.level = .95)
+cbf1 = correlationBF(corrdata$attended, corrdata$unattended, rscale = "medium",iterations=num.iter)
+plot1 <-ggscatter(corrdata, x = "attended", y = "unattended", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = def.cormethod, size = 3, alpha = 0.6, cor.coef.size = 3, cor.coeff.args = list(digits = 3),
+          add.params = list(fill = "lightgray"),
+          ggtheme = theme_bw(),
+          xlab = "attended", ylab = "unattended",
+          title = sprintf("Rho: %1.3f CI[%1.3f %1.3f]; BF: %1.3f",corrRho1[[1]],corrRho1[[2]],corrRho1[[3]],extractBF(cbf1)[[1]]))+
+  font("title", size = 8)
+
+corrRho2 = SpearmanRho(x = corrdata$attended, y = corrdata$irrelevant, conf.level = .95)
+cbf2 = correlationBF(corrdata$attended, corrdata$irrelevant, rscale = "medium",iterations=num.iter)
+plot2<-ggscatter(corrdata, x = "attended", y = "irrelevant", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = def.cormethod, size = 3, alpha = 0.6, cor.coef.size = 3,cor.coeff.args = list(digits = 3),
+          add.params = list(fill = "lightgray"),
+          ggtheme = theme_bw(),
+          xlab = "attended", ylab = "irrelevant",
+          title = sprintf("Rho: %1.3f CI[%1.3f %1.3f]; BF: %1.3f",corrRho2[[1]],corrRho2[[2]],corrRho2[[3]],extractBF(cbf2)[[1]]))+
+  font("title", size = 8)
+
+corrRho3 = SpearmanRho(x = corrdata$unattended, y = corrdata$irrelevant, conf.level = .95)
+cbf3 = correlationBF(corrdata$unattended, corrdata$irrelevant, rscale = "medium",iterations=num.iter)
+plot3<-ggscatter(corrdata, x = "unattended", y = "irrelevant", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = def.cormethod, size = 3, alpha = 0.6, cor.coef.size = 3,cor.coeff.args = list(digits = 3),
+          add.params = list(fill = "lightgray"),
+          ggtheme = theme_bw(),
+          xlab = "unattended", ylab = "irrelevant",
+          title = sprintf("Rho: %1.3f CI[%1.3f %1.3f]; BF: %1.3f",corrRho3[[1]],corrRho3[[2]],corrRho3[[3]],extractBF(cbf3)[[1]]))+
+  font("title", size = 8)
+
+# cowplot::plot_grid(plot1, plot2, plot3, ncol = 3,labels = "AUTO")
+plotttitle <- ggdraw() + draw_label("correlation of SSVEP amplitude modulations", fontface='bold')
+plotplots <- ggarrange(plot1, plot2, plot3,ncol = 3)
+plotplots2 <-ggarrange(plotttitle, plotplots, nrow = 2, heights=c(0.2, 1))
+
+savefig <- multi_panel_figure(columns = 1, rows = 1, panel_label_type = "none", width = 8, height = 3, unit = "in")
+
+savefig %<>%
+  fill_panel(plotplots2, column = 1, row = 1)
+savefig
+save_multi_panel_figure(savefig, "Corr_SSVEPs.pdf")
+
+```
+
+
+dv = difference
+
+<br>  
+
+
+```{r correlation diff, echo=TRUE, fig.height=3, fig.width=8, warning=FALSE}
+# def.cormethod ="pearson"
+def.cormethod ="spearman"
+num.iter = 10000
+
+# ssvep amplitude correlation between pre-cue tasks
+corrdata <- DataIn %>%
+  dplyr::select(-freq_irr, -color_irr)%>%
+  pivot_longer(c(-subjects, -condition, -time),names_to = "signal", values_to = "amplitude")%>%
+  pivot_wider(names_from = "time", values_from = "amplitude")%>%
+  rename(pre = '[-1 0]')%>%
+  rowwise()%>%
+  mutate(post = mean(c(`[0.5 1.5]`,`[1 2]`)) - pre) %>%
+  dplyr::select(., subjects, condition, pre, post, signal)%>%
+  pivot_longer(c(-subjects, -condition, -signal),names_to = "time", values_to = "amplitude")%>%
+  mutate(condition = factor(condition, levels=c('attended','unattended','irrelevant'), ordered = T))%>%
+  mutate(time = factor(time, levels=c('pre','post'), ordered = T))%>%
+  filter(signal == "amplitude_evoked", time=="post")%>%
+  pivot_wider(names_from = "condition", values_from = "amplitude")%>%
+  dplyr::select(., attended, unattended, irrelevant)
+
+# calculate correlations
+# calculate confidence intervals
+corrRho1 = SpearmanRho(x = corrdata$attended, y = corrdata$unattended, conf.level = .95)
+cbf1 = correlationBF(corrdata$attended, corrdata$unattended, rscale = "medium",iterations=num.iter)
+plot1<-ggscatter(corrdata, x = "attended", y = "unattended", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = def.cormethod, size = 3, alpha = 0.6,
+          add.params = list(fill = "lightgray"),
+          ggtheme = theme_classic(),
+          xlab = "attended", ylab = "unattended",
+          title = sprintf("Rho: %1.3f CI[%1.3f %1.3f]; BF: %1.3f",corrRho1[[1]],corrRho1[[2]],corrRho1[[3]],extractBF(cbf1)[[1]]))+
+  font("title", size = 8)
+
+corrRho2 = SpearmanRho(x = corrdata$attended, y = corrdata$irrelevant, conf.level = .95)
+cbf2 = correlationBF(corrdata$attended, corrdata$irrelevant, rscale = "medium",iterations=num.iter)
+plot2<-ggscatter(corrdata, x = "attended", y = "irrelevant", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = def.cormethod, size = 3, alpha = 0.6,
+          add.params = list(fill = "lightgray"),
+          ggtheme = theme_classic(),
+          xlab = "attended", ylab = "irrelevant",
+          title = sprintf("Rho: %1.3f CI[%1.3f %1.3f]; BF: %1.3f",corrRho2[[1]],corrRho2[[2]],corrRho2[[3]],extractBF(cbf2)[[1]]))+
+  font("title", size = 8)
+
+corrRho3 = SpearmanRho(x = corrdata$unattended, y = corrdata$irrelevant, conf.level = .95)
+cbf3 = correlationBF(corrdata$unattended, corrdata$irrelevant, rscale = "medium",iterations=num.iter)
+plot3<-ggscatter(corrdata, x = "unattended", y = "irrelevant", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = def.cormethod, size = 3, alpha = 0.6,
+          add.params = list(fill = "lightgray"),
+          ggtheme = theme_classic(),
+          xlab = "unattended", ylab = "irrelevant",
+          title = sprintf("Rho: %1.3f CI[%1.3f %1.3f]; BF: %1.3f",corrRho3[[1]],corrRho3[[2]],corrRho3[[3]],extractBF(cbf3)[[1]]))+
+  font("title", size = 8)
+
+# cowplot::plot_grid(plot1, plot2, plot3, ncol = 3,labels = "AUTO")
+plotttitle <- ggdraw() + draw_label("correlation of SSVEP amplitude differences", fontface='bold')
+plotplots <- ggarrange(plot1, plot2, plot3,ncol = 3)
+ggarrange(plotttitle, plotplots, nrow = 2, heights=c(0.2, 1))
+
+```
+
+
+correlation with behavioral data
+dv = modulation in %
+
+<br>  
+
+
+```{r correlation behav mod, echo=TRUE, fig.height=3, fig.width=8, warning=FALSE}
+# def.cormethod ="pearson"
+def.cormethod ="spearman"
+num.iter = 10000
+
+# ssvep amplitude correlation and
+corrdata_beh <- DataIn_beh1%>%
+  filter(eventtype=="target")%>%
+  group_by(participant)%>%
+  summarise(RT_Mean=mean(RT,na.rm=TRUE),RT_STD=sd(RT,na.rm=TRUE),Hitrate=(sum(response=='hit')/n())*100)
+
+corrdata_beh2 <- DataIn_beh2%>%
+  dplyr::rename(participant=subject)
+
+# ssvep amplitude correlation between pre-cue tasks
+corrdata_SSVEP <- DataIn %>%
+  dplyr::select(-freq_irr, -color_irr)%>%
+  pivot_longer(c(-subjects, -condition, -time),names_to = "signal", values_to = "amplitude")%>%
+  pivot_wider(names_from = "time", values_from = "amplitude")%>%
+  rename(pre = '[-1 0]')%>%
+  rowwise()%>%
+  mutate(post = mean(c(`[0.5 1.5]`,`[1 2]`))) %>%
+  dplyr::select(., subjects, condition, pre, post, signal)%>%
+  pivot_longer(c(-subjects, -condition, -signal),names_to = "time", values_to = "amplitude")%>%
+  mutate(condition = factor(condition, levels=c('attended','unattended','irrelevant'), ordered = T))%>%
+  mutate(time = factor(time, levels=c('pre','post'), ordered = T))%>%
+  filter(signal == "modulation_evoked", time=="post")%>%
+  pivot_wider(names_from = "condition", values_from = "amplitude")%>%
+  mutate('attended - unattended'= attended - unattended)%>%
+  dplyr::select(., subjects, attended, unattended, `attended - unattended`)%>%
+  dplyr::rename(participant=subjects)
+
+
+
+corrdata <- merge(corrdata_SSVEP,corrdata_beh, by = "participant")
+corrdata <- merge(corrdata,corrdata_beh2, by = "participant")
+
+# calculate correlations
+# calculate confidence intervals
+corrRho1 = SpearmanRho(x = corrdata$`attended`, y = corrdata$RT_Mean, conf.level = .95)
+cbf1 = correlationBF(corrdata$`attended`, corrdata$RT_Mean, rscale = "medium",iterations=num.iter)
+plot1 <- ggscatter(corrdata, x = "attended", y = "RT_Mean", 
+          add = "reg.line", conf.int = TRUE, 
+          # cor.coef = TRUE, cor.method = def.cormethod, size = 3, alpha = 0.6,
+          cor.coef = TRUE, cor.method = def.cormethod, size = 3, alpha = 1,
+          add.params = list(fill = "lightgray"),
+          ggtheme = theme_classic(),
+          xlab = "SSVEP: attended", ylab = "RT in ms",
+          title = sprintf("Rho: %1.3f CI[%1.3f %1.3f]; BF: %1.3f",corrRho1[[1]],corrRho1[[2]],corrRho1[[3]],extractBF(cbf1)[[1]]))+
+  font("title", size = 8)
+
+corrRho2 = SpearmanRho(x = corrdata$`unattended`, y = corrdata$RT_Mean, conf.level = .95)
+cbf2 = correlationBF(corrdata$`unattended`, corrdata$RT_Mean, rscale = "medium",iterations=num.iter)
+plot2 <- ggscatter(corrdata, x = "unattended", y = "RT_Mean", 
+          add = "reg.line", conf.int = TRUE, 
+          # cor.coef = TRUE, cor.method = def.cormethod, size = 3, alpha = 0.6,
+          cor.coef = TRUE, cor.method = def.cormethod, size = 3, alpha = 1,
+          add.params = list(fill = "lightgray"),
+          ggtheme = theme_classic(),
+          xlab = "SSVEP: unattended", ylab = "RT in ms",
+          title = sprintf("Rho: %1.3f CI[%1.3f %1.3f]; BF: %1.3f",corrRho2[[1]],corrRho2[[2]],corrRho2[[3]],extractBF(cbf2)[[1]]))+
+  font("title", size = 8)
+
+corrRho3 = SpearmanRho(x = corrdata$`attended - unattended`, y = corrdata$RT_Mean, conf.level = .95)
+cbf3 = correlationBF(corrdata$`attended - unattended`, corrdata$RT_Mean, rscale = "medium",iterations=num.iter)
+plot3 <- ggscatter(corrdata, x = "attended - unattended", y = "RT_Mean", 
+          add = "reg.line", conf.int = TRUE, 
+          # cor.coef = TRUE, cor.method = def.cormethod, size = 3, alpha = 0.6,
+          cor.coef = TRUE, cor.method = def.cormethod, size = 3, alpha = 1,
+          add.params = list(fill = "lightgray"),
+          ggtheme = theme_classic(),
+          xlab = "SSVEP: attended - unattended", ylab = "RT in ms",
+          title = sprintf("Rho: %1.3f CI[%1.3f %1.3f]; BF: %1.3f",corrRho3[[1]],corrRho3[[2]],corrRho3[[3]],extractBF(cbf3)[[1]]))+
+  font("title", size = 8)
+
+plotttitle <- ggdraw() + draw_label("correlation of SSVEP amplitude modulations and RT", fontface='bold')
+plotplots <- ggarrange(plot1, plot2, plot3,ncol = 3)
+plotplots2<-ggarrange(plotttitle, plotplots, nrow = 2, heights=c(0.2, 1))
+
+
+savefig <- multi_panel_figure(columns = 1, rows = 1, panel_label_type = "none", width = 8, height = 3, unit = "in")
+
+savefig %<>%
+  fill_panel(plotplots2, column = 1, row = 1)
+savefig
+save_multi_panel_figure(savefig, "Corr_SSVEP_RT.eps")
+
+
+# calculate correlations
+# calculate confidence intervals
+corrRho1 = SpearmanRho(x = corrdata$`attended`, y = corrdata$Hitrate, conf.level = .95)
+cbf1 = correlationBF(corrdata$`attended`, corrdata$Hitrate, rscale = "medium",iterations=num.iter)
+plot1 <- ggscatter(corrdata, x = "attended", y = "Hitrate", 
+          add = "reg.line", conf.int = TRUE, 
+          # cor.coef = TRUE, cor.method = def.cormethod, size = 3, alpha = 0.6,
+          cor.coef = TRUE, cor.method = def.cormethod, size = 3, alpha = 1,
+          add.params = list(fill = "lightgray"),
+          ggtheme = theme_classic(),
+          xlab = "SSVEP: attended", ylab = "Hitrate in %",
+          title = sprintf("Rho: %1.3f CI[%1.3f %1.3f]; BF: %1.3f",corrRho1[[1]],corrRho1[[2]],corrRho1[[3]],extractBF(cbf1)[[1]]))+
+  font("title", size = 8)
+
+corrRho2 = SpearmanRho(x = corrdata$`unattended`, y = corrdata$Hitrate, conf.level = .95)
+cbf2 = correlationBF(corrdata$`unattended`, corrdata$Hitrate, rscale = "medium",iterations=num.iter)
+plot2 <- ggscatter(corrdata, x = "unattended", y = "Hitrate", 
+          add = "reg.line", conf.int = TRUE, 
+          # cor.coef = TRUE, cor.method = def.cormethod, size = 3, alpha = 0.6,
+          cor.coef = TRUE, cor.method = def.cormethod, size = 3, alpha = 1,
+          add.params = list(fill = "lightgray"),
+          ggtheme = theme_classic(),
+          xlab = "SSVEP: unattended", ylab = "Hitrate in %",
+          title = sprintf("Rho: %1.3f CI[%1.3f %1.3f]; BF: %1.3f",corrRho2[[1]],corrRho2[[2]],corrRho2[[3]],extractBF(cbf2)[[1]]))+
+  font("title", size = 8)
+
+corrRho3 = SpearmanRho(x = corrdata$`attended - unattended`, y = corrdata$Hitrate, conf.level = .95)
+cbf3 = correlationBF(corrdata$`attended - unattended`, corrdata$Hitrate, rscale = "medium",iterations=num.iter)
+plot3 <- ggscatter(corrdata, x = "attended - unattended", y = "Hitrate", 
+          add = "reg.line", conf.int = TRUE, 
+          # cor.coef = TRUE, cor.method = def.cormethod, size = 3, alpha = 0.6,
+          cor.coef = TRUE, cor.method = def.cormethod, size = 3, alpha = 1,
+          add.params = list(fill = "lightgray"),
+          ggtheme = theme_classic(),
+          xlab = "SSVEP: attended - unattended", ylab = "Hitrate in %",
+          title = sprintf("Rho: %1.3f CI[%1.3f %1.3f]; BF: %1.3f",corrRho3[[1]],corrRho3[[2]],corrRho3[[3]],extractBF(cbf3)[[1]]))+
+  font("title", size = 8)
+
+plotttitle <- ggdraw() + draw_label("correlation of SSVEP amplitude modulations and Hitrate", fontface='bold')
+plotplots <- ggarrange(plot1, plot2, plot3,ncol = 3)
+plotplots2<-ggarrange(plotttitle, plotplots, nrow = 2, heights=c(0.2, 1))
+
+
+savefig <- multi_panel_figure(columns = 1, rows = 1, panel_label_type = "none", width = 8, height = 3, unit = "in")
+
+savefig %<>%
+  fill_panel(plotplots2, column = 1, row = 1)
+savefig
+save_multi_panel_figure(savefig, "Corr_SSVEP_Hitrate.eps")
+
+
+# calculate correlations
+# calculate confidence intervals
+corrRho1 = SpearmanRho(x = corrdata$`attended`, y = corrdata$FA, conf.level = .95)
+cbf1 = correlationBF(corrdata$`attended`, corrdata$FA, rscale = "medium",iterations=num.iter)
+plot1 <- ggscatter(corrdata, x = "attended", y = "FA", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = def.cormethod, size = 3, alpha = 0.6,
+          add.params = list(fill = "lightgray"),
+          ggtheme = theme_classic(),
+          xlab = "SSVEP: attended", ylab = "FA",
+          title = sprintf("Rho: %1.3f CI[%1.3f %1.3f]; BF: %1.3f",corrRho1[[1]],corrRho1[[2]],corrRho1[[3]],extractBF(cbf1)[[1]]))+
+  font("title", size = 8)
+
+corrRho2 = SpearmanRho(x = corrdata$`unattended`, y = corrdata$FA, conf.level = .95)
+cbf2 = correlationBF(corrdata$`unattended`, corrdata$FA, rscale = "medium",iterations=num.iter)
+plot2 <- ggscatter(corrdata, x = "unattended", y = "FA", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = def.cormethod, size = 3, alpha = 0.6,
+          add.params = list(fill = "lightgray"),
+          ggtheme = theme_classic(),
+          xlab = "SSVEP: unattended", ylab = "FA",
+          title = sprintf("Rho: %1.3f CI[%1.3f %1.3f]; BF: %1.3f",corrRho2[[1]],corrRho2[[2]],corrRho2[[3]],extractBF(cbf2)[[1]]))+
+  font("title", size = 8)
+
+corrRho3 = SpearmanRho(x = corrdata$`attended - unattended`, y = corrdata$FA, conf.level = .95)
+cbf3 = correlationBF(corrdata$`attended - unattended`, corrdata$FA, rscale = "medium",iterations=num.iter)
+plot3 <- ggscatter(corrdata, x = "attended - unattended", y = "FA", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = def.cormethod, size = 3, alpha = 0.6,
+          add.params = list(fill = "lightgray"),
+          ggtheme = theme_classic(),
+          xlab = "SSVEP: attended - unattended", ylab = "FA",
+          title = sprintf("Rho: %1.3f CI[%1.3f %1.3f]; BF: %1.3f",corrRho3[[1]],corrRho3[[2]],corrRho3[[3]],extractBF(cbf3)[[1]]))+
+  font("title", size = 8)
+
+plotttitle <- ggdraw() + draw_label("correlation of SSVEP amplitude modulations and FA", fontface='bold')
+plotplots <- ggarrange(plot1, plot2, plot3,ncol = 3)
+plotplots2<-ggarrange(plotttitle, plotplots, nrow = 2, heights=c(0.2, 1))
+
+
+savefig <- multi_panel_figure(columns = 1, rows = 1, panel_label_type = "none", width = 8, height = 3, unit = "in")
+
+savefig %<>%
+  fill_panel(plotplots2, column = 1, row = 1)
+savefig
+save_multi_panel_figure(savefig, "Corr_SSVEP_FA.eps")
+
+# calculate correlations
+# calculate confidence intervals
+corrRho1 = SpearmanRho(x = corrdata$`attended`, y = corrdata$FA_proper, conf.level = .95)
+cbf1 = correlationBF(corrdata$`attended`, corrdata$FA_proper, rscale = "medium",iterations=num.iter)
+plot1 <- ggscatter(corrdata, x = "attended", y = "FA_proper", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = def.cormethod, size = 3, alpha = 0.6,
+          add.params = list(fill = "lightgray"),
+          ggtheme = theme_classic(),
+          xlab = "SSVEP: attended", ylab = "FA_proper",
+          title = sprintf("Rho: %1.3f CI[%1.3f %1.3f]; BF: %1.3f",corrRho1[[1]],corrRho1[[2]],corrRho1[[3]],extractBF(cbf1)[[1]]))+
+  font("title", size = 8)
+
+corrRho2 = SpearmanRho(x = corrdata$`unattended`, y = corrdata$FA_proper, conf.level = .95)
+cbf2 = correlationBF(corrdata$`unattended`, corrdata$FA_proper, rscale = "medium",iterations=num.iter)
+plot2 <- ggscatter(corrdata, x = "unattended", y = "FA_proper", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = def.cormethod, size = 3, alpha = 0.6,
+          add.params = list(fill = "lightgray"),
+          ggtheme = theme_classic(),
+          xlab = "SSVEP: unattended", ylab = "FA_proper",
+          title = sprintf("Rho: %1.3f CI[%1.3f %1.3f]; BF: %1.3f",corrRho2[[1]],corrRho2[[2]],corrRho2[[3]],extractBF(cbf2)[[1]]))+
+  font("title", size = 8)
+
+corrRho3 = SpearmanRho(x = corrdata$`attended - unattended`, y = corrdata$FA_proper, conf.level = .95)
+cbf3 = correlationBF(corrdata$`attended - unattended`, corrdata$FA_proper, rscale = "medium",iterations=num.iter)
+plot3 <- ggscatter(corrdata, x = "attended - unattended", y = "FA_proper", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = def.cormethod, size = 3, alpha = 0.6,
+          add.params = list(fill = "lightgray"),
+          ggtheme = theme_classic(),
+          xlab = "SSVEP: attended - unattended", ylab = "FA_proper",
+          title = sprintf("Rho: %1.3f CI[%1.3f %1.3f]; BF: %1.3f",corrRho3[[1]],corrRho3[[2]],corrRho3[[3]],extractBF(cbf3)[[1]]))+
+  font("title", size = 8)
+
+plotttitle <- ggdraw() + draw_label("correlation of SSVEP amplitude modulations and proper FA", fontface='bold')
+plotplots <- ggarrange(plot1, plot2, plot3,ncol = 3)
+plotplots2<-ggarrange(plotttitle, plotplots, nrow = 2, heights=c(0.2, 1))
+
+
+savefig <- multi_panel_figure(columns = 1, rows = 1, panel_label_type = "none", width = 8, height = 3, unit = "in")
+
+savefig %<>%
+  fill_panel(plotplots2, column = 1, row = 1)
+savefig
+save_multi_panel_figure(savefig, "Corr_SSVEP_FAProper.eps")
+
+```
+
+correlation with behavioral data
+dv = difference
+
+<br>  
+
+```{r correlation behav diff, echo=TRUE, fig.height=3, fig.width=8, warning=FALSE}
+# def.cormethod ="pearson"
+def.cormethod ="spearman"
+num.iter = 10000
+
+# ssvep amplitude correlation and
+corrdata_beh <- DataIn_beh1%>%
+  filter(eventtype=="target")%>%
+  group_by(participant)%>%
+  summarise(RT_Mean=mean(RT,na.rm=TRUE),RT_STD=sd(RT,na.rm=TRUE),Hitrate=(sum(response=='hit')/n())*100)
+
+corrdata_beh2 <- DataIn_beh2%>%
+  dplyr::rename(participant=subject)
+
+# ssvep amplitude correlation between pre-cue tasks
+corrdata_SSVEP <- DataIn %>%
+  dplyr::select(-freq_irr, -color_irr)%>%
+  pivot_longer(c(-subjects, -condition, -time),names_to = "signal", values_to = "amplitude")%>%
+  pivot_wider(names_from = "time", values_from = "amplitude")%>%
+  rename(pre = '[-1 0]')%>%
+  rowwise()%>%
+  mutate(post = mean(c(`[0.5 1.5]`,`[1 2]`)) - pre) %>%
+  dplyr::select(., subjects, condition, pre, post, signal)%>%
+  pivot_longer(c(-subjects, -condition, -signal),names_to = "time", values_to = "amplitude")%>%
+  mutate(condition = factor(condition, levels=c('attended','unattended','irrelevant'), ordered = T))%>%
+  mutate(time = factor(time, levels=c('pre','post'), ordered = T))%>%
+  filter(signal == "amplitude_evoked", time=="post")%>%
+  pivot_wider(names_from = "condition", values_from = "amplitude")%>%
+  mutate('attended - unattended'= attended - unattended)%>%
+  dplyr::select(., subjects, attended, unattended, `attended - unattended`)%>%
+  dplyr::rename(participant=subjects)
+
+corrdata <- merge(corrdata_SSVEP,corrdata_beh, by = "participant")
+corrdata <- merge(corrdata,corrdata_beh2, by = "participant")
+
+# calculate correlations
+# calculate confidence intervals
+corrRho1 = SpearmanRho(x = corrdata$`attended`, y = corrdata$RT_Mean, conf.level = .95)
+cbf1 = correlationBF(corrdata$`attended`, corrdata$RT_Mean, rscale = "medium",iterations=num.iter)
+plot1 <- ggscatter(corrdata, x = "attended", y = "RT_Mean", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = def.cormethod, size = 3, alpha = 0.6,
+          add.params = list(fill = "lightgray"),
+          ggtheme = theme_classic(),
+          xlab = "SSVEP: attended", ylab = "RT in ms")
+
+corrRho2 = SpearmanRho(x = corrdata$`unattended`, y = corrdata$RT_Mean, conf.level = .95)
+cbf2 = correlationBF(corrdata$`unattended`, corrdata$RT_Mean, rscale = "medium",iterations=num.iter)
+plot2 <- ggscatter(corrdata, x = "unattended", y = "RT_Mean", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = def.cormethod, size = 3, alpha = 0.6,
+          add.params = list(fill = "lightgray"),
+          ggtheme = theme_classic(),
+          xlab = "SSVEP: unattended", ylab = "RT in ms")
+
+corrRho3 = SpearmanRho(x = corrdata$`attended - unattended`, y = corrdata$RT_Mean, conf.level = .95)
+cbf3 = correlationBF(corrdata$`attended - unattended`, corrdata$RT_Mean, rscale = "medium",iterations=num.iter)
+plot3 <- ggscatter(corrdata, x = "attended - unattended", y = "RT_Mean", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = def.cormethod, size = 3, alpha = 0.6,
+          add.params = list(fill = "lightgray"),
+          ggtheme = theme_classic(),
+          xlab = "SSVEP: attended - unattended", ylab = "RT in ms")
+
+plotttitle <- ggdraw() + draw_label("correlation of SSVEP amplitude modulations and RT", fontface='bold')
+plotplots <- ggarrange(plot1, plot2, plot3,ncol = 3)
+ggarrange(plotttitle, plotplots, nrow = 2, heights=c(0.2, 1))
+
+
+
+# calculate correlations
+# calculate confidence intervals
+corrRho1 = SpearmanRho(x = corrdata$`attended`, y = corrdata$Hitrate, conf.level = .95)
+cbf1 = correlationBF(corrdata$`attended`, corrdata$Hitrate, rscale = "medium",iterations=num.iter)
+plot1 <- ggscatter(corrdata, x = "attended", y = "Hitrate", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = def.cormethod, size = 3, alpha = 0.6,
+          add.params = list(fill = "lightgray"),
+          ggtheme = theme_classic(),
+          xlab = "SSVEP: attended", ylab = "Hitrate in %")
+
+corrRho2 = SpearmanRho(x = corrdata$`unattended`, y = corrdata$Hitrate, conf.level = .95)
+cbf2 = correlationBF(corrdata$`unattended`, corrdata$Hitrate, rscale = "medium",iterations=num.iter)
+plot2 <- ggscatter(corrdata, x = "unattended", y = "Hitrate", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = def.cormethod, size = 3, alpha = 0.6,
+          add.params = list(fill = "lightgray"),
+          ggtheme = theme_classic(),
+          xlab = "SSVEP: unattended", ylab = "Hitrate in %")
+
+corrRho3 = SpearmanRho(x = corrdata$`attended - unattended`, y = corrdata$Hitrate, conf.level = .95)
+cbf3 = correlationBF(corrdata$`attended - unattended`, corrdata$Hitrate, rscale = "medium",iterations=num.iter)
+plot3 <- ggscatter(corrdata, x = "attended - unattended", y = "Hitrate", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = def.cormethod, size = 3, alpha = 0.6,
+          add.params = list(fill = "lightgray"),
+          ggtheme = theme_classic(),
+          xlab = "SSVEP: attended - unattended", ylab = "Hitrate in %")
+
+plotttitle <- ggdraw() + draw_label("correlation of SSVEP amplitude modulations and Hitrate", fontface='bold')
+plotplots <- ggarrange(plot1, plot2, plot3,ncol = 3)
+ggarrange(plotttitle, plotplots, nrow = 2, heights=c(0.2, 1))
+
+
+# calculate correlations
+# calculate confidence intervals
+corrRho1 = SpearmanRho(x = corrdata$`attended`, y = corrdata$FA, conf.level = .95)
+cbf1 = correlationBF(corrdata$`attended`, corrdata$FA, rscale = "medium",iterations=num.iter)
+plot1 <- ggscatter(corrdata, x = "attended", y = "FA", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = def.cormethod, size = 3, alpha = 0.6,
+          add.params = list(fill = "lightgray"),
+          ggtheme = theme_classic(),
+          xlab = "SSVEP: attended", ylab = "FA")
+
+corrRho2 = SpearmanRho(x = corrdata$`unattended`, y = corrdata$FA, conf.level = .95)
+cbf2 = correlationBF(corrdata$`unattended`, corrdata$FA, rscale = "medium",iterations=num.iter)
+plot2 <- ggscatter(corrdata, x = "unattended", y = "FA", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = def.cormethod, size = 3, alpha = 0.6,
+          add.params = list(fill = "lightgray"),
+          ggtheme = theme_classic(),
+          xlab = "SSVEP: unattended", ylab = "FA")
+
+corrRho3 = SpearmanRho(x = corrdata$`attended - unattended`, y = corrdata$FA, conf.level = .95)
+cbf3 = correlationBF(corrdata$`attended - unattended`, corrdata$FA, rscale = "medium",iterations=num.iter)
+plot3 <- ggscatter(corrdata, x = "attended - unattended", y = "FA", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = def.cormethod, size = 3, alpha = 0.6,
+          add.params = list(fill = "lightgray"),
+          ggtheme = theme_classic(),
+          xlab = "SSVEP: attended - unattended", ylab = "FA")
+
+plotttitle <- ggdraw() + draw_label("correlation of SSVEP amplitude modulations and FA", fontface='bold')
+plotplots <- ggarrange(plot1, plot2, plot3,ncol = 3)
+ggarrange(plotttitle, plotplots, nrow = 2, heights=c(0.2, 1))
+
+# calculate correlations
+# calculate confidence intervals
+corrRho1 = SpearmanRho(x = corrdata$`attended`, y = corrdata$FA_proper, conf.level = .95)
+cbf1 = correlationBF(corrdata$`attended`, corrdata$FA_proper, rscale = "medium",iterations=num.iter)
+plot1 <- ggscatter(corrdata, x = "attended", y = "FA_proper", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = def.cormethod, size = 3, alpha = 0.6,
+          add.params = list(fill = "lightgray"),
+          ggtheme = theme_classic(),
+          xlab = "SSVEP: attended", ylab = "FA_proper")
+
+corrRho2 = SpearmanRho(x = corrdata$`unattended`, y = corrdata$FA_proper, conf.level = .95)
+cbf2 = correlationBF(corrdata$`unattended`, corrdata$FA_proper, rscale = "medium",iterations=num.iter)
+plot2 <- ggscatter(corrdata, x = "unattended", y = "FA_proper", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = def.cormethod, size = 3, alpha = 0.6,
+          add.params = list(fill = "lightgray"),
+          ggtheme = theme_classic(),
+          xlab = "SSVEP: unattended", ylab = "FA_proper")
+
+corrRho3 = SpearmanRho(x = corrdata$`attended - unattended`, y = corrdata$FA_proper, conf.level = .95)
+cbf3 = correlationBF(corrdata$`attended - unattended`, corrdata$FA_proper, rscale = "medium",iterations=num.iter)
+plot3 <- ggscatter(corrdata, x = "attended - unattended", y = "FA_proper", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = def.cormethod, size = 3, alpha = 0.6,
+          add.params = list(fill = "lightgray"),
+          ggtheme = theme_classic(),
+          xlab = "SSVEP: attended - unattended", ylab = "FA_proper")
+
+plotttitle <- ggdraw() + draw_label("correlation of SSVEP amplitude modulations and proper FA", fontface='bold')
+plotplots <- ggarrange(plot1, plot2, plot3,ncol = 3)
+ggarrange(plotttitle, plotplots, nrow = 2, heights=c(0.2, 1))
+
+```
+
+
+```{r correlation behav mod_publication, echo=TRUE, fig.height=5, fig.width=8, warning=FALSE}
+# def.cormethod ="pearson"
+def.cormethod ="spearman"
+num.iter = 10000
+
+# ssvep amplitude correlation and
+corrdata_beh <- DataIn_beh1%>%
+  filter(eventtype=="target")%>%
+  group_by(participant)%>%
+  summarise(
+    RT_Mean=mean(RT,na.rm=TRUE),
+    RT_STD=sd(RT,na.rm=TRUE),
+    Hitrate=(sum(response=='hit')/n())*100,
+    Hitrate_adj1 = ifelse((sum(response=='hit')/n())>0,
+                         min(c(sum(response=='hit')/n(), 1-(.5/n()))),
+                         .5/n()), # according to Stanislaw H, Todorov N, Behav Res Meth (1999) 31, 137-149, "1/2N rule" or
+    Hitrate_adj2 = (sum(response=='hit')+0.5)/(n()+1)) # loglinear approach (Hautus, 1995)
+corrdata_beh_1a = DataIn_beh1%>%
+  filter(eventtype=="distractor") %>%
+  group_by(participant)%>%
+  summarise(
+    FArate=(sum(response=='FA_proper')/n())*100,
+    FArate_adj1 = ifelse((sum(response=='FA_proper')/n())>0,
+                         min(c(sum(response=='FA_proper')/n(), 1-(.5/n()))),
+                         .5/n()), # according to Stanislaw H, Todorov N, Behav Res Meth (1999) 31, 137-149, "1/2N rule" or
+    FArate_adj2 = (sum(response=='FA_proper')+0.5)/(n()+1)) # loglinear approach (Hautus, 1995))
+corrdata_beh <- merge(corrdata_beh,corrdata_beh_1a) %>% # adjust for HR and FR of 0 or 1
+  mutate(
+    d_prime = qnorm(Hitrate_adj1)-qnorm(FArate_adj1),
+    c = -0.5*(qnorm(Hitrate_adj1)+qnorm(FArate_adj1))
+  )
+
+
+# ssvep amplitude correlation between pre-cue tasks
+corrdata_SSVEP <- DataIn %>%
+  dplyr::select(-freq_irr, -color_irr)%>%
+  pivot_longer(c(-subjects, -condition, -time),names_to = "signal", values_to = "amplitude")%>%
+  pivot_wider(names_from = "time", values_from = "amplitude")%>%
+  rename(pre = '[-1 0]')%>%
+  rowwise()%>%
+  mutate(post = mean(c(`[0.5 1.5]`,`[1 2]`))) %>%
+  dplyr::select(., subjects, condition, pre, post, signal)%>%
+  pivot_longer(c(-subjects, -condition, -signal),names_to = "time", values_to = "amplitude")%>%
+  mutate(condition = factor(condition, levels=c('attended','unattended','irrelevant'), ordered = T))%>%
+  mutate(time = factor(time, levels=c('pre','post'), ordered = T))%>%
+  filter(signal == "modulation_evoked", time=="post")%>%
+  pivot_wider(names_from = "condition", values_from = "amplitude")%>%
+  mutate('attended - unattended'= attended - unattended, 'attended - irrelevant'= attended - irrelevant)%>%
+  dplyr::select(., subjects, attended, unattended, irrelevant, `attended - unattended`, `attended - irrelevant`)%>%
+  dplyr::rename(participant=subjects)
+
+corrdata <- merge(corrdata_SSVEP,corrdata_beh, by = "participant")
+
+# calculate correlations
+# calculate confidence intervals
+corrRho1 = SpearmanRho(x = corrdata$`attended`, y = corrdata$RT_Mean, conf.level = .95)
+cbf1 = correlationBF(corrdata$`attended`, corrdata$RT_Mean, rscale = "medium",iterations=num.iter)
+plot1 <- ggscatter(corrdata, x = "attended", y = "RT_Mean", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = def.cormethod, size = 3, alpha = 0.6,cor.coeff.args = list(digits = 3),
+          cor.coef.size = 3,
+          add.params = list(fill = "lightgray"),
+          ggtheme = theme_bw(),
+          xlab = "SSVEP: attended", ylab = "RT in ms",
+          title = sprintf("Rho: %1.3f CI[%1.3f %1.3f]; BF: %1.3f",corrRho1[[1]],corrRho1[[2]],corrRho1[[3]],extractBF(cbf1)[[1]]))+
+  font("x", size = 8) + font("y", size = 8) + font("title", size = 8) + font("x.text", size = 8) + font("y.text", size = 8) +
+  font("caption", size = 8) + font("y", size = 8) +
+  scale_y_continuous(limits=c(500, 850))
+
+corrRho2 = SpearmanRho(x = corrdata$`unattended`, y = corrdata$RT_Mean, conf.level = .95)
+cbf2 = correlationBF(corrdata$`unattended`, corrdata$RT_Mean, rscale = "medium",iterations=num.iter)
+plot2 <- ggscatter(corrdata, x = "unattended", y = "RT_Mean", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = def.cormethod, size = 3, alpha = 0.6,cor.coeff.args = list(digits = 3),
+          cor.coef.size = 3,
+          add.params = list(fill = "lightgray"),
+          ggtheme = theme_bw(),
+          xlab = "SSVEP: unattended", ylab = "RT in ms",
+          title = sprintf("Rho: %1.3f CI[%1.3f %1.3f]; BF: %1.3f",corrRho2[[1]],corrRho2[[2]],corrRho2[[3]],extractBF(cbf2)[[1]]))+
+  font("x", size = 8) + font("y", size = 8) + font("title", size = 8) + font("x.text", size = 8) + font("y.text", size = 8) +
+  font("caption", size = 8) + font("y", size = 8) +
+  scale_y_continuous(limits=c(500, 850))
+
+corrRho3 = SpearmanRho(x = corrdata$`irrelevant`, y = corrdata$RT_Mean, conf.level = .95)
+cbf3 = correlationBF(corrdata$`irrelevant`, corrdata$RT_Mean, rscale = "medium",iterations=num.iter)
+plot3 <- ggscatter(corrdata, x = "irrelevant", y = "RT_Mean", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = def.cormethod, size = 3, alpha = 0.6,cor.coeff.args = list(digits = 3),
+          cor.coef.size = 3,
+          add.params = list(fill = "lightgray"),
+          ggtheme = theme_bw(),
+          xlab = "SSVEP: irrelevant", ylab = "RT in ms",
+          title = sprintf("Rho: %1.3f CI[%1.3f %1.3f]; BF: %1.3f",corrRho3[[1]],corrRho3[[2]],corrRho3[[3]],extractBF(cbf3)[[1]]))+
+  font("x", size = 8) + font("y", size = 8) + font("title", size = 8) + font("x.text", size = 8) + font("y.text", size = 8) +
+  font("caption", size = 8) + font("y", size = 8) +
+  scale_y_continuous(limits=c(500, 850))
+
+corrRho4 = SpearmanRho(x = corrdata$`attended - unattended`, y = corrdata$RT_Mean, conf.level = .95)
+cbf4 = correlationBF(corrdata$`attended - unattended`, corrdata$RT_Mean, rscale = "medium",iterations=num.iter)
+plot4 <- ggscatter(corrdata, x = "attended - unattended", y = "RT_Mean", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = def.cormethod, size = 3, alpha = 0.6,cor.coeff.args = list(digits = 3),
+          cor.coef.size = 3,
+          add.params = list(fill = "lightgray"),
+          ggtheme = theme_bw(),
+          xlab = "SSVEP: attended - unattended", ylab = "RT in ms",
+          title = sprintf("Rho: %1.3f CI[%1.3f %1.3f]; BF: %1.3f",corrRho4[[1]],corrRho4[[2]],corrRho4[[3]],extractBF(cbf4)[[1]]))+
+  font("x", size = 8) + font("y", size = 8) + font("title", size = 8) + font("x.text", size = 8) + font("y.text", size = 8) +
+  font("caption", size = 8) + font("y", size = 8) +
+  scale_y_continuous(limits=c(500, 850))
+
+corrRho5 = SpearmanRho(x = corrdata$`attended - irrelevant`, y = corrdata$RT_Mean, conf.level = .95)
+cbf5 = correlationBF(corrdata$`attended - irrelevant`, corrdata$RT_Mean, rscale = "medium",iterations=num.iter)
+plot5 <- ggscatter(corrdata, x = "attended - irrelevant", y = "RT_Mean", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = def.cormethod, size = 3, alpha = 0.6,cor.coeff.args = list(digits = 3),
+          add.params = list(fill = "lightgray"),
+          cor.coef.size = 3,
+          ggtheme = theme_bw(),
+          xlab = "SSVEP: attended - irrelevant", ylab = "RT in ms",
+          title = sprintf("Rho: %1.3f CI[%1.3f %1.3f]; BF: %1.3f",corrRho5[[1]],corrRho5[[2]],corrRho5[[3]],extractBF(cbf5)[[1]]))+
+  font("x", size = 8) + font("y", size = 8) + font("title", size = 8) + font("x.text", size = 8) + font("y.text", size = 8) +
+  font("caption", size = 8) + font("y", size = 8) +
+  scale_y_continuous(limits=c(500, 850))
+
+plotttitle <- ggdraw() + draw_label("correlation of SSVEP amplitude modulations and RT", fontface='bold')
+plotplots <- ggarrange(plot1, plot2, plot3, plot4, plot5, ncol = 3, nrow = 2)
+plotplots2<-ggarrange(plotttitle, plotplots, nrow = 2, heights=c(0.2, 1))
+
+
+savefig <- multi_panel_figure(columns = 1, rows = 1, panel_label_type = "none", width = 8, height = 5, unit = "in")
+
+savefig %<>%
+  fill_panel(plotplots2, column = 1, row = 1)
+savefig
+save_multi_panel_figure(savefig, "Corr_SSVEP_RT.pdf")
+
+
+
+
+# calculate correlations
+# calculate confidence intervals
+corrRho1 = SpearmanRho(x = corrdata$`attended`, y = corrdata$Hitrate, conf.level = .95)
+cbf1 = correlationBF(corrdata$`attended`, corrdata$Hitrate, rscale = "medium",iterations=num.iter)
+plot1 <- ggscatter(corrdata, x = "attended", y = "Hitrate", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = def.cormethod, size = 3, alpha = 0.6,
+          add.params = list(fill = "lightgray"),
+          ggtheme = theme_bw(),
+          xlab = "SSVEP: attended", ylab = "Hitrate in %",
+          title = sprintf("Rho: %1.3f CI[%1.3f %1.3f]; BF: %1.3f",corrRho1[[1]],corrRho1[[2]],corrRho1[[3]],extractBF(cbf1)[[1]]))+
+  font("title", size = 8) +
+  scale_y_continuous(limits=c(45, 109))
+
+
+
+
+
+corrRho1 = SpearmanRho(x = corrdata$`attended`, y = corrdata$Hitrate, conf.level = .95)
+cbf1 = correlationBF(corrdata$`attended`, corrdata$Hitrate, rscale = "medium",iterations=num.iter)
+plot1 <- ggscatter(corrdata, x = "attended", y = "Hitrate", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = def.cormethod, size = 3, alpha = 0.6,cor.coeff.args = list(digits = 3),
+          cor.coef.size = 3,
+          add.params = list(fill = "lightgray"),
+          ggtheme = theme_bw(),
+          xlab = "SSVEP: attended", ylab = "Hitrate in %",
+          title = sprintf("Rho: %1.3f CI[%1.3f %1.3f]; BF: %1.3f",corrRho1[[1]],corrRho1[[2]],corrRho1[[3]],extractBF(cbf1)[[1]]))+
+  font("x", size = 8) + font("y", size = 8) + font("title", size = 8) + font("x.text", size = 8) + font("y.text", size = 8) +
+  font("caption", size = 8) + font("y", size = 8) +
+  scale_y_continuous(limits=c(45, 109))
+
+corrRho2 = SpearmanRho(x = corrdata$`unattended`, y = corrdata$Hitrate, conf.level = .95)
+cbf2 = correlationBF(corrdata$`unattended`, corrdata$Hitrate, rscale = "medium",iterations=num.iter)
+plot2 <- ggscatter(corrdata, x = "unattended", y = "Hitrate", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = def.cormethod, size = 3, alpha = 0.6,cor.coeff.args = list(digits = 3),
+          cor.coef.size = 3,
+          add.params = list(fill = "lightgray"),
+          ggtheme = theme_bw(),
+          xlab = "SSVEP: unattended", ylab = "Hitrate in %",
+          title = sprintf("Rho: %1.3f CI[%1.3f %1.3f]; BF: %1.3f",corrRho2[[1]],corrRho2[[2]],corrRho2[[3]],extractBF(cbf2)[[1]]))+
+  font("x", size = 8) + font("y", size = 8) + font("title", size = 8) + font("x.text", size = 8) + font("y.text", size = 8) +
+  font("caption", size = 8) + font("y", size = 8) +
+  scale_y_continuous(limits=c(45, 109))
+
+corrRho3 = SpearmanRho(x = corrdata$`irrelevant`, y = corrdata$Hitrate, conf.level = .95)
+cbf3 = correlationBF(corrdata$`irrelevant`, corrdata$Hitrate, rscale = "medium",iterations=num.iter)
+plot3 <- ggscatter(corrdata, x = "irrelevant", y = "Hitrate", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = def.cormethod, size = 3, alpha = 0.6,cor.coeff.args = list(digits = 3),
+          cor.coef.size = 3,
+          add.params = list(fill = "lightgray"),
+          ggtheme = theme_bw(),
+          xlab = "SSVEP: irrelevant", ylab = "Hitrate in %",
+          title = sprintf("Rho: %1.3f CI[%1.3f %1.3f]; BF: %1.3f",corrRho3[[1]],corrRho3[[2]],corrRho3[[3]],extractBF(cbf3)[[1]]))+
+  font("x", size = 8) + font("y", size = 8) + font("title", size = 8) + font("x.text", size = 8) + font("y.text", size = 8) +
+  font("caption", size = 8) + font("y", size = 8) +
+  scale_y_continuous(limits=c(45, 109))
+
+corrRho4 = SpearmanRho(x = corrdata$`attended - unattended`, y = corrdata$Hitrate, conf.level = .95)
+cbf4 = correlationBF(corrdata$`attended - unattended`, corrdata$Hitrate, rscale = "medium",iterations=num.iter)
+plot4 <- ggscatter(corrdata, x = "attended - unattended", y = "Hitrate", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = def.cormethod, size = 3, alpha = 0.6,cor.coeff.args = list(digits = 3),
+          cor.coef.size = 3,
+          add.params = list(fill = "lightgray"),
+          ggtheme = theme_bw(),
+          xlab = "SSVEP: attended - unattended", ylab = "Hitrate in %",
+          title = sprintf("Rho: %1.3f CI[%1.3f %1.3f]; BF: %1.3f",corrRho4[[1]],corrRho4[[2]],corrRho4[[3]],extractBF(cbf4)[[1]]))+
+  font("x", size = 8) + font("y", size = 8) + font("title", size = 8) + font("x.text", size = 8) + font("y.text", size = 8) +
+  font("caption", size = 8) + font("y", size = 8) +
+  scale_y_continuous(limits=c(45, 109))
+
+corrRho5 = SpearmanRho(x = corrdata$`attended - irrelevant`, y = corrdata$Hitrate, conf.level = .95)
+cbf5 = correlationBF(corrdata$`attended - irrelevant`, corrdata$Hitrate, rscale = "medium",iterations=num.iter)
+plot5 <- ggscatter(corrdata, x = "attended - irrelevant", y = "Hitrate", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = def.cormethod, size = 3, alpha = 0.6,cor.coeff.args = list(digits = 3),
+          add.params = list(fill = "lightgray"),
+          cor.coef.size = 3,
+          ggtheme = theme_bw(),
+          xlab = "SSVEP: attended - irrelevant", ylab = "Hitrate in %",
+          title = sprintf("Rho: %1.3f CI[%1.3f %1.3f]; BF: %1.3f",corrRho5[[1]],corrRho5[[2]],corrRho5[[3]],extractBF(cbf5)[[1]]))+
+  font("x", size = 8) + font("y", size = 8) + font("title", size = 8) + font("x.text", size = 8) + font("y.text", size = 8) +
+  font("caption", size = 8) + font("y", size = 8) +
+  scale_y_continuous(limits=c(45, 109))
+
+plotttitle <- ggdraw() + draw_label("correlation of SSVEP amplitude modulations and Hitrate in %", fontface='bold')
+plotplots <- ggarrange(plot1, plot2, plot3, plot4, plot5, ncol = 3, nrow = 2)
+plotplots2<-ggarrange(plotttitle, plotplots, nrow = 2, heights=c(0.2, 1))
+
+
+savefig <- multi_panel_figure(columns = 1, rows = 1, panel_label_type = "none", width = 8, height = 5, unit = "in")
+savefig %<>%
+  fill_panel(plotplots2, column = 1, row = 1)
+savefig
+save_multi_panel_figure(savefig, "Corr_SSVEP_Hitrate.pdf")
+
+
+# calculate correlations
+# calculate confidence intervals
+corrRho1 = SpearmanRho(x = corrdata$`attended`, y = corrdata$FArate, conf.level = .95)
+cbf1 = correlationBF(corrdata$`attended`, corrdata$FArate, rscale = "medium",iterations=num.iter)
+plot1 <- ggscatter(corrdata, x = "attended", y = "FArate", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = def.cormethod, size = 3, alpha = 0.6,cor.coeff.args = list(digits = 3),
+          cor.coef.size = 3,
+          add.params = list(fill = "lightgray"),
+          ggtheme = theme_bw(),
+          xlab = "SSVEP: attended", ylab = "FArate in %",
+          title = sprintf("Rho: %1.3f CI[%1.3f %1.3f]; BF: %1.3f",corrRho1[[1]],corrRho1[[2]],corrRho1[[3]],extractBF(cbf1)[[1]]))+
+  font("x", size = 8) + font("y", size = 8) + font("title", size = 8) + font("x.text", size = 8) + font("y.text", size = 8) +
+  font("caption", size = 8) + font("y", size = 8)
+  
+corrRho2 = SpearmanRho(x = corrdata$`unattended`, y = corrdata$FArate, conf.level = .95)
+cbf2 = correlationBF(corrdata$`unattended`, corrdata$FArate, rscale = "medium",iterations=num.iter)
+plot2 <- ggscatter(corrdata, x = "unattended", y = "FArate", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = def.cormethod, size = 3, alpha = 0.6,cor.coeff.args = list(digits = 3),
+          cor.coef.size = 3,
+          add.params = list(fill = "lightgray"),
+          ggtheme = theme_bw(),
+          xlab = "SSVEP: unattended", ylab = "FArate in %",
+          title = sprintf("Rho: %1.3f CI[%1.3f %1.3f]; BF: %1.3f",corrRho2[[1]],corrRho2[[2]],corrRho2[[3]],extractBF(cbf2)[[1]]))+
+  font("x", size = 8) + font("y", size = 8) + font("title", size = 8) + font("x.text", size = 8) + font("y.text", size = 8) +
+  font("caption", size = 8) + font("y", size = 8)
+
+corrRho3 = SpearmanRho(x = corrdata$`irrelevant`, y = corrdata$FArate, conf.level = .95)
+cbf3 = correlationBF(corrdata$`irrelevant`, corrdata$FArate, rscale = "medium",iterations=num.iter)
+plot3 <- ggscatter(corrdata, x = "irrelevant", y = "FArate", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = def.cormethod, size = 3, alpha = 0.6,cor.coeff.args = list(digits = 3),
+          cor.coef.size = 3,
+          add.params = list(fill = "lightgray"),
+          ggtheme = theme_bw(),
+          xlab = "SSVEP: irrelevant", ylab = "FArate in %",
+          title = sprintf("Rho: %1.3f CI[%1.3f %1.3f]; BF: %1.3f",corrRho3[[1]],corrRho3[[2]],corrRho3[[3]],extractBF(cbf3)[[1]]))+
+  font("x", size = 8) + font("y", size = 8) + font("title", size = 8) + font("x.text", size = 8) + font("y.text", size = 8) +
+  font("caption", size = 8) + font("y", size = 8)
+
+corrRho4 = SpearmanRho(x = corrdata$`attended - unattended`, y = corrdata$FArate, conf.level = .95)
+cbf4 = correlationBF(corrdata$`attended - unattended`, corrdata$FArate, rscale = "medium",iterations=num.iter)
+plot4 <- ggscatter(corrdata, x = "attended - unattended", y = "FArate", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = def.cormethod, size = 3, alpha = 0.6,cor.coeff.args = list(digits = 3),
+          cor.coef.size = 3,
+          add.params = list(fill = "lightgray"),
+          ggtheme = theme_bw(),
+          xlab = "SSVEP: attended - unattended", ylab = "FArate in %",
+          title = sprintf("Rho: %1.3f CI[%1.3f %1.3f]; BF: %1.3f",corrRho4[[1]],corrRho4[[2]],corrRho4[[3]],extractBF(cbf4)[[1]]))+
+  font("x", size = 8) + font("y", size = 8) + font("title", size = 8) + font("x.text", size = 8) + font("y.text", size = 8) +
+  font("caption", size = 8) + font("y", size = 8)
+
+corrRho5 = SpearmanRho(x = corrdata$`attended - irrelevant`, y = corrdata$FArate, conf.level = .95)
+cbf5 = correlationBF(corrdata$`attended - irrelevant`, corrdata$FArate, rscale = "medium",iterations=num.iter)
+plot5 <- ggscatter(corrdata, x = "attended - irrelevant", y = "FArate", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = def.cormethod, size = 3, alpha = 0.6,cor.coeff.args = list(digits = 3),
+          add.params = list(fill = "lightgray"),
+          cor.coef.size = 3,
+          ggtheme = theme_bw(),
+          xlab = "SSVEP: attended - irrelevant", ylab = "FArate in %",
+          title = sprintf("Rho: %1.3f CI[%1.3f %1.3f]; BF: %1.3f",corrRho5[[1]],corrRho5[[2]],corrRho5[[3]],extractBF(cbf5)[[1]]))+
+  font("x", size = 8) + font("y", size = 8) + font("title", size = 8) + font("x.text", size = 8) + font("y.text", size = 8) +
+  font("caption", size = 8) + font("y", size = 8)
+
+plotttitle <- ggdraw() + draw_label("correlation of SSVEP amplitude modulations and FArate in %", fontface='bold')
+plotplots <- ggarrange(plot1, plot2, plot3, plot4, plot5, ncol = 3, nrow = 2)
+plotplots2<-ggarrange(plotttitle, plotplots, nrow = 2, heights=c(0.2, 1))
+
+
+savefig <- multi_panel_figure(columns = 1, rows = 1, panel_label_type = "none", width = 8, height = 5, unit = "in")
+savefig %<>%
+  fill_panel(plotplots2, column = 1, row = 1)
+savefig
+save_multi_panel_figure(savefig, "Corr_SSVEP_FArate.pdf")
+
+
+
+# calculate correlations
+# calculate confidence intervals
+corrRho1 = SpearmanRho(x = corrdata$`attended`, y = corrdata$d_prime, conf.level = .95)
+cbf1 = correlationBF(corrdata$`attended`, corrdata$d_prime, rscale = "medium",iterations=num.iter)
+plot1 <- ggscatter(corrdata, x = "attended", y = "d_prime", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = def.cormethod, size = 3, alpha = 0.6,
+          add.params = list(fill = "lightgray"),
+          ggtheme = theme_bw(),
+          xlab = "SSVEP: attended", ylab = "d prime",
+          title = sprintf("Rho: %1.3f CI[%1.3f %1.3f]; BF: %1.3f",corrRho1[[1]],corrRho1[[2]],corrRho1[[3]],extractBF(cbf1)[[1]]))+
+  font("title", size = 8)
+
+corrRho1 = SpearmanRho(x = corrdata$`attended`, y = corrdata$d_prime, conf.level = .95)
+cbf1 = correlationBF(corrdata$`attended`, corrdata$d_prime, rscale = "medium",iterations=num.iter)
+plot1 <- ggscatter(corrdata, x = "attended", y = "d_prime", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = def.cormethod, size = 3, alpha = 0.6,cor.coeff.args = list(digits = 3),
+          cor.coef.size = 3,
+          add.params = list(fill = "d_prime"),
+          ggtheme = theme_bw(),
+          xlab = "SSVEP: attended", ylab = "d prime %",
+          title = sprintf("Rho: %1.3f CI[%1.3f %1.3f]; BF: %1.3f",corrRho1[[1]],corrRho1[[2]],corrRho1[[3]],extractBF(cbf1)[[1]]))+
+  font("x", size = 8) + font("y", size = 8) + font("title", size = 8) + font("x.text", size = 8) + font("y.text", size = 8) +
+  font("caption", size = 8) + font("y", size = 8)
+  
+corrRho2 = SpearmanRho(x = corrdata$`unattended`, y = corrdata$d_prime, conf.level = .95)
+cbf2 = correlationBF(corrdata$`unattended`, corrdata$d_prime, rscale = "medium",iterations=num.iter)
+plot2 <- ggscatter(corrdata, x = "unattended", y = "d_prime", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = def.cormethod, size = 3, alpha = 0.6,cor.coeff.args = list(digits = 3),
+          cor.coef.size = 3,
+          add.params = list(fill = "lightgray"),
+          ggtheme = theme_bw(),
+          xlab = "SSVEP: unattended", ylab = "d prime",
+          title = sprintf("Rho: %1.3f CI[%1.3f %1.3f]; BF: %1.3f",corrRho2[[1]],corrRho2[[2]],corrRho2[[3]],extractBF(cbf2)[[1]]))+
+  font("x", size = 8) + font("y", size = 8) + font("title", size = 8) + font("x.text", size = 8) + font("y.text", size = 8) +
+  font("caption", size = 8) + font("y", size = 8)
+
+corrRho3 = SpearmanRho(x = corrdata$`irrelevant`, y = corrdata$d_prime, conf.level = .95)
+cbf3 = correlationBF(corrdata$`irrelevant`, corrdata$d_prime, rscale = "medium",iterations=num.iter)
+plot3 <- ggscatter(corrdata, x = "irrelevant", y = "d_prime", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = def.cormethod, size = 3, alpha = 0.6,cor.coeff.args = list(digits = 3),
+          cor.coef.size = 3,
+          add.params = list(fill = "lightgray"),
+          ggtheme = theme_bw(),
+          xlab = "SSVEP: irrelevant", ylab = "d prime",
+          title = sprintf("Rho: %1.3f CI[%1.3f %1.3f]; BF: %1.3f",corrRho3[[1]],corrRho3[[2]],corrRho3[[3]],extractBF(cbf3)[[1]]))+
+  font("x", size = 8) + font("y", size = 8) + font("title", size = 8) + font("x.text", size = 8) + font("y.text", size = 8) +
+  font("caption", size = 8) + font("y", size = 8)
+
+corrRho4 = SpearmanRho(x = corrdata$`attended - unattended`, y = corrdata$FArate, conf.level = .95)
+cbf4 = correlationBF(corrdata$`attended - unattended`, corrdata$FArate, rscale = "medium",iterations=num.iter)
+plot4 <- ggscatter(corrdata, x = "attended - unattended", y = "FArate", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = def.cormethod, size = 3, alpha = 0.6,cor.coeff.args = list(digits = 3),
+          cor.coef.size = 3,
+          add.params = list(fill = "lightgray"),
+          ggtheme = theme_bw(),
+          xlab = "SSVEP: attended - unattended", ylab = "FArate in %",
+          title = sprintf("Rho: %1.3f CI[%1.3f %1.3f]; BF: %1.3f",corrRho4[[1]],corrRho4[[2]],corrRho4[[3]],extractBF(cbf4)[[1]]))+
+  font("x", size = 8) + font("y", size = 8) + font("title", size = 8) + font("x.text", size = 8) + font("y.text", size = 8) +
+  font("caption", size = 8) + font("y", size = 8)
+
+corrRho5 = SpearmanRho(x = corrdata$`attended - irrelevant`, y = corrdata$d_prime, conf.level = .95)
+cbf5 = correlationBF(corrdata$`attended - irrelevant`, corrdata$d_prime, rscale = "medium",iterations=num.iter)
+plot5 <- ggscatter(corrdata, x = "attended - irrelevant", y = "d_prime", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = def.cormethod, size = 3, alpha = 0.6,cor.coeff.args = list(digits = 3),
+          add.params = list(fill = "lightgray"),
+          cor.coef.size = 3,
+          ggtheme = theme_bw(),
+          xlab = "SSVEP: attended - irrelevant", ylab = "d prime%",
+          title = sprintf("Rho: %1.3f CI[%1.3f %1.3f]; BF: %1.3f",corrRho5[[1]],corrRho5[[2]],corrRho5[[3]],extractBF(cbf5)[[1]]))+
+  font("x", size = 8) + font("y", size = 8) + font("title", size = 8) + font("x.text", size = 8) + font("y.text", size = 8) +
+  font("caption", size = 8) + font("y", size = 8)
+
+plotttitle <- ggdraw() + draw_label("correlation of SSVEP amplitude modulations and d prime", fontface='bold')
+plotplots <- ggarrange(plot1, plot2, plot3, plot4, plot5, ncol = 3, nrow = 2)
+plotplots2<-ggarrange(plotttitle, plotplots, nrow = 2, heights=c(0.2, 1))
+
+
+savefig <- multi_panel_figure(columns = 1, rows = 1, panel_label_type = "none", width = 8, height = 5, unit = "in")
+savefig %<>%
+  fill_panel(plotplots2, column = 1, row = 1)
+savefig
+save_multi_panel_figure(savefig, "Corr_SSVEP_d_prime.pdf")
+
+
+
+
+
+```
+
+
+
+### Correlations exploratory
+
+dv = modulation
+by reaction time, hit rate and d prime
+
+<br>  
+
+
+```{r correlation explor 1, echo=TRUE, fig.height=4, fig.width=8, warning=FALSE}
+# def.cormethod ="pearson"
+def.cormethod ="spearman"
+num.iter = 10000
+
+# ssvep amplitude correlation and
+corrdata_beh <- DataIn_beh1%>%
+  filter(eventtype=="target")%>%
+  group_by(participant)%>%
+  summarise(
+    RT_Mean=mean(RT,na.rm=TRUE),
+    RT_STD=sd(RT,na.rm=TRUE),
+    Hitrate=(sum(response=='hit')/n())*100,
+    Hitrate_adj1 = ifelse((sum(response=='hit')/n())>0,
+                         min(c(sum(response=='hit')/n(), 1-(.5/n()))),
+                         .5/n()), # according to Stanislaw H, Todorov N, Behav Res Meth (1999) 31, 137-149, "1/2N rule" or
+    Hitrate_adj2 = (sum(response=='hit')+0.5)/(n()+1)) # loglinear approach (Hautus, 1995)
+corrdata_beh_1a = DataIn_beh1%>%
+  filter(eventtype=="distractor") %>%
+  group_by(participant)%>%
+  summarise(
+    FArate=(sum(response=='FA_proper')/n())*100,
+    FArate_adj1 = ifelse((sum(response=='FA_proper')/n())>0,
+                         min(c(sum(response=='FA_proper')/n(), 1-(.5/n()))),
+                         .5/n()), # according to Stanislaw H, Todorov N, Behav Res Meth (1999) 31, 137-149, "1/2N rule" or
+    FArate_adj2 = (sum(response=='FA_proper')+0.5)/(n()+1)) # loglinear approach (Hautus, 1995))
+corrdata_beh <- merge(corrdata_beh,corrdata_beh_1a) %>% # adjust for HR and FR of 0 or 1
+  mutate(
+    d_prime = qnorm(Hitrate_adj1)-qnorm(FArate_adj1),
+    c = -0.5*(qnorm(Hitrate_adj1)+qnorm(FArate_adj1))
+  )
+
+
+# ssvep amplitude correlation between pre-cue tasks
+corrdata_SSVEP <- DataIn %>%
+  dplyr::select(-freq_irr, -color_irr)%>%
+  pivot_longer(c(-subjects, -condition, -time),names_to = "signal", values_to = "amplitude")%>%
+  pivot_wider(names_from = "time", values_from = "amplitude")%>%
+  rename(pre = '[-1 0]')%>%
+  rowwise()%>%
+  mutate(post = mean(c(`[0.5 1.5]`,`[1 2]`))) %>%
+  dplyr::select(., subjects, condition, pre, post, signal)%>%
+  pivot_longer(c(-subjects, -condition, -signal),names_to = "time", values_to = "amplitude")%>%
+  mutate(condition = factor(condition, levels=c('attended','unattended','irrelevant'), ordered = T))%>%
+  mutate(time = factor(time, levels=c('pre','post'), ordered = T))%>%
+  filter(signal == "modulation_evoked", time=="post")%>%
+  pivot_wider(names_from = "condition", values_from = "amplitude")%>%
+  mutate('attended - unattended'= attended - unattended, 'attended - irrelevant'= attended - irrelevant)%>%
+  dplyr::select(., subjects, attended, unattended, irrelevant, `attended - unattended`, `attended - irrelevant`)%>%
+  dplyr::rename(participant=subjects)
+
+corrdata <- merge(corrdata_SSVEP,corrdata_beh, by = "participant")
+
+
+
+
+# calculate correlations
+# calculate confidence intervals
+corrRho1 = SpearmanRho(x = corrdata$attended, y = corrdata$unattended, conf.level = .95)
+cbf1 = correlationBF(corrdata$attended, corrdata$unattended, rscale = "medium",iterations=num.iter)
+plot1<-ggscatter(corrdata, x = "attended", y = "unattended", color = "RT_Mean",
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = def.cormethod, size = 3, alpha = 1,cor.coeff.args = list(digits = 3),
+          add.params = list(fill = "lightgray"),
+          ggtheme = theme_classic(),
+          xlab = "attended", ylab = "unattended",
+          title = sprintf("Rho: %1.3f CI[%1.3f %1.3f]; BF: %1.3f",corrRho1[[1]],corrRho1[[2]],corrRho1[[3]],extractBF(cbf1)[[1]]))+
+  font("title", size = 8)+
+  scale_colour_viridis_c(option = "plasma")
+
+corrRho2 = SpearmanRho(x = corrdata$attended, y = corrdata$irrelevant, conf.level = .95)
+cbf2 = correlationBF(corrdata$attended, corrdata$irrelevant, rscale = "medium",iterations=num.iter)
+plot2<-ggscatter(corrdata, x = "attended", y = "irrelevant",  color = "RT_Mean",
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = def.cormethod, size = 3, alpha = 1,cor.coeff.args = list(digits = 3),
+          add.params = list(fill = "lightgray"),
+          ggtheme = theme_classic(),
+          xlab = "attended", ylab = "irrelevant",
+          title = sprintf("Rho: %1.3f CI[%1.3f %1.3f]; BF: %1.3f",corrRho2[[1]],corrRho2[[2]],corrRho2[[3]],extractBF(cbf2)[[1]]))+
+  font("title", size = 8)+
+  scale_colour_viridis_c(option = "plasma")
+
+corrRho3 = SpearmanRho(x = corrdata$unattended, y = corrdata$irrelevant, conf.level = .95)
+cbf3 = correlationBF(corrdata$unattended, corrdata$irrelevant, rscale = "medium",iterations=num.iter)
+plot3<-ggscatter(corrdata, x = "unattended", y = "irrelevant",  color = "RT_Mean",
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = def.cormethod, size = 3, alpha = 1,cor.coeff.args = list(digits = 3),
+          add.params = list(fill = "lightgray"),
+          ggtheme = theme_classic(),
+          xlab = "unattended", ylab = "irrelevant",
+          title = sprintf("Rho: %1.3f CI[%1.3f %1.3f]; BF: %1.3f",corrRho3[[1]],corrRho3[[2]],corrRho3[[3]],extractBF(cbf3)[[1]]))+
+  font("title", size = 8)+
+  scale_colour_viridis_c(option = "plasma")
+
+# cowplot::plot_grid(plot1, plot2, plot3, ncol = 3,labels = "AUTO")
+plotttitle <- ggdraw() + draw_label("correlation of SSVEP amplitude modulations", fontface='bold')
+plotplots <- ggarrange(plot1, plot2, plot3,ncol = 3,common.legend = TRUE)
+ggarrange(plotttitle, plotplots, nrow = 2, heights=c(0.2, 1))
+
+# for hit rate
+# calculate correlations
+# calculate confidence intervals
+corrRho1 = SpearmanRho(x = corrdata$attended, y = corrdata$unattended, conf.level = .95)
+cbf1 = correlationBF(corrdata$attended, corrdata$unattended, rscale = "medium",iterations=num.iter)
+plot1<-ggscatter(corrdata, x = "attended", y = "unattended", color = "Hitrate",
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = def.cormethod, size = 3, alpha = 1,cor.coeff.args = list(digits = 3),
+          add.params = list(fill = "lightgray"),
+          ggtheme = theme_classic(),
+          xlab = "attended", ylab = "unattended",
+          title = sprintf("Rho: %1.3f CI[%1.3f %1.3f]; BF: %1.3f",corrRho1[[1]],corrRho1[[2]],corrRho1[[3]],extractBF(cbf1)[[1]]))+
+  font("title", size = 8)+
+  scale_colour_viridis_c(option = "plasma")
+
+corrRho2 = SpearmanRho(x = corrdata$attended, y = corrdata$irrelevant, conf.level = .95)
+cbf2 = correlationBF(corrdata$attended, corrdata$irrelevant, rscale = "medium",iterations=num.iter)
+plot2<-ggscatter(corrdata, x = "attended", y = "irrelevant",  color = "Hitrate",
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = def.cormethod, size = 3, alpha = 1,cor.coeff.args = list(digits = 3),
+          add.params = list(fill = "lightgray"),
+          ggtheme = theme_classic(),
+          xlab = "attended", ylab = "irrelevant",
+          title = sprintf("Rho: %1.3f CI[%1.3f %1.3f]; BF: %1.3f",corrRho2[[1]],corrRho2[[2]],corrRho2[[3]],extractBF(cbf2)[[1]]))+
+  font("title", size = 8)+
+  scale_colour_viridis_c(option = "plasma")
+
+corrRho3 = SpearmanRho(x = corrdata$unattended, y = corrdata$irrelevant, conf.level = .95)
+cbf3 = correlationBF(corrdata$unattended, corrdata$irrelevant, rscale = "medium",iterations=num.iter)
+plot3<-ggscatter(corrdata, x = "unattended", y = "irrelevant",  color = "Hitrate",
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = def.cormethod, size = 3, alpha = 1,cor.coeff.args = list(digits = 3),
+          add.params = list(fill = "lightgray"),
+          ggtheme = theme_classic(),
+          xlab = "unattended", ylab = "irrelevant",
+          title = sprintf("Rho: %1.3f CI[%1.3f %1.3f]; BF: %1.3f",corrRho3[[1]],corrRho3[[2]],corrRho3[[3]],extractBF(cbf3)[[1]]))+
+  font("title", size = 8)+
+  scale_colour_viridis_c(option = "plasma")
+
+# cowplot::plot_grid(plot1, plot2, plot3, ncol = 3,labels = "AUTO")
+plotttitle <- ggdraw() + draw_label("correlation of SSVEP amplitude modulations", fontface='bold')
+plotplots <- ggarrange(plot1, plot2, plot3,ncol = 3,common.legend = TRUE)
+ggarrange(plotttitle, plotplots, nrow = 2, heights=c(0.2, 1))
+
+# for d prime
+# calculate correlations
+# calculate confidence intervals
+corrRho1 = SpearmanRho(x = corrdata$attended, y = corrdata$unattended, conf.level = .95)
+cbf1 = correlationBF(corrdata$attended, corrdata$unattended, rscale = "medium",iterations=num.iter)
+plot1<-ggscatter(corrdata, x = "attended", y = "unattended", color = "d_prime",
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = def.cormethod, size = 3, alpha = 1,cor.coeff.args = list(digits = 3),
+          add.params = list(fill = "lightgray"),
+          ggtheme = theme_classic(),
+          xlab = "attended", ylab = "unattended",
+          title = sprintf("Rho: %1.3f CI[%1.3f %1.3f]; BF: %1.3f",corrRho1[[1]],corrRho1[[2]],corrRho1[[3]],extractBF(cbf1)[[1]]))+
+  font("title", size = 8)+
+  scale_colour_viridis_c(option = "plasma")
+
+corrRho2 = SpearmanRho(x = corrdata$attended, y = corrdata$irrelevant, conf.level = .95)
+cbf2 = correlationBF(corrdata$attended, corrdata$irrelevant, rscale = "medium",iterations=num.iter)
+plot2<-ggscatter(corrdata, x = "attended", y = "irrelevant",  color = "d_prime",
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = def.cormethod, size = 3, alpha = 1,cor.coeff.args = list(digits = 3),
+          add.params = list(fill = "lightgray"),
+          ggtheme = theme_classic(),
+          xlab = "attended", ylab = "irrelevant",
+          title = sprintf("Rho: %1.3f CI[%1.3f %1.3f]; BF: %1.3f",corrRho2[[1]],corrRho2[[2]],corrRho2[[3]],extractBF(cbf2)[[1]]))+
+  font("title", size = 8)+
+  scale_colour_viridis_c(option = "plasma")
+
+corrRho3 = SpearmanRho(x = corrdata$unattended, y = corrdata$irrelevant, conf.level = .95)
+cbf3 = correlationBF(corrdata$unattended, corrdata$irrelevant, rscale = "medium",iterations=num.iter)
+plot3<-ggscatter(corrdata, x = "unattended", y = "irrelevant",  color = "d_prime",
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = def.cormethod, size = 3, alpha = 1,cor.coeff.args = list(digits = 3),
+          add.params = list(fill = "lightgray"),
+          ggtheme = theme_classic(),
+          xlab = "unattended", ylab = "irrelevant",
+          title = sprintf("Rho: %1.3f CI[%1.3f %1.3f]; BF: %1.3f",corrRho3[[1]],corrRho3[[2]],corrRho3[[3]],extractBF(cbf3)[[1]]))+
+  font("title", size = 8)+
+  scale_colour_viridis_c(option = "plasma")
+
+# cowplot::plot_grid(plot1, plot2, plot3, ncol = 3,labels = "AUTO")
+plotttitle <- ggdraw() + draw_label("correlation of SSVEP amplitude modulations", fontface='bold')
+plotplots <- ggarrange(plot1, plot2, plot3,ncol = 3,common.legend = TRUE)
+ggarrange(plotttitle, plotplots, nrow = 2, heights=c(0.2, 1))
+
+```
+
+dv = modulation
+correlation between attended & mean(unattended, irrelevant)
+
+<br>  
+
+
+```{r correlation explor 2, echo=TRUE, fig.height=4, fig.width=10, warning=FALSE}
+# def.cormethod ="pearson"
+def.cormethod ="spearman"
+num.iter = 10000
+
+# ssvep amplitude correlation and
+corrdata_beh <- DataIn_beh1%>%
+  filter(eventtype=="target")%>%
+  group_by(participant)%>%
+  summarise(RT_Mean=mean(RT,na.rm=TRUE),RT_STD=sd(RT,na.rm=TRUE),Hitrate=(sum(response=='hit')/n())*100)
+
+corrdata_beh2 <- DataIn_beh2%>%
+  dplyr::rename(participant=subject)
+
+# ssvep amplitude correlation between pre-cue tasks
+corrdata_SSVEP <- DataIn %>%
+  dplyr::select(-freq_irr, -color_irr)%>%
+  pivot_longer(c(-subjects, -condition, -time),names_to = "signal", values_to = "amplitude")%>%
+  pivot_wider(names_from = "time", values_from = "amplitude")%>%
+  rename(pre = '[-1 0]')%>%
+  rowwise()%>%
+  mutate(post = mean(c(`[0.5 1.5]`,`[1 2]`))) %>%
+  dplyr::select(., subjects, condition, pre, post, signal)%>%
+  pivot_longer(c(-subjects, -condition, -signal),names_to = "time", values_to = "amplitude")%>%
+  mutate(condition = factor(condition, levels=c('attended','unattended','irrelevant'), ordered = T))%>%
+  mutate(time = factor(time, levels=c('pre','post'), ordered = T))%>%
+  filter(signal == "modulation_evoked", time=="post")%>%
+  pivot_wider(names_from = "condition", values_from = "amplitude")%>%
+  mutate('attended - unattended'= attended - unattended,
+         'attended - irrelevant'= attended - irrelevant)%>%
+  rowwise()%>%
+  mutate('mean(irrelevant, unattended)' = mean(c(irrelevant,unattended)))%>%
+  dplyr::select(., subjects, attended, unattended, irrelevant, `attended - unattended`, `attended - irrelevant`,
+                `mean(irrelevant, unattended)`)%>%
+  dplyr::rename(participant=subjects)
+
+corrdata <- merge(corrdata_SSVEP,corrdata_beh, by = "participant")
+corrdata <- merge(corrdata,corrdata_beh2, by = "participant")
+
+
+
+
+# calculate correlations
+# calculate confidence intervals
+corrRho1 = SpearmanRho(x = corrdata$attended, y = corrdata$unattended, conf.level = .95)
+cbf1 = correlationBF(corrdata$attended, corrdata$unattended, rscale = "medium",iterations=num.iter)
+plot1<-ggscatter(corrdata, x = "attended", y = "unattended",
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = def.cormethod, size = 3, alpha = 1,
+          add.params = list(fill = "lightgray"),
+          ggtheme = theme_classic(),
+          xlab = "attended", ylab = "unattended",
+          title = sprintf("Rho: %1.3f CI[%1.3f %1.3f]; BF: %1.3f",corrRho1[[1]],corrRho1[[2]],corrRho1[[3]],extractBF(cbf1)[[1]]))+
+  font("title", size = 8)
+
+corrRho2 = SpearmanRho(x = corrdata$attended, y = corrdata$irrelevant, conf.level = .95)
+cbf2 = correlationBF(corrdata$attended, corrdata$irrelevant, rscale = "medium",iterations=num.iter)
+plot2<-ggscatter(corrdata, x = "attended", y = "irrelevant",
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = def.cormethod, size = 3, alpha = 1,
+          add.params = list(fill = "lightgray"),
+          ggtheme = theme_classic(),
+          xlab = "attended", ylab = "irrelevant",
+          title = sprintf("Rho: %1.3f CI[%1.3f %1.3f]; BF: %1.3f",corrRho2[[1]],corrRho2[[2]],corrRho2[[3]],extractBF(cbf2)[[1]]))+
+  font("title", size = 8)
+
+corrRho3 = SpearmanRho(x = corrdata$unattended, y = corrdata$irrelevant, conf.level = .95)
+cbf3 = correlationBF(corrdata$unattended, corrdata$irrelevant, rscale = "medium",iterations=num.iter)
+plot3<-ggscatter(corrdata, x = "unattended", y = "irrelevant",
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = def.cormethod, size = 3, alpha = 1,
+          add.params = list(fill = "lightgray"),
+          ggtheme = theme_classic(),
+          xlab = "unattended", ylab = "irrelevant",
+          title = sprintf("Rho: %1.3f CI[%1.3f %1.3f]; BF: %1.3f",corrRho3[[1]],corrRho3[[2]],corrRho3[[3]],extractBF(cbf3)[[1]]))+
+  font("title", size = 8)
+
+corrRho4 = SpearmanRho(x = corrdata$attended, y = corrdata$`mean(irrelevant, unattended)`, conf.level = .95)
+cbf4 = correlationBF(corrdata$attended, corrdata$`mean(irrelevant, unattended)`, rscale = "medium",iterations=num.iter)
+plot4<-ggscatter(corrdata, x = "attended", y = "mean(irrelevant, unattended)",
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = def.cormethod, size = 3, alpha = 1,
+          add.params = list(fill = "lightgray"),
+          ggtheme = theme_classic(),
+          xlab = "attended", ylab = "M(unattended,irrelevant)",
+          title = sprintf("Rho: %1.3f CI[%1.3f %1.3f]; BF: %1.3f",corrRho1[[1]],corrRho1[[2]],corrRho1[[3]],extractBF(cbf1)[[1]]))+
+  font("title", size = 8)
+
+
+# cowplot::plot_grid(plot1, plot2, plot3, ncol = 3,labels = "AUTO")
+plotttitle <- ggdraw() + draw_label("correlation of SSVEP amplitude modulations", fontface='bold')
+plotplots <- ggarrange(plot1, plot2, plot3, plot4, ncol = 4,common.legend = TRUE)
+ggarrange(plotttitle, plotplots, nrow = 2, heights=c(0.2, 1))
+
+```
+
+dv = modulation
+correlation between attended & mean(unattended, irrelevant)
+
+<br>  
+
+```{r correlation explor 3, echo=TRUE, fig.height=6, fig.width=10, warning=FALSE}
+# def.cormethod ="pearson"
+def.cormethod ="spearman"
+num.iter = 10000
+
+# ssvep amplitude correlation and
+corrdata_beh <- DataIn_beh1%>%
+  filter(eventtype=="target")%>%
+  group_by(participant)%>%
+  summarise(
+    RT_Mean=mean(RT,na.rm=TRUE),
+    RT_STD=sd(RT,na.rm=TRUE),
+    Hitrate=(sum(response=='hit')/n())*100,
+    Hitrate_adj1 = ifelse((sum(response=='hit')/n())>0,
+                         min(c(sum(response=='hit')/n(), 1-(.5/n()))),
+                         .5/n()), # according to Stanislaw H, Todorov N, Behav Res Meth (1999) 31, 137-149, "1/2N rule" or
+    Hitrate_adj2 = (sum(response=='hit')+0.5)/(n()+1)) # loglinear approach (Hautus, 1995)
+corrdata_beh_1a = DataIn_beh1%>%
+  filter(eventtype=="distractor") %>%
+  group_by(participant)%>%
+  summarise(
+    FArate=(sum(response=='FA_proper')/n())*100,
+    FArate_adj1 = ifelse((sum(response=='FA_proper')/n())>0,
+                         min(c(sum(response=='FA_proper')/n(), 1-(.5/n()))),
+                         .5/n()), # according to Stanislaw H, Todorov N, Behav Res Meth (1999) 31, 137-149, "1/2N rule" or
+    FArate_adj2 = (sum(response=='FA_proper')+0.5)/(n()+1)) # loglinear approach (Hautus, 1995))
+corrdata_beh <- merge(corrdata_beh,corrdata_beh_1a) %>% # adjust for HR and FR of 0 or 1
+  mutate(
+    d_prime = qnorm(Hitrate_adj1)-qnorm(FArate_adj1),
+    c = -0.5*(qnorm(Hitrate_adj1)+qnorm(FArate_adj1))
+  )
+
+
+# ssvep amplitude correlation between pre-cue tasks
+corrdata_SSVEP <- DataIn %>%
+  dplyr::select(-freq_irr, -color_irr)%>%
+  pivot_longer(c(-subjects, -condition, -time),names_to = "signal", values_to = "amplitude")%>%
+  pivot_wider(names_from = "time", values_from = "amplitude")%>%
+  rename(pre = '[-1 0]')%>%
+  rowwise()%>%
+  mutate(post = mean(c(`[0.5 1.5]`,`[1 2]`))) %>%
+  dplyr::select(., subjects, condition, pre, post, signal)%>%
+  pivot_longer(c(-subjects, -condition, -signal),names_to = "time", values_to = "amplitude")%>%
+  mutate(condition = factor(condition, levels=c('attended','unattended','irrelevant'), ordered = T))%>%
+  mutate(time = factor(time, levels=c('pre','post'), ordered = T))%>%
+  filter(signal == "modulation_evoked", time=="post")%>%
+  pivot_wider(names_from = "condition", values_from = "amplitude")%>%
+  mutate('attended - unattended'= attended - unattended,
+         'attended - irrelevant'= attended - irrelevant)%>%
+  rowwise()%>%
+  mutate('mean(irrelevant, unattended)' = mean(c(irrelevant,unattended)))%>%
+  mutate('attended - mean(att, irr)'= attended - `mean(irrelevant, unattended)`)%>%
+  dplyr::select(., subjects, attended, unattended, irrelevant, `attended - unattended`, `attended - irrelevant`,
+                `mean(irrelevant, unattended)`,`attended - mean(att, irr)`)%>%
+  dplyr::rename(participant=subjects)
+
+corrdata <- merge(corrdata_SSVEP,corrdata_beh, by = "participant")
+
+# calculate correlations
+# calculate confidence intervals
+corrRho1 = SpearmanRho(x = corrdata$`attended`, y = corrdata$RT_Mean, conf.level = .95)
+cbf1 = correlationBF(corrdata$`attended`, corrdata$RT_Mean, rscale = "medium",iterations=num.iter)
+plot1 <- ggscatter(corrdata, x = "attended", y = "RT_Mean", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = def.cormethod, size = 3, alpha = 0.6,
+          add.params = list(fill = "lightgray"),
+          ggtheme = theme_classic(),
+          xlab = "SSVEP: attended", ylab = "RT in ms",
+          title = sprintf("Rho: %1.3f CI[%1.3f %1.3f]; BF: %1.3f",corrRho1[[1]],corrRho1[[2]],corrRho1[[3]],extractBF(cbf1)[[1]]))+
+  font("x", size = 8) + font("y", size = 8) + font("title", size = 8) + font("x.text", size = 8) + font("y.text", size = 8) +
+  font("caption", size = 8) + font("y", size = 8)+
+  scale_y_continuous(limits=c(500, 850))
+
+corrRho1b = SpearmanRho(x = corrdata$`unattended`, y = corrdata$RT_Mean, conf.level = .95)
+cbf1b = correlationBF(corrdata$`unattended`, corrdata$RT_Mean, rscale = "medium",iterations=num.iter)
+plot1b <- ggscatter(corrdata, x = "unattended", y = "RT_Mean", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = def.cormethod, size = 3, alpha = 0.6,
+          add.params = list(fill = "lightgray"),
+          ggtheme = theme_classic(),
+          xlab = "SSVEP: unattended", ylab = "RT in ms",
+          title = sprintf("Rho: %1.3f CI[%1.3f %1.3f]; BF: %1.3f",corrRho1b[[1]],corrRho1b[[2]],corrRho1b[[3]],extractBF(cbf1b)[[1]]))+
+  font("x", size = 8) + font("y", size = 8) + font("title", size = 8) + font("x.text", size = 8) + font("y.text", size = 8) +
+  font("caption", size = 8) + font("y", size = 8)
+
+corrRho2 = SpearmanRho(x = corrdata$`irrelevant`, y = corrdata$RT_Mean, conf.level = .95)
+cbf2 = correlationBF(corrdata$`irrelevant`, corrdata$RT_Mean, rscale = "medium",iterations=num.iter)
+plot2 <- ggscatter(corrdata, x = "irrelevant", y = "RT_Mean", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = def.cormethod, size = 3, alpha = 0.6,
+          add.params = list(fill = "lightgray"),
+          ggtheme = theme_classic(),
+          xlab = "SSVEP: irrelevant", ylab = "RT in ms",
+          title = sprintf("Rho: %1.3f CI[%1.3f %1.3f]; BF: %1.3f",corrRho2[[1]],corrRho2[[2]],corrRho2[[3]],extractBF(cbf2)[[1]]))+
+  font("x", size = 8) + font("y", size = 8) + font("title", size = 8) + font("x.text", size = 8) + font("y.text", size = 8) +
+  font("caption", size = 8) + font("y", size = 8)+
+  scale_y_continuous(limits=c(500, 850))
+
+corrRho3 = SpearmanRho(x = corrdata$`mean(irrelevant, unattended)`, y = corrdata$RT_Mean, conf.level = .95)
+cbf3 = correlationBF(corrdata$`mean(irrelevant, unattended)`, corrdata$RT_Mean, rscale = "medium",iterations=num.iter)
+plot3 <- ggscatter(corrdata, x = "mean(irrelevant, unattended)", y = "RT_Mean", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = def.cormethod, size = 3, alpha = 0.6,
+          add.params = list(fill = "lightgray"),
+          ggtheme = theme_classic(),
+          xlab = "SSVEP: mean(irrelevant, unattended)", ylab = "RT in ms",
+          title = sprintf("Rho: %1.3f CI[%1.3f %1.3f]; BF: %1.3f",corrRho3[[1]],corrRho3[[2]],corrRho3[[3]],extractBF(cbf3)[[1]]))+
+  font("x", size = 8) + font("y", size = 8) + font("title", size = 8) + font("x.text", size = 8) + font("y.text", size = 8) +
+  font("caption", size = 8) + font("y", size = 8) +
+  scale_y_continuous(limits=c(500, 850))
+
+corrRho4 = SpearmanRho(x = corrdata$`attended - unattended`, y = corrdata$RT_Mean, conf.level = .95)
+cbf4 = correlationBF(corrdata$`attended - unattended`, corrdata$RT_Mean, rscale = "medium",iterations=num.iter)
+plot4 <- ggscatter(corrdata, x = "attended - unattended", y = "RT_Mean", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = def.cormethod, size = 3, alpha = 0.6,
+          add.params = list(fill = "lightgray"),
+          ggtheme = theme_classic(),
+          xlab = "SSVEP: attended - unattended", ylab = "RT in ms",
+          title = sprintf("Rho: %1.3f CI[%1.3f %1.3f]; BF: %1.3f",corrRho4[[1]],corrRho4[[2]],corrRho4[[3]],extractBF(cbf4)[[1]]))+
+  font("x", size = 8) + font("y", size = 8) + font("title", size = 8) + font("x.text", size = 8) + font("y.text", size = 8) +
+  font("caption", size = 8) + font("y", size = 8)+
+  scale_y_continuous(limits=c(500, 850))
+
+corrRho5 = SpearmanRho(x = corrdata$`attended - irrelevant`, y = corrdata$RT_Mean, conf.level = .95)
+cbf5 = correlationBF(corrdata$`attended - irrelevant`, corrdata$RT_Mean, rscale = "medium",iterations=num.iter)
+plot5 <- ggscatter(corrdata, x = "attended - irrelevant", y = "RT_Mean", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = def.cormethod, size = 3, alpha = 0.6,
+          add.params = list(fill = "lightgray"),
+          ggtheme = theme_classic(),
+          xlab = "SSVEP: attended - irrelevant", ylab = "RT in ms",
+          title = sprintf("Rho: %1.3f CI[%1.3f %1.3f]; BF: %1.3f",corrRho5[[1]],corrRho5[[2]],corrRho5[[3]],extractBF(cbf5)[[1]]))+
+  font("x", size = 8) + font("y", size = 8) + font("title", size = 8) + font("x.text", size = 8) + font("y.text", size = 8) +
+  font("caption", size = 8) + font("y", size = 8) +
+  scale_y_continuous(limits=c(500, 850))
+
+corrRho6 = SpearmanRho(x = corrdata$`attended - mean(att, irr)`, y = corrdata$RT_Mean, conf.level = .95)
+cbf6 = correlationBF(corrdata$`attended - mean(att, irr)`, corrdata$RT_Mean, rscale = "medium",iterations=num.iter)
+plot6 <- ggscatter(corrdata, x = "attended - mean(att, irr)", y = "RT_Mean", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = def.cormethod, size = 3, alpha = 0.6,
+          add.params = list(fill = "lightgray"),
+          ggtheme = theme_classic(),
+          xlab = "SSVEP: attended - mean(att, irr)", ylab = "RT in ms",
+          title = sprintf("Rho: %1.3f CI[%1.3f %1.3f]; BF: %1.3f",corrRho6[[1]],corrRho6[[2]],corrRho6[[3]],extractBF(cbf6)[[1]]))+
+  font("x", size = 8) + font("y", size = 8) + font("title", size = 8) + font("x.text", size = 8) + font("y.text", size = 8) +
+  font("caption", size = 8) + font("y", size = 8) +
+  scale_y_continuous(limits=c(500, 850))
+
+plotttitle <- ggdraw() + draw_label("correlation of SSVEP amplitude modulations and RT", fontface='bold')
+plotplots <- ggarrange(plot1, plot1b, plot2, plot3, plot4, plot5, plot6, ncol = 4, nrow = 2)
+plotplots2<-ggarrange(plotttitle, plotplots, nrow = 2, heights=c(0.1, 1))
+
+
+savefig <- multi_panel_figure(columns = 1, rows = 1, panel_label_type = "none", width = 10, height = 5, unit = "in")
+
+savefig %<>%
+  fill_panel(plotplots2, column = 1, row = 1)
+savefig
+save_multi_panel_figure(savefig, "Corr_SSVEP_RT_irr_expl.pdf")
+
+
+
+
+# calculate correlations
+# calculate confidence intervals
+corrRho1 = SpearmanRho(x = corrdata$`attended`, y = corrdata$Hitrate, conf.level = .95)
+cbf1 = correlationBF(corrdata$`attended`, corrdata$Hitrate, rscale = "medium",iterations=num.iter)
+plot1 <- ggscatter(corrdata, x = "attended", y = "Hitrate", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = def.cormethod, size = 3, alpha = 0.6,
+          add.params = list(fill = "lightgray"),
+          ggtheme = theme_classic(),
+          xlab = "SSVEP: attended", ylab = "Hitrate in %",
+          title = sprintf("Rho: %1.3f CI[%1.3f %1.3f]; BF: %1.3f",corrRho1[[1]],corrRho1[[2]],corrRho1[[3]],extractBF(cbf1)[[1]]))+
+  font("x", size = 8) + font("y", size = 8) + font("title", size = 8) + font("x.text", size = 8) + font("y.text", size = 8) +
+  font("caption", size = 8) + font("y", size = 8)
+
+corrRho1b = SpearmanRho(x = corrdata$`unattended`, y = corrdata$Hitrate, conf.level = .95)
+cbf1b = correlationBF(corrdata$`unattended`, corrdata$Hitrate, rscale = "medium",iterations=num.iter)
+plot1b <- ggscatter(corrdata, x = "unattended", y = "Hitrate", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = def.cormethod, size = 3, alpha = 0.6,
+          add.params = list(fill = "lightgray"),
+          ggtheme = theme_classic(),
+          xlab = "SSVEP: unattended", ylab = "Hitrate in %",
+          title = sprintf("Rho: %1.3f CI[%1.3f %1.3f]; BF: %1.3f",corrRho1b[[1]],corrRho1b[[2]],corrRho1b[[3]],extractBF(cbf1b)[[1]]))+
+  font("x", size = 8) + font("y", size = 8) + font("title", size = 8) + font("x.text", size = 8) + font("y.text", size = 8) +
+  font("caption", size = 8) + font("y", size = 8)
+
+corrRho2 = SpearmanRho(x = corrdata$`irrelevant`, y = corrdata$Hitrate, conf.level = .95)
+cbf2 = correlationBF(corrdata$`irrelevant`, corrdata$Hitrate, rscale = "medium",iterations=num.iter)
+plot2 <- ggscatter(corrdata, x = "irrelevant", y = "Hitrate", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = def.cormethod, size = 3, alpha = 0.6,
+          add.params = list(fill = "lightgray"),
+          ggtheme = theme_classic(),
+          xlab = "SSVEP: irrelevant", ylab = "Hitrate in %",
+          title = sprintf("Rho: %1.3f CI[%1.3f %1.3f]; BF: %1.3f",corrRho2[[1]],corrRho2[[2]],corrRho2[[3]],extractBF(cbf2)[[1]]))+
+  font("x", size = 8) + font("y", size = 8) + font("title", size = 8) + font("x.text", size = 8) + font("y.text", size = 8) +
+  font("caption", size = 8) + font("y", size = 8)
+
+corrRho3 = SpearmanRho(x = corrdata$`mean(irrelevant, unattended)`, y = corrdata$Hitrate, conf.level = .95)
+cbf3 = correlationBF(corrdata$`mean(irrelevant, unattended)`, corrdata$Hitrate, rscale = "medium",iterations=num.iter)
+plot3 <- ggscatter(corrdata, x = "mean(irrelevant, unattended)", y = "Hitrate", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = def.cormethod, size = 3, alpha = 0.6,
+          add.params = list(fill = "lightgray"),
+          ggtheme = theme_classic(),
+          xlab = "SSVEP: mean(irrelevant, unattended)", ylab = "Hitrate in %",
+          title = sprintf("Rho: %1.3f CI[%1.3f %1.3f]; BF: %1.3f",corrRho3[[1]],corrRho3[[2]],corrRho3[[3]],extractBF(cbf3)[[1]]))+
+  font("x", size = 8) + font("y", size = 8) + font("title", size = 8) + font("x.text", size = 8) + font("y.text", size = 8) +
+  font("caption", size = 8) + font("y", size = 8)
+
+corrRho4 = SpearmanRho(x = corrdata$`attended - unattended`, y = corrdata$Hitrate, conf.level = .95)
+cbf4 = correlationBF(corrdata$`attended - unattended`, corrdata$Hitrate, rscale = "medium",iterations=num.iter)
+plot4 <- ggscatter(corrdata, x = "attended - unattended", y = "Hitrate", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = def.cormethod, size = 3, alpha = 0.6,
+          add.params = list(fill = "lightgray"),
+          ggtheme = theme_classic(),
+          xlab = "SSVEP: attended - unattended", ylab = "Hitrate in %",
+          title = sprintf("Rho: %1.3f CI[%1.3f %1.3f]; BF: %1.3f",corrRho4[[1]],corrRho4[[2]],corrRho4[[3]],extractBF(cbf4)[[1]]))+
+  font("x", size = 8) + font("y", size = 8) + font("title", size = 8) + font("x.text", size = 8) + font("y.text", size = 8) +
+  font("caption", size = 8) + font("y", size = 8)
+
+corrRho5 = SpearmanRho(x = corrdata$`attended - irrelevant`, y = corrdata$Hitrate, conf.level = .95)
+cbf5 = correlationBF(corrdata$`attended - irrelevant`, corrdata$Hitrate, rscale = "medium",iterations=num.iter)
+plot5 <- ggscatter(corrdata, x = "attended - irrelevant", y = "Hitrate", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = def.cormethod, size = 3, alpha = 0.6,
+          add.params = list(fill = "lightgray"),
+          ggtheme = theme_classic(),
+          xlab = "SSVEP: attended - irrelevant", ylab = "Hitrate in %",
+          title = sprintf("Rho: %1.3f CI[%1.3f %1.3f]; BF: %1.3f",corrRho5[[1]],corrRho5[[2]],corrRho5[[3]],extractBF(cbf5)[[1]]))+
+  font("x", size = 8) + font("y", size = 8) + font("title", size = 8) + font("x.text", size = 8) + font("y.text", size = 8) +
+  font("caption", size = 8) + font("y", size = 8)
+
+corrRho6 = SpearmanRho(x = corrdata$`attended - mean(att, irr)`, y = corrdata$Hitrate, conf.level = .95)
+cbf6 = correlationBF(corrdata$`attended - mean(att, irr)`, corrdata$Hitrate, rscale = "medium",iterations=num.iter)
+plot6 <- ggscatter(corrdata, x = "attended - mean(att, irr)", y = "Hitrate", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = def.cormethod, size = 3, alpha = 0.6,
+          add.params = list(fill = "lightgray"),
+          ggtheme = theme_classic(),
+          xlab = "SSVEP: attended - mean(att, irr)", ylab = "Hitrate in %",
+          title = sprintf("Rho: %1.3f CI[%1.3f %1.3f]; BF: %1.3f",corrRho6[[1]],corrRho6[[2]],corrRho6[[3]],extractBF(cbf6)[[1]]))+
+  font("x", size = 8) + font("y", size = 8) + font("title", size = 8) + font("x.text", size = 8) + font("y.text", size = 8) +
+  font("caption", size = 8) + font("y", size = 8)
+
+
+plotttitle <- ggdraw() + draw_label("correlation of SSVEP amplitude modulations and Hitrate in %", fontface='bold')
+plotplots <- ggarrange(plot1, plot1b, plot2, plot3, plot4, plot5, plot6, ncol = 4, nrow = 2)
+plotplots2<-ggarrange(plotttitle, plotplots, nrow = 2, heights=c(0.1, 1))
+
+
+savefig <- multi_panel_figure(columns = 1, rows = 1, panel_label_type = "none", width = 10, height = 5, unit = "in")
+
+savefig %<>%
+  fill_panel(plotplots2, column = 1, row = 1)
+savefig
+save_multi_panel_figure(savefig, "Corr_SSVEP_Hitrate_irr_exp.pdf")
+
+
+
+# calculate correlations
+# calculate confidence intervals
+corrRho1 = SpearmanRho(x = corrdata$`attended`, y = corrdata$d_prime, conf.level = .95)
+cbf1 = correlationBF(corrdata$`attended`, corrdata$d_prime, rscale = "medium",iterations=num.iter)
+plot1 <- ggscatter(corrdata, x = "attended", y = "d_prime", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = def.cormethod, size = 3, alpha = 0.6,
+          add.params = list(fill = "lightgray"),
+          ggtheme = theme_classic(),
+          xlab = "SSVEP: attended", ylab = "d prime",
+          title = sprintf("Rho: %1.3f CI[%1.3f %1.3f]; BF: %1.3f",corrRho1[[1]],corrRho1[[2]],corrRho1[[3]],extractBF(cbf1)[[1]]))+
+  font("x", size = 8) + font("y", size = 8) + font("title", size = 8) + font("x.text", size = 8) + font("y.text", size = 8) +
+  font("caption", size = 8) + font("y", size = 8)
+
+corrRho1b = SpearmanRho(x = corrdata$`unattended`, y = corrdata$d_prime, conf.level = .95)
+cbf1b = correlationBF(corrdata$`unattended`, corrdata$d_prime, rscale = "medium",iterations=num.iter)
+plot1b <- ggscatter(corrdata, x = "unattended", y = "d_prime", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = def.cormethod, size = 3, alpha = 0.6,
+          add.params = list(fill = "lightgray"),
+          ggtheme = theme_classic(),
+          xlab = "SSVEP: unattended", ylab = "d prime",
+          title = sprintf("Rho: %1.3f CI[%1.3f %1.3f]; BF: %1.3f",corrRho1b[[1]],corrRho1b[[2]],corrRho1b[[3]],extractBF(cbf1b)[[1]]))+
+  font("x", size = 8) + font("y", size = 8) + font("title", size = 8) + font("x.text", size = 8) + font("y.text", size = 8) +
+  font("caption", size = 8) + font("y", size = 8)
+
+corrRho2 = SpearmanRho(x = corrdata$`irrelevant`, y = corrdata$d_prime, conf.level = .95)
+cbf2 = correlationBF(corrdata$`irrelevant`, corrdata$d_prime, rscale = "medium",iterations=num.iter)
+plot2 <- ggscatter(corrdata, x = "irrelevant", y = "d_prime", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = def.cormethod, size = 3, alpha = 0.6,
+          add.params = list(fill = "lightgray"),
+          ggtheme = theme_classic(),
+          xlab = "SSVEP: irrelevant", ylab = "d prime",
+          title = sprintf("Rho: %1.3f CI[%1.3f %1.3f]; BF: %1.3f",corrRho2[[1]],corrRho2[[2]],corrRho2[[3]],extractBF(cbf2)[[1]]))+
+  font("x", size = 8) + font("y", size = 8) + font("title", size = 8) + font("x.text", size = 8) + font("y.text", size = 8) +
+  font("caption", size = 8) + font("y", size = 8)
+
+corrRho3 = SpearmanRho(x = corrdata$`mean(irrelevant, unattended)`, y = corrdata$d_prime, conf.level = .95)
+cbf3 = correlationBF(corrdata$`mean(irrelevant, unattended)`, corrdata$d_prime, rscale = "medium",iterations=num.iter)
+plot3 <- ggscatter(corrdata, x = "mean(irrelevant, unattended)", y = "d_prime", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = def.cormethod, size = 3, alpha = 0.6,
+          add.params = list(fill = "lightgray"),
+          ggtheme = theme_classic(),
+          xlab = "SSVEP: mean(irrelevant, unattended)", ylab = "d prime",
+          title = sprintf("Rho: %1.3f CI[%1.3f %1.3f]; BF: %1.3f",corrRho3[[1]],corrRho3[[2]],corrRho3[[3]],extractBF(cbf3)[[1]]))+
+  font("x", size = 8) + font("y", size = 8) + font("title", size = 8) + font("x.text", size = 8) + font("y.text", size = 8) +
+  font("caption", size = 8) + font("y", size = 8)
+
+corrRho4 = SpearmanRho(x = corrdata$`attended - unattended`, y = corrdata$d_prime, conf.level = .95)
+cbf4 = correlationBF(corrdata$`attended - unattended`, corrdata$d_prime, rscale = "medium",iterations=num.iter)
+plot4 <- ggscatter(corrdata, x = "attended - unattended", y = "d_prime", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = def.cormethod, size = 3, alpha = 0.6,
+          add.params = list(fill = "lightgray"),
+          ggtheme = theme_classic(),
+          xlab = "SSVEP: attended - unattended", ylab = "d prime",
+          title = sprintf("Rho: %1.3f CI[%1.3f %1.3f]; BF: %1.3f",corrRho4[[1]],corrRho4[[2]],corrRho4[[3]],extractBF(cbf4)[[1]]))+
+  font("x", size = 8) + font("y", size = 8) + font("title", size = 8) + font("x.text", size = 8) + font("y.text", size = 8) +
+  font("caption", size = 8) + font("y", size = 8)
+
+corrRho5 = SpearmanRho(x = corrdata$`attended - irrelevant`, y = corrdata$d_prime, conf.level = .95)
+cbf5 = correlationBF(corrdata$`attended - irrelevant`, corrdata$d_prime, rscale = "medium",iterations=num.iter)
+plot5 <- ggscatter(corrdata, x = "attended - irrelevant", y = "d_prime", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = def.cormethod, size = 3, alpha = 0.6,
+          add.params = list(fill = "lightgray"),
+          ggtheme = theme_classic(),
+          xlab = "SSVEP: attended - irrelevant", ylab = "d prime",
+          title = sprintf("Rho: %1.3f CI[%1.3f %1.3f]; BF: %1.3f",corrRho5[[1]],corrRho5[[2]],corrRho5[[3]],extractBF(cbf5)[[1]]))+
+  font("x", size = 8) + font("y", size = 8) + font("title", size = 8) + font("x.text", size = 8) + font("y.text", size = 8) +
+  font("caption", size = 8) + font("y", size = 8)
+
+corrRho6 = SpearmanRho(x = corrdata$`attended - mean(att, irr)`, y = corrdata$d_prime, conf.level = .95)
+cbf6 = correlationBF(corrdata$`attended - mean(att, irr)`, corrdata$d_prime, rscale = "medium",iterations=num.iter)
+plot6 <- ggscatter(corrdata, x = "attended - mean(att, irr)", y = "d_prime", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = def.cormethod, size = 3, alpha = 0.6,
+          add.params = list(fill = "lightgray"),
+          ggtheme = theme_classic(),
+          xlab = "SSVEP: attended - mean(att, irr)", ylab = "d prime",
+          title = sprintf("Rho: %1.3f CI[%1.3f %1.3f]; BF: %1.3f",corrRho6[[1]],corrRho6[[2]],corrRho6[[3]],extractBF(cbf6)[[1]]))+
+  font("x", size = 8) + font("y", size = 8) + font("title", size = 8) + font("x.text", size = 8) + font("y.text", size = 8) +
+  font("caption", size = 8) + font("y", size = 8)
+
+
+plotttitle <- ggdraw() + draw_label("correlation of SSVEP amplitude modulations and d prime", fontface='bold')
+plotplots <- ggarrange(plot1, plot1b, plot2, plot3, plot4, plot5, plot6, ncol = 4, nrow = 2)
+plotplots2<-ggarrange(plotttitle, plotplots, nrow = 2, heights=c(0.1, 1))
+
+
+savefig <- multi_panel_figure(columns = 1, rows = 1, panel_label_type = "none", width = 10, height = 5, unit = "in")
+
+savefig %<>%
+  fill_panel(plotplots2, column = 1, row = 1)
+savefig
+save_multi_panel_figure(savefig, "Corr_SSVEP_dprime_irr_exp.pdf")
+
+```
+
+
+
+### regression models
+
+dv = **RT** and **Hit rate**
+related to SSVEP modulations?
+
+<br> 
+
+```{r LM,echo=FALSE}
+# ssvep amplitude correlation and
+corrdata_beh <- DataIn_beh1%>%
+  filter(eventtype=="target")%>%
+  group_by(participant)%>%
+  summarise(RT_Mean=mean(RT,na.rm=TRUE),RT_STD=sd(RT,na.rm=TRUE),Hitrate=(sum(response=='hit')/n())*100)
+
+corrdata_beh2 <- DataIn_beh2%>%
+  dplyr::rename(participant=subject)
+
+# ssvep amplitude correlation between pre-cue tasks
+corrdata_SSVEP <- DataIn %>%
+  dplyr::select(-freq_irr, -color_irr)%>%
+  pivot_longer(c(-subjects, -condition, -time),names_to = "signal", values_to = "amplitude")%>%
+  pivot_wider(names_from = "time", values_from = "amplitude")%>%
+  rename(pre = '[-1 0]')%>%
+  rowwise()%>%
+  mutate(post = mean(c(`[0.5 1.5]`,`[1 2]`))) %>%
+  dplyr::select(., subjects, condition, pre, post, signal)%>%
+  pivot_longer(c(-subjects, -condition, -signal),names_to = "time", values_to = "amplitude")%>%
+  mutate(condition = factor(condition, levels=c('attended','unattended','irrelevant'), ordered = T))%>%
+  mutate(time = factor(time, levels=c('pre','post'), ordered = T))%>%
+  filter(signal == "modulation_evoked", time=="post")%>%
+  pivot_wider(names_from = "condition", values_from = "amplitude")%>%
+  mutate('attended - unattended'= attended - unattended,
+         'attended - irrelevant'= attended - irrelevant)%>%
+  rowwise()%>%
+  mutate('mean(irrelevant, unattended)' = mean(c(irrelevant,unattended)))%>%
+  mutate('attended - mean(att, irr)'= attended - `mean(irrelevant, unattended)`)%>%
+  dplyr::select(., subjects, attended, unattended, irrelevant, `attended - unattended`, `attended - irrelevant`,
+                `mean(irrelevant, unattended)`,`attended - mean(att, irr)`)%>%
+  dplyr::rename(participant=subjects)%>%
+  mutate(participant=as.factor(participant))
+
+corrdata <- merge(corrdata_SSVEP,corrdata_beh, by = "participant")
+corrdata <- merge(corrdata,corrdata_beh2, by = "participant")
+
+model_data = corrdata%>%
+  dplyr::select(., participant, attended, unattended, irrelevant, `attended - unattended`, `attended - irrelevant`, RT_Mean)%>%
+  pivot_longer(c(-participant, -RT_Mean),names_to = "SSVEP", values_to = "amplitude")
+
+
+ggscatter(model_data, x = "amplitude", y = "RT_Mean",
+          add = "reg.line",                         # Add regression line
+          conf.int = TRUE,                          # Add confidence interval
+          color = "SSVEP", palette = "jco",           # Color by groups "cyl"
+          shape = "SSVEP",                             # Change point shape by groups "cyl"
+          ggtheme = theme_classic()
+)+
+  stat_cor(aes(color = SSVEP), label.x = 40,method = def.cormethod)
+
+
+# create model
+## model
+model <- lm(RT_Mean ~ attended+unattended+irrelevant,
+            data=corrdata)
+summary(model)
+
+model <- lm(RT_Mean ~ `mean(irrelevant, unattended)`,
+            data=corrdata)
+summary(model)
+
+# usefull?
+model <- lm(RT_Mean ~ `attended - unattended`+`attended - irrelevant`,
+            data=corrdata)
+summary(model)
+model <- lm(Hitrate ~ `attended - unattended`+`attended - irrelevant`, data=corrdata)
+summary(model)
+#
+
+model <- lm(Hitrate ~ attended+unattended+irrelevant,
+            data=corrdata)
+summary(model)
+
+model <- lm(Hitrate ~ attended+unattended+irrelevant,
+            data=corrdata)
+summary(model)
+
+model <- lm(Hitrate ~ unattended+irrelevant,
+            data=corrdata)
+summary(model)
+
+model <- lm(Hitrate ~ `mean(irrelevant, unattended)`,
+            data=corrdata)
+summary(model)
+
+model <- lm(Hitrate ~ `attended - unattended`,
+            data=corrdata)
+summary(model)
+
+# testing two models
+bfunatt = lmBF(Hitrate ~ `attended - unattended` + participant, 
+               data = corrdata, whichRandom = "participant", rscaleFixed = 1/3,iterations=num.iter)
+bfirrel = lmBF(Hitrate ~ `attended - irrelevant` + participant, data = corrdata, whichRandom = "participant", rscaleFixed = 1/3,)
+
+
+## Compare the main-effects only model to the full model
+BFcomp <- bfunatt / bfirrel
+
+
+```

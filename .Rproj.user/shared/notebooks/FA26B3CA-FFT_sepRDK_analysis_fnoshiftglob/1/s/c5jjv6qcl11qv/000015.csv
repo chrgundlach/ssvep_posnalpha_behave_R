@@ -1,0 +1,12 @@
+"0",""
+"0","Data_Collapsed%>%"
+"0","  filter(time==""post"")%>%"
+"0","  group_by(con_RDK_col_attended, subjects)%>%"
+"0","  dplyr::summarise(modulation = mean(modulation_evoked))%>%"
+"0","  pivot_wider(names_from = con_RDK_col_attended, values_from = modulation)%>%"
+"0","  mutate(col_attended_MINUS_unattended = col_attended - col_unattended)%>%"
+"0","  dplyr::summarise(N = n(), mean_modulation = mean(col_attended_MINUS_unattended), SD_modulation = SD(col_attended_MINUS_unattended))%>%"
+"0","  kable(escape = F, digits = c(3,3,3,3,3,3,3,3,3), caption = c(""FBA effects"")) %>%"
+"0","  kable_styling(""striped"", full_width = T, bootstrap_options = c(""striped"", ""hover"", ""condensed"", ""responsive"",font_size = 6))"
+"2","`summarise()` has grouped output by 'con_RDK_col_attended'. You can override using the `.groups` argument.
+"

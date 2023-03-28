@@ -1,0 +1,1472 @@
+---
+title: "FFT_SSVEPXALPHA_model_alpha_bin_experimental"
+author: "Christopher Gundlach"
+date: "26. Oktober 2018"
+output:
+  html_document:
+    code_folding: hide
+    toc: true
+    toc_float: true
+    toc_depth: 4
+    theme: flatly
+---
+
+Modelling of ~~raw~~ [*CSD based*] amplitude values from gabor-transformed or fft-based data
+via linear mixed models
+via standard anova models
+
+
+```{r load_package, message = FALSE, warning = FALSE}
+library(lme4)
+library(readxl)
+library(tidyverse)
+library(data.table)
+library(tidyverse)
+library(afex)
+library(broom)
+library(apa)
+library(kableExtra)
+library(lmerTest)
+library(pbkrtest)
+library(effects)
+library(visreg)
+library(sjPlot)
+library(broom.mixed)
+library(pander)
+library(mediation)
+library(multcomp)
+library(multcompView)
+library(magrittr)
+library(multipanelfigure)
+library(ggbeeswarm)
+library(lsmeans)
+
+
+
+
+# broad cluster CSD based NOT normalized to pre-cue baseline averaged across conditions in %
+# sort alpha_l_M_alpha_r is quotient --> maybe controls for overall changes in amplitude?
+# upper and lower 10% are trimmed!
+# overlapping bins
+# sorting by alpha contra to attention divided by alpha ipsi to attention
+# lateral electrode cluster for SSVEP
+#         Left SSVEP: 			{'P6';'P8';'P10';'PO4';'PO8';'O2';'I2';'POz';'Oz';'Iz'}
+#         Right SSVEP:			{'P9';'P7';'P5';'PO7';'PO3';'I1';'O1';'POz';'Oz';'Iz'}
+# # checked!!!
+# DATAPath = "data/FFT_analysis_CSD_alphabins_contrAlpDivIpsAlp_overlapping_trimmed_timeaveraged_pre_cue_raw_10-29-2018.csv"
+# t_baseline = c(-1000, 0)
+# t_postcue = c(500, 3000)
+# t_path = 'TFA3'
+# t_sorting = 'alpha contra to attention divided by alpha ipsi to attention'
+
+# broad cluster CSD based normalized to pre-cue baseline averaged across conditions in %
+# sort alpha_l_M_alpha_r is quotient --> maybe controls for overall changes in amplitude?
+# upper and lower 10% are trimmed!
+# overlapping bins
+# sorting by alpha contra to attention divided by alpha ipsi to attention
+# lateral electrode cluster for SSVEP
+#         Left SSVEP: 			{'P6';'P8';'P10';'PO4';'PO8';'O2';'I2';'POz';'Oz';'Iz'}
+#         Right SSVEP:			{'P9';'P7';'P5';'PO7';'PO3';'I1';'O1';'POz';'Oz';'Iz'}
+# # checked!!!
+# DATAPath = "data/FFT_analysis_CSD_alphabins_contrAlpDivIpsAlp_overlapping_trimmed_timeaveraged_pre_cue_norm_10-29-2018.csv"
+# t_baseline = c(-1000, 0)
+# t_postcue = c(500, 3000)
+# t_path = 'TFA3'
+# t_sorting = 'alpha contra to attention divided by alpha ipsi to attention'
+
+# broad cluster CSD based normalized to post-cue baseline averaged across conditions in %
+# sort alpha_l_M_alpha_r is quotient --> maybe controls for overall changes in amplitude?
+# upper and lower 10% are trimmed!
+# overlapping bins
+# sorting by alpha contra to attention divided by alpha ipsi to attention
+# lateral electrode cluster for SSVEP
+#         Left SSVEP: 			{'P6';'P8';'P10';'PO4';'PO8';'O2';'I2';'POz';'Oz';'Iz'}
+#         Right SSVEP:			{'P9';'P7';'P5';'PO7';'PO3';'I1';'O1';'POz';'Oz';'Iz'}
+# # checked!!!
+# DATAPath = "data/FFT_analysis_CSD_alphabins_contrAlpDivIpsAlp_overlapping_trimmed_timeaveraged_post_cue_norm_10-29-2018.csv"
+# t_baseline = c(-1000, 0)
+# t_postcue = c(500, 3000)
+# t_path = 'TFA3'
+# t_sorting = 'alpha contra to attention divided by alpha ipsi to attention'
+
+# broad cluster CSD based normalized to pre-cue baseline averaged across conditions in %
+# sort alpha_l_M_alpha_r is quotient --> maybe controls for overall changes in amplitude?
+# upper and lower 10% are trimmed!
+# overlapping bins
+# sorting by alpha contra to attention divided by alpha ipsi to attention
+# lateral electrode cluster for SSVEP
+#         Left SSVEP: 			{'P6';'P8';'P10';'PO4';'PO8';'O2';'I2';'POz';'Oz';'Iz'}
+#         Right SSVEP:			{'P9';'P7';'P5';'PO7';'PO3';'I1';'O1';'POz';'Oz';'Iz'}
+# # checked!!!
+# DATAPath = "data/FFT_analysis_CSD_alphabins_contrAlpDivIpsAlp_pre_overlapping_trimmed_timeaveraged_pre_cue_raw_11-01-2018.csv"
+# t_baseline = c(-1000, 0)
+# t_postcue = c(500, 3000)
+# t_path = 'TFA3'
+# t_sorting = 'pre alpha contra to attention divided by alpha ipsi to attention'
+
+# broad cluster CSD based normalized to pre-cue baseline averaged across conditions in %
+# sort alpha_l_M_alpha_r is quotient --> maybe controls for overall changes in amplitude?
+# upper and lower 10% are trimmed!
+# overlapping bins
+# sorting by alpha contra to attention divided by alpha ipsi to attention
+# lateral electrode cluster for SSVEP
+#         Left SSVEP: 			{'P6';'P8';'P10';'PO4';'PO8';'O2';'I2';'POz';'Oz';'Iz'}
+#         Right SSVEP:			{'P9';'P7';'P5';'PO7';'PO3';'I1';'O1';'POz';'Oz';'Iz'}
+# # checked!!!
+# DATAPath = "data/FFT_analysis_CSD_alphabins_contrAlpDivIpsAlp_pre_overlapping_trimmed_timeaveraged_pre_cue_norm_11-01-2018.csv"
+# t_baseline = c(-1000, 0)
+# t_postcue = c(500, 3000)
+# t_path = 'TFA3'
+# t_sorting = 'pre alpha contra to attention divided by alpha ipsi to attention'
+
+# broad cluster CSD based NOT normalized to pre-cue baseline averaged across conditions in %
+# sort alpha_l_M_alpha_r is quotient --> maybe controls for overall changes in amplitude?
+# upper and lower 10% are trimmed!
+# overlapping bins
+# sorting by alpha contra to attention minus by alpha ipsi to attention modulation pre to post
+# lateral electrode cluster for SSVEP
+#         Left SSVEP: 			{'P6';'P8';'P10';'PO4';'PO8';'O2';'I2';'POz';'Oz';'Iz'}
+#         Right SSVEP:			{'P9';'P7';'P5';'PO7';'PO3';'I1';'O1';'POz';'Oz';'Iz'}
+# # checked!!!
+# DATAPath = "data/FFT_analysis_CSD_alphabins_contrAlpDivIpsAlp_pretopost_overlapping_trimmed_timeaveraged_pre_cue_raw_10-29-2018.csv"
+# t_baseline = c(-1000, 0)
+# t_postcue = c(500, 3000)
+# t_path = 'TFA3'
+# t_sorting = 'alpha contra to attention - by alpha ipsi to attention pre to post mod'
+
+# !!!!!!!!!!!!!!!! #####data in manuscript#####
+# broad cluster CSD based normalized to pre-cue baseline averaged across conditions in %
+# sort alpha_l_M_alpha_r is quotient --> maybe controls for overall changes in amplitude?
+# upper and lower 10% are trimmed!
+# overlapping bins
+# sorting by alpha contra to attention minus by alpha ipsi to attention modulation pre to post
+# lateral electrode cluster for SSVEP
+#         Left SSVEP: 			{'P6';'P8';'P10';'PO4';'PO8';'O2';'I2';'POz';'Oz';'Iz'}
+#         Right SSVEP:			{'P9';'P7';'P5';'PO7';'PO3';'I1';'O1';'POz';'Oz';'Iz'}
+# # checked!!!
+DATAPath = "data/FFT_analysis_CSD_alphabins_contrAlpDivIpsAlp_pretopost_overlapping_trimmed_timeaveraged_pre_cue_norm_02-11-2019.csv"
+t_baseline = c(-1000, 0)
+t_postcue = c(500, 3000)
+t_path = 'TFA3'
+t_sorting = 'alpha contra to attention - by alpha ipsi to attention pre to post mod'
+# !!!!!!!!!!!!!!!!!!
+
+# !!!!!!!!!!!!!!!!
+# broad cluster CSD based normalized to pre-cue baseline averaged across conditions in %
+# sort alpha_l_M_alpha_r is quotient --> maybe controls for overall changes in amplitude?
+# upper and lower 10% are trimmed!
+# overlapping bins
+# sorting by alpha contra to attention minus by alpha ipsi to attention modulation pre to post
+# lateral electrode cluster for SSVEP
+#         Left SSVEP: 			{'P9';'P7';'P5';'P6';'P8';'P10';'PO7';'PO3';'POz';'PO4';'PO8';'O1';'Oz';'O2';'Iz';'I1';'I2'}
+#       Right SSVEP:			{'P9';'P7';'P5';'P6';'P8';'P10';'PO7';'PO3';'POz';'PO4';'PO8';'O1';'Oz';'O2';'Iz';'I1';'I2'}
+# # checked!!!
+# DATAPath = "data/FFT_analysis_CSD_alphabins_contrAlpDivIpsAlp_pretopost_overlapping_trimmed_timeaveraged_pre_cue_norm_largecluster_01-28-2019.csv"
+# t_baseline = c(-1000, 0)
+# t_postcue = c(500, 3000)
+# t_path = 'TFA3'
+# t_sorting = 'alpha contra to attention - by alpha ipsi to attention pre to post mod'
+# !!!!!!!!!!!!!!!!!!
+
+
+# broad cluster CSD based NOT normalized to pre-cue baseline averaged across conditions in %
+# upper and lower 10% are trimmed!
+# overlapping bins
+# sorting by alpha contra to attention
+# lateral electrode cluster for SSVEP
+#         Left SSVEP: 			{'P6';'P8';'P10';'PO4';'PO8';'O2';'I2';'POz';'Oz';'Iz'}
+#         Right SSVEP:			{'P9';'P7';'P5';'PO7';'PO3';'I1';'O1';'POz';'Oz';'Iz'}
+# # checked!!!
+# DATAPath = "data/FFT_analysis_CSD_alphabins_contrAlp_overlapping_trimmed_timeaveraged_pre_cue_raw_10-29-2018.csv"
+# t_baseline = c(-1000, 0)
+# t_postcue = c(500, 3000)
+# t_path = 'TFA3'
+# t_sorting = 'alpha contra to attention'
+
+# broad cluster CSD based normalized to pre-cue baseline averaged across conditions in %
+# upper and lower 10% are trimmed!
+# overlapping bins
+# sorting by alpha contra to attention
+# lateral electrode cluster for SSVEP
+#         Left SSVEP: 			{'P6';'P8';'P10';'PO4';'PO8';'O2';'I2';'POz';'Oz';'Iz'}
+#         Right SSVEP:			{'P9';'P7';'P5';'PO7';'PO3';'I1';'O1';'POz';'Oz';'Iz'}
+# # checked!!!
+# DATAPath = "data/FFT_analysis_CSD_alphabins_contrAlp_overlapping_trimmed_timeaveraged_pre_cue_norm_10-29-2018.csv"
+# t_baseline = c(-1000, 0)
+# t_postcue = c(500, 3000)
+# t_path = 'TFA3'
+# t_sorting = 'alpha contra to attention'
+
+# broad cluster CSD based NOT normalized to pre-cue baseline averaged across conditions in %
+# upper and lower 10% are trimmed!
+# overlapping bins
+# sorting by alpha contra to attention
+# lateral electrode cluster for SSVEP
+#         Left SSVEP: 			{'P6';'P8';'P10';'PO4';'PO8';'O2';'I2';'POz';'Oz';'Iz'}
+#         Right SSVEP:			{'P9';'P7';'P5';'PO7';'PO3';'I1';'O1';'POz';'Oz';'Iz'}
+# # checked!!!
+# DATAPath = "data/FFT_analysis_CSD_alphabins_ipsiAlp_overlapping_trimmed_timeaveraged_pre_cue_raw_10-29-2018.csv"
+# t_baseline = c(-1000, 0)
+# t_postcue = c(500, 3000)
+# t_path = 'TFA3'
+# t_sorting = 'alpha ipsi to attention'
+
+# broad cluster CSD based normalized to pre-cue baseline averaged across conditions in %
+# upper and lower 10% are trimmed!
+# overlapping bins
+# sorting by alpha contra to attention
+# lateral electrode cluster for SSVEP
+#         Left SSVEP: 			{'P6';'P8';'P10';'PO4';'PO8';'O2';'I2';'POz';'Oz';'Iz'}
+#         Right SSVEP:			{'P9';'P7';'P5';'PO7';'PO3';'I1';'O1';'POz';'Oz';'Iz'}
+# # checked!!!
+# DATAPath = "data/FFT_analysis_CSD_alphabins_ipsiAlp_overlapping_trimmed_timeaveraged_pre_cue_norm_10-29-2018.csv"
+# t_baseline = c(-1000, 0)
+# t_postcue = c(500, 3000)
+# t_path = 'TFA3'
+# t_sorting = 'alpha ipsi to attention'
+
+# broad cluster CSD based NOT normalized to pre-cue baseline averaged across conditions in %
+# upper and lower 10% are trimmed!
+# overlapping bins
+# sorting by alpha contra to attention
+# lateral electrode cluster for SSVEP
+#         Left SSVEP: 			{'P6';'P8';'P10';'PO4';'PO8';'O2';'I2';'POz';'Oz';'Iz'}
+#         Right SSVEP:			{'P9';'P7';'P5';'PO7';'PO3';'I1';'O1';'POz';'Oz';'Iz'}
+# # checked!!!
+# DATAPath = "data/FFT_analysis_CSD_alphabins_ipsiAlp_pretopost_overlapping_trimmed_timeaveraged_pre_cue_raw_10-29-2018.csv"
+# t_baseline = c(-1000, 0)
+# t_postcue = c(500, 3000)
+# t_path = 'TFA3'
+# t_sorting = 'alpha ipsi to attention pre to post'
+
+# broad cluster CSD based NOT normalized to pre-cue baseline averaged across conditions in %
+# upper and lower 10% are trimmed!
+# overlapping bins
+# sorting by alpha contra to attention
+# lateral electrode cluster for SSVEP
+#         Left SSVEP: 			{'P6';'P8';'P10';'PO4';'PO8';'O2';'I2';'POz';'Oz';'Iz'}
+#         Right SSVEP:			{'P9';'P7';'P5';'PO7';'PO3';'I1';'O1';'POz';'Oz';'Iz'}
+# # checked!!!
+# DATAPath = "data/FFT_analysis_CSD_alphabins_ipsiAlp_pretopost_overlapping_trimmed_timeaveraged_pre_cue_norm_10-29-2018.csv"
+# t_baseline = c(-1000, 0)
+# t_postcue = c(500, 3000)
+# t_path = 'TFA3'
+# t_sorting = 'alpha ipsi to attention pre to post'
+
+
+# #####revision 2#####
+# broad cluster CSD based normalized to pre-cue baseline averaged across conditions in %
+# sort alpha_l_M_alpha_r is quotient --> maybe controls for overall changes in amplitude?
+# upper and lower 10% are trimmed!
+# overlapping bins
+# sorting by alpha contra / alpha ipsi (post)
+# lateral electrode cluster for SSVEP
+#         Left SSVEP: 			{'P6';'P8';'P10';'PO4';'PO8';'O2';'I2';'POz';'Oz';'Iz'}
+#         Right SSVEP:			{'P9';'P7';'P5';'PO7';'PO3';'I1';'O1';'POz';'Oz';'Iz'}
+# # checked!!!
+DATAPath = "data/FFT_analysis_CSD_alphabins_contrAlpDivIpsAlp_post_overlapping_trimmed_timeaveraged_pre_cue_norm_09-23-2019.csv"
+t_baseline = c(-1000, 0)
+t_postcue = c(500, 3000)
+t_path = 'TFA3'
+t_sorting = 'alpha contra to attention - by alpha ipsi to attention post'
+# !!!!!!!!!!!!!!!!!!
+
+
+options(scipen=1, digits=3)
+```
+<style type="text/css">
+.main-container {
+  max-width: 1800px !important;
+  margin-left: auto;
+  margin-right: auto;
+}
+</style>
+
+
+## Prepare data  
+<br>  
+
+1.  Read in data: 
+    + `r DATAPath`
+    + with pre-cue  [`r toString(t_baseline)`] ms and post-cue [`r toString(t_postcue)`] ms time window
+    + separate for alpha bins (trials sorted according to alpha values)
+        + 5 bins, overlapping
+        + sort_r_alpha: sorted by average amplitude of right alpha (low to high)
+        + sort_l_alpha: sorted by average amplitude of left alpha (low to high)
+        + sort_r_alpha_M_l_alpha: sorted by average amplitude of right MINUS left alpha (low to high)
+<br>  
+
+```{r load_data,results = "hide", fig.show = "hide", warning = FALSE}
+# read in data
+DataIn <- read_excel(DATAPath)
+head(DataIn)
+str(DataIn)
+
+```
+## Model data with alpha bins  
+<br>  
+
+1.  Prepare new dataset(s)...
+<br>  
+
+```{r manipulate_data,results = "hide", fig.show = "hide", warning = FALSE}
+# alter data to create new variable *datatype*
+DATA_All <- gather(DataIn, datatype, amplitude, -subjects, -alpha_bin, -time, -pre_cue_task, -post_cue_task)
+head(DATA_All)
+str(DATA_All)
+
+# 
+DATA_All<- DATA_All %>%
+  mutate(signal = ifelse(grepl("right_alpha_left_stim", datatype) | grepl("left_alpha_right_stim", datatype),"lateral_alpha",
+                         ifelse(grepl("central_alpha", datatype),"central_alpha","SSVEP"))) %>%
+  mutate(post_cue_attention = ifelse(
+    grepl("right_alpha_left_stim", datatype) & post_cue_task=="attend left","attend_contra",ifelse(
+      grepl("right_alpha_left_stim", datatype) & post_cue_task=="attend right","attend_ipsi",ifelse(
+        grepl("left_alpha_right_stim", datatype) & post_cue_task=="attend right","attend_contra",ifelse(
+          grepl("left_alpha_right_stim", datatype) & post_cue_task=="attend left","attend_ipsi",ifelse(
+            grepl("SSVEP_left_stim", datatype) & post_cue_task=="attend left","attend_contra",ifelse(
+              grepl("SSVEP_left_stim", datatype) & post_cue_task=="attend right","attend_ipsi",ifelse(
+                grepl("SSVEP_right_stim", datatype) & post_cue_task=="attend right","attend_contra",ifelse(
+                  grepl("SSVEP_right_stim", datatype) & post_cue_task=="attend left","attend_ipsi","attend"
+                ))))))))) %>%
+  mutate(vis_location = ifelse(grepl("right_alpha_left_stim", datatype) | grepl("SSVEP_left_stim", datatype), "left",ifelse(
+    grepl("left_alpha_right_stim", datatype) | grepl("SSVEP_right_stim", datatype), "right", "central"
+    ))) %>%
+  separate(datatype, into = c("datatype", "sort_basis"), sep = "/")
+head(DATA_All)
+str(DATA_All)
+
+
+```
+
+1a  Illustrate Data as is
+
+<br>  
+
+```{r plot_data_st, results = "hide",  fig.height=6, fig.width=10, warning = FALSE}
+dat_plot <- DATA_All %>%
+  filter(sort_basis == "sort_r_alpha_M_l_alpha") %>%
+  filter(datatype == "right_alpha_left_stim")
+
+ggplot(dat_plot, aes(x = alpha_bin, y = amplitude, fill = post_cue_task)) +
+  stat_summary(fun.data = mean_se, geom = "bar", position = "dodge") +
+  geom_hline(yintercept=0, show.legend = FALSE) +
+  stat_summary(fun.data = mean_se, geom = "errorbar",position=position_dodge(width=0.95),width=.4, size=.9,colour = "grey40") +
+  facet_grid(time ~ pre_cue_task) +
+  labs(title=sprintf("right_alpha_left_stim | alpha bin: %s",t_sorting), 
+       subtitle="amplitude values in % of pre-cue amplitude averaged across all conditions | separate for alpha bins") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  ylab(expression(paste("amplitude modulation in %")))
+
+
+dat_plot <- DATA_All %>%
+  filter(sort_basis == "sort_r_alpha_M_l_alpha") %>%
+  filter(datatype == "left_alpha_right_stim")
+
+ggplot(dat_plot, aes(x = alpha_bin, y = amplitude, fill = post_cue_task)) +
+  stat_summary(fun.data = mean_se, geom = "bar", position = "dodge") +
+  geom_hline(yintercept=0, show.legend = FALSE) +
+  stat_summary(fun.data = mean_se, geom = "errorbar",position=position_dodge(width=0.95),width=.4, size=.9,colour = "grey40") +
+  facet_grid(time ~ pre_cue_task) +
+  labs(title=sprintf("left_alpha_right_stim | alpha bin: r_alpha MINUS l_alpha"), 
+       subtitle="amplitude values in % of pre-cue amplitude averaged across all conditions | separate for alpha bins") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  ylab(expression(paste("amplitude modulation in %")))
+
+
+dat_plot <- DATA_All %>%
+  filter(sort_basis == "sort_r_alpha_M_l_alpha") %>%
+  filter(datatype == "SSVEP_left_stim")
+
+ggplot(dat_plot, aes(x = alpha_bin, y = amplitude, fill = post_cue_task)) +
+  stat_summary(fun.data = mean_se, geom = "bar", position = "dodge") +
+  geom_hline(yintercept=0, show.legend = FALSE) +
+  stat_summary(fun.data = mean_se, geom = "errorbar",position=position_dodge(width=0.95),width=.4, size=.9,colour = "grey40") +
+  facet_grid(time ~ pre_cue_task) +
+  labs(title=sprintf("SSVEP_left_stim | alpha bin: r_alpha MINUS l_alpha"), 
+       subtitle="amplitude values in % of pre-cue amplitude averaged across all conditions | separate for alpha bins") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  ylab(expression(paste("amplitude modulation in %")))
+
+
+dat_plot <- DATA_All %>%
+  filter(sort_basis == "sort_r_alpha_M_l_alpha") %>%
+  filter(datatype == "SSVEP_right_stim")
+
+ggplot(dat_plot, aes(x = alpha_bin, y = amplitude, fill = post_cue_task)) +
+  stat_summary(fun.data = mean_se, geom = "bar", position = "dodge") +
+  geom_hline(yintercept=0, show.legend = FALSE) +
+  stat_summary(fun.data = mean_se, geom = "errorbar",position=position_dodge(width=0.95),width=.4, size=.9,colour = "grey40") +
+  facet_grid(time ~ pre_cue_task) +
+  labs(title=sprintf("SSVEP_right_stim | alpha bin: r_alpha MINUS l_alpha"), 
+       subtitle="amplitude values in % of pre-cue amplitude averaged across all conditions | separate for alpha bins") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  ylab(expression(paste("amplitude modulation in %")))
+
+
+
+dat_plot <- DATA_All %>%
+  dplyr::select(-post_cue_attention) %>%
+  filter(sort_basis == "sort_r_alpha_M_l_alpha") %>%
+  # mutate(alpha_bin = ifelse( 
+  #           sort_basis=="sort_r_alpha_M_l_alpha" & post_cue_task=="attend left",alpha_bin, rev(unique(DATA_All$alpha_bin))[alpha_bin]
+  #         )) %>%
+  spread(post_cue_task, amplitude) %>%
+  mutate(difference = `attend left` - `attend right`) %>%
+  mutate(alpha_bin = as.factor(alpha_bin)) %>%
+  dplyr::select(-`attend left`,-`attend right`)
+
+ggplot(dat_plot, aes(x = pre_cue_task, y = difference, fill = alpha_bin)) +
+      stat_summary(fun.data = mean_se, geom = "bar", position = "dodge") +
+      geom_hline(yintercept=0, show.legend = FALSE) +
+      stat_summary(fun.data = mean_se, geom = "errorbar", position=position_dodge(width=0.95),width=.4, size=.9,colour = "grey40") +
+      facet_grid(time ~ datatype) +
+      labs(title=sprintf("difference attend left MINUS attend right | alpha bin: r_alpha MINUS l_alpha"), 
+           subtitle="amplitude values in % of pre-cue amplitude averaged across all conditions | separate for alpha bins") +
+      theme(plot.title = element_text(hjust = 0.5)) +
+      ylab(expression(paste("amplitude modulation in %")))
+
+dat_plot <- DATA_All %>%
+  dplyr::select(-post_cue_attention) %>%
+  filter(sort_basis == "sort_r_alpha_M_l_alpha") %>%
+  # mutate(alpha_bin = ifelse( 
+  #           sort_basis=="sort_r_alpha_M_l_alpha" & post_cue_task=="attend left",alpha_bin, rev(unique(DATA_All$alpha_bin))[alpha_bin]
+  #         )) %>%
+  spread(time,amplitude) %>%
+  mutate(amplitude = post_cue - pre_cue) %>%
+  dplyr::select(-pre_cue , -post_cue) %>%
+  spread(post_cue_task, amplitude) %>%
+  mutate(difference = `attend left` - `attend right`) %>%
+  mutate(alpha_bin = as.factor(alpha_bin)) %>%
+  dplyr::select(-`attend left`,-`attend right`)
+
+ggplot(dat_plot, aes(x = pre_cue_task, y = difference, fill = alpha_bin)) +
+      stat_summary(fun.data = mean_se, geom = "bar", position = "dodge") +
+      geom_hline(yintercept=0, show.legend = FALSE) +
+      stat_summary(fun.data = mean_se, geom = "errorbar", position=position_dodge(width=0.95),width=.4, size=.9,colour = "grey40") +
+      facet_grid(~ datatype) +
+      labs(title=sprintf("attend left MINUS attend right difference of post-pre difference| alpha bin: r_alpha MINUS l_alpha"), 
+           subtitle="amplitude values in % of pre-cue amplitude averaged across all conditions | separate for alpha bins") +
+      theme(plot.title = element_text(hjust = 0.5)) +
+      ylab(expression(paste("amplitude modulation in %")))
+
+
+```
+
+
+2.  Prepare new dataset(s)...
+    + simplify model data by 
+        + representing post-cue data as pre- to post-cue changes
+            + pre-cue data represents amplitude modulation in % of pre-cue amplitudes averaged across all conditions
+            + data to be modelled: post-cue MINUS pre-cue modulation
+        + modelling alpha signals [*left_alpha_right_stim* and *right_alpha_left_stim*] together as *lateral_alpha*
+        + modelling SSVEP signals [*SSVEP_left_stim* and *SSVEP_right_stim*] together as *SSVEP*
+        + with factor visual location
+        + either for left or right stimulus
+        + --when averaged across hemispheres: alpha bin sorting reversed for left and right hemispheres
+            + *sort_r_alpha_M_l_alpha* lower bins (i.e. negative values) for left visual stimuli should index strong lateralization in line with mechanistical role of alpha oscillations [ipsi > contra]; higher bins (i.e. positive values) for right visual stimuli should index strong lateralization [ipsi > contra]--
+        + when averaged across hemispheres: alpha bin adapted  for attend left and attend right conditions
+            + *sort_r_alpha_M_l_alpha* lower bins (i.e. negative values) for attend left and attend right index strong lateralization in line with mechanistical role of alpha oscillations [ipsi > contra]; higher bins (i.e. positive values) for attend left and attend right stimuli should index strong lateralization [contra > ipsi]
+            + needs to be adapted; *sort_r_alpha_M_l_alpha* represents sorting for attend left (low: high attentional allocation, if alpha is marker; high: low attentional allocation, if alpha is marker) but not attend right (here order is reversed and needs to be adapted)
+<br>  
+
+```{r manipulate_data_st,results = "hide", fig.show = "hide", warning = FALSE}
+# create hemisphere factor
+# model_dat_st <- DATA_All %>%
+#   # filter(datatype == "right_alpha_left_stim" | datatype == "SSVEP_left_stim") %>%
+#   # filter(datatype == "left_alpha_right_stim" | datatype == "SSVEP_right_stim") %>%
+#   filter(signal != "central_alpha" ) %>%
+#   spread(time,amplitude) %>%
+#   mutate(amplitude = post_cue - pre_cue) %>%
+#   dplyr::select(-pre_cue , -post_cue, -datatype, -post_cue_task) %>%
+#   spread(signal,amplitude) %>%
+#   # mutate(alpha_bin = ifelse( # older sorting version
+#   #   sort_basis=="sort_l_alpha" & vis_location=="left",alpha_bin, ifelse(
+#   #     sort_basis=="sort_l_alpha" & vis_location=="right",rev(unique(DATA_All$alpha_bin))[alpha_bin], ifelse(
+#   #       sort_basis=="sort_r_alpha" & vis_location=="left",rev(unique(DATA_All$alpha_bin))[alpha_bin], ifelse(
+#   #         sort_basis=="sort_r_alpha" & vis_location=="right",alpha_bin, ifelse(
+#   #           sort_basis=="sort_r_alpha_M_l_alpha" & vis_location=="left",alpha_bin, rev(unique(DATA_All$alpha_bin))[alpha_bin]
+#   #         ))))))
+  
+  
+  model_dat_st <- DATA_All %>%
+  # filter(datatype == "right_alpha_left_stim" | datatype == "SSVEP_left_stim") %>%
+  # filter(datatype == "left_alpha_right_stim" | datatype == "SSVEP_right_stim") %>%
+  filter(signal != "central_alpha" ) %>%
+  spread(time,amplitude) %>%
+  mutate(amplitude = post_cue - pre_cue) %>% # model pre-to post-cue modulation
+  # mutate(amplitude = post_cue) %>% # model only post-cue amplitude
+  dplyr::select(-pre_cue , -post_cue, -datatype) %>%
+  spread(signal,amplitude) %>%
+  # mutate(alpha_bin = ifelse( # older sorting version
+  #   sort_basis=="sort_l_alpha" & vis_location=="left",alpha_bin, ifelse(
+  #     sort_basis=="sort_l_alpha" & vis_location=="right",rev(unique(DATA_All$alpha_bin))[alpha_bin], ifelse(
+  #       sort_basis=="sort_r_alpha" & vis_location=="left",rev(unique(DATA_All$alpha_bin))[alpha_bin], ifelse(
+  #         sort_basis=="sort_r_alpha" & vis_location=="right",alpha_bin, ifelse(
+  #           sort_basis=="sort_r_alpha_M_l_alpha" & vis_location=="left",alpha_bin, rev(unique(DATA_All$alpha_bin))[alpha_bin]
+  #         ))))))
+  mutate(alpha_bin = ifelse( # adapted version: lowest alpha bin: hightest attentional allocation of alpha!
+    sort_basis=="sort_l_alpha" & post_cue_task=="attend right",alpha_bin, ifelse(
+      sort_basis=="sort_l_alpha" & post_cue_task=="attend left",rev(unique(DATA_All$alpha_bin))[alpha_bin], ifelse(
+        sort_basis=="sort_r_alpha" & post_cue_task=="attend right",rev(unique(DATA_All$alpha_bin))[alpha_bin], ifelse(
+          sort_basis=="sort_r_alpha" & post_cue_task=="attend left",alpha_bin, ifelse(
+            sort_basis=="sort_r_alpha_M_l_alpha" & post_cue_task=="attend left",alpha_bin, rev(unique(DATA_All$alpha_bin))[alpha_bin]
+          )))))) %>%
+  dplyr::select(-post_cue_task)
+  
+title_dataselection = ifelse(length(unique(model_dat_st$vis_location))>1,
+                             paste(unique(model_dat_st$vis_location)[1],unique(model_dat_st$vis_location)[2]),
+                             unique(model_dat_st$vis_location))
+
+model_dat_st <- model_dat_st %>%
+  group_by(subjects, alpha_bin, pre_cue_task, sort_basis, post_cue_attention) %>%
+  summarise(lateral_alpha = mean(lateral_alpha), SSVEP = mean(SSVEP))
+
+# # z scale values
+# model_dat_st <- model_dat_st %>%
+#   group_by(subjects) %>%
+#   mutate(lateral_alpha = scale(lateral_alpha, center = TRUE, scale = TRUE)) %>%
+#   mutate(SSVEP = scale(SSVEP, center = TRUE, scale = TRUE))
+
+
+
+
+```
+
+2.  Plot post-cue to pre-cue modulation of data  
+<br>  
+
+```{r plot_ssvep_alpha_st, echo=TRUE, fig.height=6, fig.width=10, warning=FALSE, results = "hide"}
+theme_set(theme_classic())
+
+model_dat_plot <- model_dat_st %>%
+  filter(sort_basis == "sort_r_alpha_M_l_alpha")
+  
+ggplot(model_dat_plot, aes(x = interaction(post_cue_attention, pre_cue_task), y = lateral_alpha, 
+                               fill = interaction(post_cue_attention))) +
+      stat_summary(fun.data = mean_se, geom = "bar", position = "dodge") +
+      geom_hline(yintercept=0, show.legend = FALSE) +
+      # geom_line(aes(group = interaction(subjects)),alpha = 0.3, colour = "black") +
+      # geom_point(size = 2.5) +
+      # geom_point(size = 1.5, aes(colour  = post_cue_attention)) +
+      #geom_point(shape = 21,aes(fill  = post_cue_task, size = 0.5, stroke = 0.5)) +
+      # scale_x_discrete("conditions", , labels=c("attend cross","attend ring")) +
+      stat_summary(fun.data = mean_se, geom = "errorbar",position=position_dodge(width=0.95),width=.4, size=.9) +
+      scale_x_discrete("conditions", breaks=waiver(), labels = rep(c("cross","cross","ring","ring"),1,20)) +
+      facet_grid(.~alpha_bin)+
+      labs(title=sprintf("ALPHA | bins [ipsi>contra] to [contra>ipsi] | signal post_cue - pre_cue | vis. location: %s",
+                         title_dataselection), 
+           subtitle="amplitude values in % of pre-cue amplitude averaged across all conditions | separate for alpha bins") +
+      theme(plot.title = element_text(hjust = 0.5)) +
+      ylab(expression(paste("amplitude modulation in %")))
+
+
+ggplot(model_dat_plot, aes(x = interaction(post_cue_attention, pre_cue_task), y = SSVEP, 
+                               fill = interaction(post_cue_attention))) +
+      stat_summary(fun.data = mean_se, geom = "bar", position = "dodge") +
+      geom_hline(yintercept=0, show.legend = FALSE) +
+      # geom_line(aes(group = interaction(subjects)),alpha = 0.3, colour = "black") +
+      # geom_point(size = 2.5) +
+      # geom_point(size = 1.5, aes(colour  = post_cue_attention)) +
+      #geom_point(shape = 21,aes(fill  = post_cue_task, size = 0.5, stroke = 0.5)) +
+      # scale_x_discrete("conditions", , labels=c("attend cross","attend ring")) +
+      stat_summary(fun.data = mean_se, geom = "errorbar",position=position_dodge(width=0.95),width=.4, size=.9) +
+      scale_x_discrete("conditions", breaks=waiver(), labels = rep(c("cross","cross","ring","ring"),1,20)) +
+      facet_grid(.~alpha_bin)+
+      labs(title=sprintf("SSVEP | bins [ipsi>contra] to [contra>ipsi] | signal post_cue - pre_cue | vis. location: %s",
+                         title_dataselection), 
+           subtitle="amplitude values in % of pre-cue amplitude averaged across all conditions | separate for alpha bins") +
+      theme(plot.title = element_text(hjust = 0.5)) +
+      ylab(expression(paste("amplitude modulation in %")))
+```
+
+
+### Actual modelling of SSVEP DATA | repeated measures ANOVA  
+<br>  
+
+#### Run ANOVA(RM)  
+<br>  
+
+Repeated measures ANOVA with factors **ALPHA**[1,2,3,4,5] X **Pre-cue Task**[(attend) cross, (attend) rings] X **Post-cue Attention** [attend_contra, attend_ipsi] for **SSVEP amplitude** and **alpha amplitude**;
+
+
+
+```{r anova_ssvep_bins, echo=TRUE, fig.height=6, fig.width=10, warning=FALSE}
+# SSVEP
+StatsOut <- model_dat_st %>%
+  group_by(sort_basis) %>%
+  nest() %>%
+  mutate(stats= map(data, ~broom::tidy(
+    anova(aov_ez(id="subjects", dv = "SSVEP", data = ., within = c("alpha_bin","pre_cue_task","post_cue_attention")))
+  ))) %>%
+  dplyr::select(-data) %>%
+  unnest()%>%
+  filter(sort_basis == "sort_r_alpha_M_l_alpha")
+
+StatsOut %>%
+  mutate(
+    p.value = cell_spec(round(p.value,4), 
+                        color = ifelse(is.nan(p.value),"blue", ifelse(p.value < .05, "green", "red")),
+                        bold = ifelse(is.nan(p.value),F, ifelse(p.value < .05, T,F)),
+                        align = "center")
+  ) %>%
+  mutate(term = cell_spec(term, align = "center")) %>%
+  kable(escape = F, digits = c(3,3,3,3,3,3,3,3,3), caption = c("repeated measures ANOVA | dv = SSVEP | results")) %>%
+  kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8)) #%>%
+  # row_spec(c(1:7), background = "white")%>%
+  # row_spec(c(8:14), background = "#F2F2F2")%>%
+  # row_spec(c(15:21), background = "#E3E3E3")
+
+# alpha
+StatsOut <- model_dat_st %>%
+  group_by(sort_basis) %>%
+  nest() %>%
+  mutate(stats= map(data, ~broom::tidy(
+    anova(aov_ez(id="subjects", dv = "lateral_alpha", data = ., within = c("alpha_bin","pre_cue_task","post_cue_attention")))
+  ))) %>%
+  dplyr::select(-data) %>%
+  unnest()%>%
+  filter(sort_basis == "sort_r_alpha_M_l_alpha")
+
+StatsOut %>%
+  mutate(
+    p.value = cell_spec(round(p.value,4), 
+                        color = ifelse(is.nan(p.value),"blue", ifelse(p.value < .05, "green", "red")),
+                        bold = ifelse(is.nan(p.value),F, ifelse(p.value < .05, T,F)),
+                        align = "center")
+  ) %>%
+  mutate(term = cell_spec(term, align = "center")) %>%
+  kable(escape = F, digits = c(3,3,3,3,3,3,3,3,3), caption = c("repeated measures ANOVA | dv = lateral alpha | results")) %>%
+  kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8)) #%>%
+  # row_spec(c(1:7), background = "white")%>%
+  # row_spec(c(8:14), background = "#F2F2F2")%>%
+  # row_spec(c(15:21), background = "#E3E3E3")
+
+
+```
+
+#### Illustration of potential results
+
+1.  (potential) main effect of **alpha**  
+<br>  
+
+```{r results_maina_alpha_bin, echo=TRUE, fig.height=6, fig.width=10, warning=FALSE}
+# main alpha bin
+model_dat_plot <- model_dat_st %>%
+  filter(sort_basis == "sort_r_alpha_M_l_alpha")%>%
+  gather(datatype, amplitude, -subjects, -alpha_bin, -pre_cue_task, -sort_basis, -post_cue_attention)%>%
+  group_by(subjects, alpha_bin, datatype) %>%
+  summarise(amplitude = mean(amplitude))
+
+ggplot(model_dat_plot, aes(x = alpha_bin, y = amplitude, fill = alpha_bin)) +
+  stat_summary(fun.data = mean_se, geom = "bar", position = "dodge") +
+  geom_hline(yintercept=0, show.legend = FALSE) +
+  geom_line(aes(group = subjects),alpha = 0.5, colour = "grey60") +
+  geom_point(size = 2.5, colour = "grey60",alpha = 0.6) +
+  # geom_point(size = 1.5, aes(colour  = post_cue_attention)) +
+  #geom_point(shape = 21,aes(fill  = post_cue_task, size = 0.5, stroke = 0.5)) +
+  # scale_x_discrete("conditions", , labels=c("attend cross","attend ring")) +
+  stat_summary(fun.data = mean_se, geom = "errorbar",position=position_dodge(width=0.95),width=.4, size=.9,colour = "grey40") +
+  # scale_x_discrete("alpha bins", breaks=waiver(), labels = rep(c("1","2","3","4","5"),1,5)) +
+  facet_grid(.~datatype)+
+  labs(title=sprintf("signal modulation post_cue - pre_cue | vis. location: %s",title_dataselection), 
+       subtitle="amplitude values in % of pre-cue amplitude averaged across all conditions | separate for alpha bins") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  ylab(expression(paste("amplitude modulation in %")))
+
+```
+
+2.  (potential) main effect of pre-cue task  
+<br>  
+
+```{r results_main_pre_cue_task, echo=TRUE, fig.height=6, fig.width=10, warning=FALSE}
+# main pre-cue task
+model_dat_plot <- model_dat_st %>%
+  filter(sort_basis == "sort_r_alpha_M_l_alpha")%>%
+  gather(datatype, amplitude, -subjects, -alpha_bin, -pre_cue_task, -sort_basis, -post_cue_attention)%>%
+  group_by(subjects, pre_cue_task, datatype) %>%
+  summarise(amplitude = mean(amplitude))
+
+
+ggplot(model_dat_plot, aes(x = pre_cue_task, y = amplitude, fill = pre_cue_task)) +
+  stat_summary(fun.data = mean_se, geom = "bar", position = "dodge") +
+  geom_hline(yintercept=0, show.legend = FALSE) +
+  geom_line(aes(group = subjects),alpha = 0.3, colour = "grey60") +
+  geom_point(size = 2.5, colour = "black",alpha = 0.3) +
+  # geom_point(size = 1.5, aes(colour  = post_cue_attention)) +
+  #geom_point(shape = 21,aes(fill  = post_cue_task, size = 0.5, stroke = 0.5)) +
+  # scale_x_discrete("conditions", , labels=c("attend cross","attend ring")) +
+  stat_summary(fun.data = mean_se, geom = "errorbar",position=position_dodge(width=0.95),width=.4, size=.9) +
+  # scale_x_discrete("alpha bins", breaks=waiver(), labels = rep(c("1","2","3","4","5"),1,5)) +
+  facet_grid(.~datatype)+
+  labs(title=sprintf("signal modulation post_cue - pre_cue | vis. location: %s",title_dataselection), 
+       subtitle="amplitude values in % of pre-cue amplitude averaged across all conditions | separate for pre-cue task") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  ylab(expression(paste("amplitude modulation in %")))
+
+```
+
+
+3.  (potential) main effect of post-cue attention  
+<br>  
+
+```{r results_main_post_cue_attention, echo=TRUE, fig.height=6, fig.width=10, warning=FALSE}
+# main post-cue attention
+model_dat_plot <- model_dat_st %>%
+  filter(sort_basis == "sort_r_alpha_M_l_alpha")%>%
+  gather(datatype, amplitude, -subjects, -alpha_bin, -pre_cue_task, -sort_basis, -post_cue_attention)%>%
+  group_by(subjects, post_cue_attention, datatype) %>%
+  summarise(amplitude = mean(amplitude))
+
+
+ggplot(model_dat_plot, aes(x = post_cue_attention, y = amplitude, fill = post_cue_attention)) +
+  stat_summary(fun.data = mean_se, geom = "bar", position = "dodge") +
+  geom_hline(yintercept=0, show.legend = FALSE) +
+  geom_line(aes(group = subjects),alpha = 0.3, colour = "grey60") +
+  geom_point(size = 2.5, colour = "black",alpha = 0.3) +
+  # geom_point(size = 1.5, aes(colour  = post_cue_attention)) +
+  #geom_point(shape = 21,aes(fill  = post_cue_task, size = 0.5, stroke = 0.5)) +
+  # scale_x_discrete("conditions", , labels=c("attend cross","attend ring")) +
+  stat_summary(fun.data = mean_se, geom = "errorbar",position=position_dodge(width=0.95),width=.4, size=.9) +
+  # scale_x_discrete("alpha bins", breaks=waiver(), labels = rep(c("1","2","3","4","5"),1,5)) +
+  facet_grid(.~datatype)+
+  labs(title=sprintf("signal modulation post_cue - pre_cue | vis. location: %s",title_dataselection), 
+       subtitle="amplitude values in % of pre-cue amplitude averaged across all conditions | separate for post_cue_attention") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  ylab(expression(paste("amplitude modulation in %")))
+```
+
+4.  (potential) interaction of post-cue attention X alpha_bins  
+<br>  
+
+```{r results_post_cue_attention_X_alpha_bins, echo=TRUE, fig.height=4, fig.width=10, warning=FALSE}
+# interaction of alpha bins and signals
+model_dat_plot <- model_dat_st %>%
+  filter(sort_basis == "sort_r_alpha_M_l_alpha")%>%
+  gather(datatype, amplitude, -subjects, -alpha_bin, -pre_cue_task, -sort_basis, -post_cue_attention)%>%
+  group_by(subjects, post_cue_attention, alpha_bin, datatype) %>%
+  summarise(amplitude = mean(amplitude))
+model_dat_plot2 <- model_dat_st %>%
+  filter(sort_basis == "sort_r_alpha_M_l_alpha")%>%
+  gather(datatype, amplitude, -subjects, -alpha_bin, -pre_cue_task, -sort_basis, -post_cue_attention)%>%
+  spread(post_cue_attention,amplitude) %>%
+  mutate(amplitude = attend_contra-attend_ipsi) %>%
+  dplyr::select(-attend_contra, -attend_ipsi) %>%
+  group_by(subjects, alpha_bin, datatype) %>%
+  summarise(amplitude = mean(amplitude))
+
+
+ggplot(model_dat_plot, aes(x = interaction(post_cue_attention,alpha_bin), y = amplitude, fill = post_cue_attention)) +
+  stat_summary(fun.data = mean_se, geom = "bar", position = "dodge") +
+  geom_hline(yintercept=0, show.legend = FALSE) +
+  geom_line(aes(group = interaction(subjects,alpha_bin)),alpha = 0.6, colour = "grey60") +
+  geom_point(size = 2.5, colour = "black",alpha = 0.2) +
+  # geom_point(size = 1.5, aes(colour  = post_cue_attention)) +
+  #geom_point(shape = 21,aes(fill  = post_cue_task, size = 0.5, stroke = 0.5)) +
+  # scale_x_discrete("conditions", , labels=c("attend cross","attend ring")) +
+  stat_summary(fun.data = mean_se, geom = "errorbar",position=position_dodge(width=0.95),width=.4, size=.9) +
+  scale_x_discrete("alpha bins", breaks=waiver(), labels = rep(c("1","1","2","2","3","3","4","4","5","5"),1,15)) +
+  facet_grid(.~datatype)+
+  labs(title=sprintf("signal modulation post_cue - pre_cue | vis. location: %s",title_dataselection), 
+       subtitle="amplitude values in % of pre-cue amplitude averaged across all conditions | separate for post_cue_attention and alpha bins") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  ylab(expression(paste("amplitude modulation in %")))
+
+
+theme_set(theme_bw())
+ggplot(model_dat_plot, aes(x = interaction(post_cue_attention,alpha_bin), y = amplitude, fill = post_cue_attention)) +
+  # stat_summary(fun.data = mean_se, geom = "bar", position = "dodge",width = 0.5) +
+  geom_hline(yintercept=0, show.legend = FALSE) +
+  geom_line(aes(group = interaction(subjects,alpha_bin)),alpha = 1, colour = "grey60") +
+  # geom_point(size = 2.5) +
+  # geom_point(size = 1.5, aes(colour  = post_cue_attention),position="jitter") +
+  geom_dotplot(binaxis='y', stackdir='center',stackratio=0.7, dotsize=10, binwidth = 0.2,position = position_jitter(w = 0.05, h = 0)) +
+   #geom_point(shape = 21,aes(fill  = post_cue_task, size = 0.5, stroke = 0.5)) +
+  # scale_x_discrete("conditions", , labels=c("attend cross","attend ring")) +
+  # stat_summary(fun.data = mean_se, geom = "errorbar", position=position_dodge(width=0.95),width=.3, size=.9) +
+  stat_summary(fun.y=mean, aes(ymin=..y.., ymax=..y.., color =post_cue_attention), geom='errorbar', width=0.9, size=1.25) + 
+  scale_x_discrete("alpha bins", breaks=waiver(), labels = rep(c("1","1","2","2","3","3","4","4","5","5"),1,15)) +
+  facet_grid(.~datatype)+
+  # scale_y_continuous(limits=c(-45,50),breaks = seq(-40, 50, by=10 )) +
+  # scale_fill_manual("post-cue attention", labels = c("contralateral to attended","contralateral to unattended"),
+  # values = c("grey40","grey80")) +
+  # scale_color_manual("post-cue attention", labels = c("contralateral to attended","contralateral to unattended"),
+  # values = c("grey40","grey80")) +
+  # scale_fill_manual("post-cue attention", labels = c("contralateral to attended","contralateral to unattended"),
+  #                   values = c("orangered","dodgerblue"),guide = guide_legend()) +
+  # scale_color_manual("post-cue attention", labels = c("contralateral to attended","contralateral to unattended"),
+  #                    values = c("orangered","dodgerblue"),guide = guide_legend()) +
+  # ggtitle("post_cue amplitude modulation")+
+  # theme(plot.title = element_text(hjust = 0.5),legend.position="bottom") +
+  theme(legend.position="bottom") +
+  ylab(expression(paste("pre to post amplitude modulation in %")))
+
+postscript("Plot4b.eps", width = 6.5, height = 3.5, paper = "special", horizontal=FALSE)
+ggplot(model_dat_plot, aes(x = interaction(post_cue_attention,alpha_bin), y = amplitude, fill = post_cue_attention)) +
+  # stat_summary(fun.data = mean_se, geom = "bar", position = "dodge",width = 0.5) +
+  geom_hline(yintercept=0, show.legend = FALSE) +
+  geom_line(aes(group = interaction(subjects,alpha_bin)),alpha = 1, colour = "grey60") +
+  # geom_point(size = 2.5) +
+  # geom_point(size = 1.5, aes(colour  = post_cue_attention),position="jitter") +
+  geom_dotplot(binaxis='y', stackdir='center',stackratio=0.7, dotsize=10, binwidth = 0.2,position = position_jitter(w = 0.05, h = 0)) +
+   #geom_point(shape = 21,aes(fill  = post_cue_task, size = 0.5, stroke = 0.5)) +
+  # scale_x_discrete("conditions", , labels=c("attend cross","attend ring")) +
+  # stat_summary(fun.data = mean_se, geom = "errorbar", position=position_dodge(width=0.95),width=.3, size=.9) +
+  stat_summary(fun.y=mean, aes(ymin=..y.., ymax=..y.., color =post_cue_attention), geom='errorbar', width=0.9, size=1.25) + 
+  scale_x_discrete("alpha bins", breaks=waiver(), labels = rep(c("1","1","2","2","3","3","4","4","5","5"),1,15)) +
+  facet_grid(.~datatype)+
+  # scale_y_continuous(limits=c(-45,50),breaks = seq(-40, 50, by=10 )) +
+  # scale_fill_manual("post-cue attention", labels = c("contralateral to attended","contralateral to unattended"),
+  # values = c("grey40","grey80")) +
+  # scale_color_manual("post-cue attention", labels = c("contralateral to attended","contralateral to unattended"),
+  # values = c("grey40","grey80")) +
+  # scale_fill_manual("post-cue attention", labels = c("contralateral to attended","contralateral to unattended"),
+  #                   values = c("orangered","dodgerblue"),guide = guide_legend()) +
+  # scale_color_manual("post-cue attention", labels = c("contralateral to attended","contralateral to unattended"),
+  #                    values = c("orangered","dodgerblue"),guide = guide_legend()) +
+  # ggtitle("post_cue amplitude modulation")+
+  # theme(plot.title = element_text(hjust = 0.5),legend.position="bottom") +
+  theme(legend.position="bottom") +
+  ylab(expression(paste("pre to post amplitude modulation in %")))
+dev.off()
+
+
+# publication
+postscript("Plot4.eps", width = 6.5, height = 3.5, paper = "special", horizontal=FALSE)
+theme_set(theme_bw())
+ggplot(model_dat_plot, aes(x = interaction(post_cue_attention,alpha_bin), y = amplitude, fill = post_cue_attention)) +
+  stat_summary(fun.data = mean_se, geom = "bar", position = "dodge",width = 0.5) +
+  geom_hline(yintercept=0, show.legend = FALSE) +
+  geom_line(aes(group = interaction(subjects,alpha_bin)),alpha = 1, colour = "grey60") +
+  # geom_point(size = 2.5, colour = "grey60",alpha = 1) +
+  geom_point(size = 1, aes(colour  = post_cue_attention)) +
+  #geom_point(shape = 21,aes(fill  = post_cue_task, size = 0.5, stroke = 0.5)) +
+  # scale_x_discrete("conditions", , labels=c("attend cross","attend ring")) +
+  stat_summary(fun.data = mean_se, geom = "errorbar",position=position_dodge(width=0.95),width=.4, size=.9) +
+  scale_x_discrete("alpha bins", breaks=waiver(), labels = rep(c("1","1","2","2","3","3","4","4","5","5"),1,15)) +
+  facet_grid(.~datatype)+
+  # labs(title=sprintf("signal modulation post_cue - pre_cue | vis. location: %s",title_dataselection), 
+  #      subtitle="amplitude values in % of pre-cue amplitude averaged across all conditions | separate for post_cue_attention and alpha bins") +
+  # theme(plot.title = element_text(hjust = 0.5)) +
+  theme(legend.position="bottom") +
+  ylab(expression(paste("pre to post amplitude modulation in %")))
+dev.off()
+
+
+theme_set(theme_bw())
+p1 = ggplot(model_dat_plot, aes(x = interaction(post_cue_attention,alpha_bin), y = amplitude, fill = post_cue_attention)) +
+  # stat_summary(fun.data = mean_se, geom = "bar", position = "dodge",width = 0.5) +
+  geom_hline(yintercept=0, show.legend = FALSE) +
+  geom_line(aes(group = interaction(subjects,alpha_bin)),alpha = 1, colour = "grey60") +
+  # geom_point(size = 2.5) +
+  # geom_point(size = 1.5, aes(colour  = post_cue_attention),position="jitter") +
+  geom_beeswarm(aes(color = post_cue_attention, x = interaction(post_cue_attention,alpha_bin), 
+                    shape = datatype, group = post_cue_attention), cex=1.5, size = 2)+
+  # geom_dotplot(binaxis='y', stackdir='center',stackratio=0.7, dotsize=10, binwidth = 0.2,position = position_jitter(w = 0.05, h = 0)) +
+   #geom_point(shape = 21,aes(fill  = post_cue_task, size = 0.5, stroke = 0.5)) +
+  # scale_x_discrete("conditions", , labels=c("attend cross","attend ring")) +
+  # stat_summary(fun.data = mean_se, geom = "errorbar", position=position_dodge(width=0.95),width=.3, size=.9) +
+  stat_summary(fun.y=mean, aes(ymin=..y.., ymax=..y.., color =post_cue_attention), geom='errorbar', width=0.9, size=1.5) + 
+  scale_x_discrete("alpha bins", breaks=waiver(), labels = rep(c("1","1","2","2","3","3","4","4","5","5"),1,15)) +
+  facet_grid(.~datatype)+
+  # scale_y_continuous(limits=c(-45,50),breaks = seq(-40, 50, by=10 )) +
+  # scale_fill_manual("post-cue attention", labels = c("contralateral to attended","contralateral to unattended"),
+  # values = c("grey40","grey80")) +
+  # scale_color_manual("post-cue attention", labels = c("contralateral to attended","contralateral to unattended"),
+  # values = c("grey40","grey80")) +
+  # scale_fill_manual("post-cue attention", labels = c("contralateral to attended","contralateral to unattended"),
+  #                   values = c("orangered","dodgerblue"),guide = guide_legend()) +
+  # scale_color_manual("post-cue attention", labels = c("contralateral to attended","contralateral to unattended"),
+  #                    values = c("orangered","dodgerblue"),guide = guide_legend()) +
+  # ggtitle("post_cue amplitude modulation")+
+  # theme(plot.title = element_text(hjust = 0.5),legend.position="bottom") +
+  theme(legend.position="bottom") +
+  ylab(expression(paste("pre to post amplitude modulation in %")))
+
+p2 = ggplot(model_dat_plot2, aes(x = alpha_bin, y = amplitude, fill = datatype, shape = datatype)) +
+  # stat_summary(fun.data = mean_se, geom = "bar", position = "dodge",width = 0.5) +
+  geom_hline(yintercept=0, show.legend = FALSE) +
+  # geom_line(aes(group = interaction(subjects,alpha_bin)),alpha = 1, colour = "grey60") +
+  # geom_point(size = 2.5) +
+  # geom_point(size = 1.5, aes(colour  = post_cue_attention),position="jitter") +
+  geom_beeswarm(aes(color = datatype, x = alpha_bin, shape = datatype, group = datatype), 
+                cex=1.5, size = 2, dodge.width = 0.55)+ 
+  # geom_dotplot( binaxis='y', aes(group = interaction(alpha_bin,datatype) , fill = datatype, x = alpha_bin), 
+  #               stackdir='center',stackratio=0.7,dotsize=15, binwidth = 0.2,
+  #               position = position_jitterdodge(jitter.width = 0.05, jitter.height = 0,dodge.width = 0.55)) +
+     #geom_point(shape = 21,aes(fill  = post_cue_task, size = 0.5, stroke = 0.5)) +
+  # scale_x_discrete("conditions", , labels=c("attend cross","attend ring")) +
+  # stat_summary(fun.data = mean_se, geom = "errorbar", position=position_dodge(width=0.95),width=.3, size=.9) +
+  stat_summary(fun.y=mean, aes(ymin=..y.., ymax=..y.., color =datatype, group = interaction(alpha_bin,datatype)), 
+               geom='errorbar', width=1, size=1.5, position = position_dodge(width = 0.55)) + 
+  # scale_x_discrete("alpha bins", breaks=waiver(), labels = rep(c("1","1","2","2","3","3","4","4","5","5"),1,15)) +
+  scale_y_continuous("pre to post amplitude modulation in %",limits=c(-45,45),breaks = seq(-40, 50, by=10 )) +
+  # scale_fill_manual("post-cue attention", labels = c("contralateral to attended","contralateral to unattended"),
+  # values = c("grey40","grey80")) +
+  # scale_color_manual("post-cue attention", labels = c("contralateral to attended","contralateral to unattended"),
+  # values = c("grey40","grey80")) +
+  # scale_fill_manual("post-cue attention", labels = c("contralateral to attended","contralateral to unattended"),
+  #                   values = c("orangered","dodgerblue"),guide = guide_legend()) +
+  # scale_color_manual("post-cue attention", labels = c("contralateral to attended","contralateral to unattended"),
+  #                    values = c("orangered","dodgerblue"),guide = guide_legend()) +
+  # ggtitle("post_cue amplitude modulation")+
+  # theme(plot.title = element_text(hjust = 0.5),legend.position="bottom") +
+  theme(legend.position="bottom")
+  # ylab(expression(paste("pre to post amplitude modulation in %")))
+figure1 <- multi_panel_figure(columns = 3, rows = 1, panel_label_type = "none", width = 8, height = 3.5, unit = "in")
+figure1 %<>%
+  fill_panel(p1, column = 1:2, row = 1) %<>%
+  fill_panel(p2, column = 3, row = 1)
+figure1
+save_multi_panel_figure(figure1, "Plot4c.eps")
+
+
+
+
+
+
+```
+
+```{r results_post_cue_attention_X_alpha_bins_diff, echo=TRUE, fig.height=4, fig.width=10, warning=FALSE}
+# interaction alpha bin
+model_dat_plot <- model_dat_st %>%
+  filter(sort_basis == "sort_r_alpha_M_l_alpha")%>%
+  group_by(subjects, post_cue_attention, alpha_bin) %>%
+  summarise(lateral_alpha = mean(lateral_alpha), SSVEP = mean(SSVEP)) %>%
+  gather(datatype, amplitude, -subjects, -alpha_bin, -post_cue_attention) %>%
+  spread(post_cue_attention,amplitude) %>%
+  mutate(amplitude = attend_contra-attend_ipsi) %>%
+  dplyr::select(-attend_contra, -attend_ipsi)
+
+ggplot(model_dat_plot, aes(x = alpha_bin, y = amplitude, fill = alpha_bin)) +
+  stat_summary(fun.data = mean_se, geom = "bar", position = "dodge") +
+  geom_hline(yintercept=0, show.legend = FALSE) +
+  geom_line(aes(group = subjects),alpha = 0.6, colour = "grey60") +
+  geom_point(size = 2.5, colour = "black",alpha = 0.2) +
+  # geom_point(size = 1.5, aes(colour  = post_cue_attention)) +
+  #geom_point(shape = 21,aes(fill  = post_cue_task, size = 0.5, stroke = 0.5)) +
+  # scale_x_discrete("conditions", , labels=c("attend cross","attend ring")) +
+  stat_summary(fun.data = mean_se, geom = "errorbar",position=position_dodge(width=0.95),width=.4, size=.9) +
+  scale_x_discrete("alpha bins", breaks=waiver(), labels = rep(c("1","1","2","2","3","3","4","4","5","5"),1,15)) +
+  facet_grid(.~datatype)+
+  labs(title=sprintf("signal modulation post_cue - pre_cue | attend contra - attend ipsi | vis. location: %s",title_dataselection), 
+       subtitle="amplitude values in % of pre-cue amplitude averaged across all conditions | difference of post_cue_attention for alpha bins") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  ylab(expression(paste("amplitude modulation in %")))
+
+```
+
+additional check of statistic models for SSVEP [*(potential) interaction of post-cue attention X alpha_bins*]
+
+```{r check_anova, echo=TRUE, fig.height=4, fig.width=12, warning=FALSE}
+anova_test <- model_dat_st %>%
+  filter(sort_basis=="sort_r_alpha_M_l_alpha") %>%
+  aov_ez(id="subjects", dv = "SSVEP", ., within = c("alpha_bin"))
+
+# full anova model
+anova_test_full <- model_dat_st %>%
+  filter(sort_basis=="sort_r_alpha_M_l_alpha") %>%
+  aov_ez(id="subjects", dv = "SSVEP", data = ., within = c("alpha_bin","pre_cue_task","post_cue_attention"))
+
+# anova_test_full <- model_dat_st %>%
+#   filter(sort_basis=="sort_r_alpha_M_l_alpha") %>%
+#   aov_ez(id="subjects", dv = "lateral_alpha", data = ., within = c("alpha_bin","pre_cue_task","post_cue_attention"))
+
+# follow up: 1. marginal means
+anova_lsmeans = lsmeans(anova_test_full,c("alpha_bin","post_cue_attention"))
+anova_lsmeans_c <- lsmeans(anova_test_full, c("post_cue_attention"), by="alpha_bin") # lsmeans(anova_test_full, ~post_cue_attention|alpha_bin)
+# paired t-tests (attention effects for phase bins)
+update(pairs(anova_lsmeans_c), by=NULL) %>% # adjust = "holm"
+  kable(escape = F, digits = c(3,3,3,3,3,3,3,3,3), caption = ("attention effects separate for phase bins")) %>%
+  kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
+# contrast(anova_lsmeans_c,method="pairwise")
+
+# paired t-tests: difference of differences (do attention effects differ between alpha bins?)
+pairs(update(pairs(anova_lsmeans_c), by=NULL)) %>%
+  kable(escape = F, digits = c(3,3,3,3,3,3,3,3,3), caption = ("difference of differences (do attention effects differ between alpha bins?)")) %>%
+  kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
+# get F-value from post-hoc comparisons
+test(pairs(update(pairs(anova_lsmeans_c), by=NULL)),joint=TRUE) %>%
+  kable(escape = F, digits = c(3,3,3,3,3,3,3,3,3), caption = ("F-value from post-hoc comparisons")) %>%
+  kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
+
+# polynomial contrast
+contrast(lsmeans(anova_test_full, ~alpha_bin),method="poly") %>%
+  kable(escape = F, digits = c(3,3,3,3,3,3,3,3,3), caption = ("polynomial contrasts")) %>%
+  kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
+
+# illustration
+lsmip(anova_test_full, post_cue_attention ~ alpha_bin)
+
+CLD = cld(anova_lsmeans_c,
+          alpha=0.05,
+          Letters=letters,      ### Use lower-case letters for .group
+          adjust="tukey")
+CLD$.group=gsub(" ", "", CLD$.group)
+
+ggplot(CLD, aes(x = alpha_bin, y = lsmean, color = post_cue_attention, label = .group)) +
+  geom_point(shape  = 15, size   = 4, position = position_dodge(0.4)) +
+  geom_errorbar(aes(ymin = lower.CL, ymax = upper.CL), width = 0.2, size  =  0.7, position = position_dodge(0.4)) +
+  theme_bw() +
+  theme(axis.title = element_text(face = "bold"), axis.text = element_text(face = "bold"),plot.caption = element_text(hjust = 0)) +
+  ylab(expression(paste("amplitude in % modulation"))) +
+     ggtitle (sprintf("alpha signal modulation post_cue - pre_cue | vis. location: %s",title_dataselection), 
+       subtitle="amplitude values in % of pre-cue amplitude averaged across all conditions | separate for post_cue_attention and alpha bins") +
+  scale_x_discrete("alpha bin", labels = c(1,2,3,4,5) ) +
+  labs(caption  = paste0("\nMeans sharing a letter are ",
+                         "not significantly different.",
+                         "(Un-adjusted comparisons)."), hjust=0.5) +
+  geom_text(nudge_x = c(0.1, -0.1, 0.1, -0.1, 0.1, -0.1, 0.1, -0.1, 0.1, -0.1),
+            nudge_y = c(4.7,  4.7, 4.7,  4.7, 4.7 , 4.7,  4.7, 4.7, 4.7, 4.7),
+            color   = "black")
+```
+
+### Actual modelling of SSVEP DATA | linear mixed models  
+<br>  
+
+1.  Model selection: which models are "superior"?  
+<br>  
+    1.  Model selection via step function [`lmerTest::step`] with Kenward-Roger approximation
+        + from most complex model
+        + Create linear mixed models: model post-cue amplitude modulations
+        + Which parameters are systematically related to changes of SSVEP amplitude?
+            + (**model_postAtt_T_PreCueTask_T_alpha**) with random slopes for pre_cue_task X post_cue_attention and random intercepts are modelled
+            + post-cue SSVEP amplitude modulation is related intersubject differences
+            + post-cue SSVEP amplitude modulation is related to post-cue attention condition
+            + post-cue SSVEP amplitude modulation is related to pre-cue task condition
+            + post-cue SSVEP amplitude modulation is related to post-cue alpha amplitude modulation (dependent on relation of ipsi alpha to contra alpha represented in alpha bins)
+             
+<br>  
+
+```{r linear_mixed_model_model_selection_step_ssvep, fig.height=6, fig.width=10, warning=FALSE, tidy.opts=list(blank=FALSE, width.cutoff=60)}
+lmer_model_dat_st <- model_dat_st %>%
+  filter(sort_basis=="sort_r_alpha_M_l_alpha") %>%
+  ungroup()
+  # lmer_model_dat_st$alpha_bin <- as.factor(lmer_model_dat_st$alpha_bin)
+
+
+# model_postAtt_T_PreCueTask_T_alpha2 <-lmerTest::lmer(SSVEP ~ post_cue_attention * pre_cue_task * alpha_bin + 
+#                                                (post_cue_attention*pre_cue_task | subjects),
+#                   data=lmer_model_dat_st, REML=TRUE)
+
+model_postAtt_T_PreCueTask_T_alpha2 <-lmerTest::lmer(SSVEP ~ post_cue_attention * pre_cue_task * alpha_bin + 
+                                               (post_cue_attention*pre_cue_task*alpha_bin | subjects),
+                  data=lmer_model_dat_st, REML=TRUE)
+model_estimation <- lmerTest::step(model_postAtt_T_PreCueTask_T_alpha2,ddf="Kenward-Roger",reduce.random=FALSE)
+best_model <- get_model(model_estimation)
+# print model estimation
+# model_estimation$random %>%
+#   kable(escape = F, digits = c(3,3,3,3), caption = c("random effects | stepwise elimintion")) %>%
+#   kable_styling("striped", full_width = F, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8),position = "left")
+model_estimation$fixed %>%
+  mutate(
+    `Pr(>F)` = cell_spec(ifelse(round(`Pr(>F)`,4)<.001,"< .001",round(`Pr(>F)`,4)), 
+                        color = ifelse(is.nan(`Pr(>F)`),"blue", ifelse(`Pr(>F)` < .05, "green", "red")),
+                        bold = ifelse(is.nan(`Pr(>F)`),F, ifelse(`Pr(>F)` < .05, T,F)),
+                        align = "center")) %>%
+  mutate(`eliminated factor` = rownames(model_estimation$fixed)) %>%
+  dplyr::select(colnames(.)[c(8,1:7)]) %>%
+  kable(escape = F, digits = c(3,3,3,3), caption = c("fixed effects | stepwise elimination")) %>%
+  kable_styling("striped", full_width = F, bootstrap_options = c("striped", "hover", "condensed", "responsive",
+                                                                 font_size = 8),position = "left")
+
+# ## reduced model (excluding pre-cue-task)
+# model_dat_plot <- model_dat_st %>%
+#   filter(sort_basis == "sort_r_alpha_M_l_alpha")%>%
+#   gather(datatype, amplitude, -subjects, -alpha_bin, -pre_cue_task, -sort_basis, -post_cue_attention)%>%
+#   group_by(subjects, post_cue_attention, alpha_bin, datatype) %>%
+#   summarise(amplitude = mean(amplitude))%>%
+#   spread(datatype, amplitude)
+# 
+# model_postAtt_T_PreCueTask_T_alpha3 <-lmerTest::lmer(SSVEP ~ post_cue_attention * alpha_bin + 
+#                                                (post_cue_attention*alpha_bin | subjects),
+#                   data=lmer_model_dat_st, REML=TRUE)
+# model_estimation <- lmerTest::step(model_postAtt_T_PreCueTask_T_alpha3,ddf="Kenward-Roger",reduce.random=FALSE)
+# best_model <- get_model(model_estimation)
+# # print model estimation
+# # model_estimation$random %>%
+# #   kable(escape = F, digits = c(3,3,3,3), caption = c("random effects | stepwise elimintion")) %>%
+# #   kable_styling("striped", full_width = F, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8),position = "left")
+# model_estimation$fixed %>%
+#   mutate(
+#     `Pr(>F)` = cell_spec(ifelse(round(`Pr(>F)`,4)<.001,"< .001",round(`Pr(>F)`,4)), 
+#                         color = ifelse(is.nan(`Pr(>F)`),"blue", ifelse(`Pr(>F)` < .05, "green", "red")),
+#                         bold = ifelse(is.nan(`Pr(>F)`),F, ifelse(`Pr(>F)` < .05, T,F)),
+#                         align = "center")) %>%
+#   mutate(`eliminated factor` = rownames(model_estimation$fixed)) %>%
+#   dplyr::select(colnames(.)[c(8,1:7)]) %>%
+#   kable(escape = F, digits = c(3,3,3,3), caption = c("fixed effects | stepwise elimination")) %>%
+#   kable_styling("striped", full_width = F, bootstrap_options = c("striped", "hover", "condensed", "responsive",
+#                                                                  font_size = 8),position = "left")
+
+```
+
+2.  model description of best model
+    + Best model is `r toString(best_model@call)`  
+<br>  
+
+``` {r linear_mixed_model_model_description_ssvep, fig.height=5, fig.width=8, warning=FALSE}
+model2test = best_model
+
+lmer_model_dat_st2 <- lmer_model_dat_st
+lmer_model_dat_st2$alpha_bin <-as.factor(lmer_model_dat_st2$alpha_bin)
+model2test = model_postAtt_T_PreCueTask_T_alpha2 <-lmerTest::lmer(SSVEP ~ post_cue_attention * pre_cue_task * alpha_bin + 
+                                               (post_cue_attention*pre_cue_task | subjects),
+                                               data=lmer_model_dat_st2, REML=TRUE)
+
+anova_lsmeans_c <- lsmeans(model2test, c("post_cue_attention")) 
+CLD = cld(anova_lsmeans_c,
+          alpha=0.05,
+          Letters=letters,      ### Use lower-case letters for .group
+          adjust="tukey")
+CLD$.group=gsub(" ", "", CLD$.group)
+
+ggplot(CLD, aes(x = post_cue_attention, y = lsmean, color = post_cue_attention, fill = post_cue_attention, label = .group)) +
+  stat_summary(fun.data = mean_se, geom = "bar", position = "dodge") +
+  geom_hline(yintercept=0, show.legend = FALSE) +
+  geom_errorbar(aes(ymin = lower.CL, ymax = upper.CL), width=.4, size=.9, position = position_dodge(0.4),color = "black") +
+  theme_bw() +
+  theme(axis.title = element_text(face = "bold"), axis.text = element_text(face = "bold"),plot.caption = element_text(hjust = 0)) +
+  ylab(expression(paste("amplitude modulation in %"))) +
+     ggtitle (sprintf("SSVEP signal modulation post_cue - pre_cue | vis. location: %s",title_dataselection), 
+       subtitle="amplitude values in % of pre-cue amplitude averaged across all conditions | separate for post_cue_attention") +
+  scale_x_discrete("post cue attention") +
+  labs(caption  = paste0("\nMeans sharing a letter are ",
+                         "not significantly different.",
+                         "(Un-adjusted comparisons)."), hjust=0.5) +
+  geom_text(nudge_x = c(0, -0),
+            nudge_y = c(4.7,  4.7),
+            color   = "black")
+
+anova_lsmeans_c <- lsmeans(model2test, c("pre_cue_task"))
+CLD = cld(anova_lsmeans_c,
+          alpha=0.05,
+          Letters=letters,      ### Use lower-case letters for .group
+          adjust="tukey")
+CLD$.group=gsub(" ", "", CLD$.group)
+
+ggplot(CLD, aes(x = pre_cue_task, y = lsmean, color = pre_cue_task, fill = pre_cue_task, label = .group)) +
+  stat_summary(fun.data = mean_se, geom = "bar", position = "dodge") +
+  geom_hline(yintercept=0, show.legend = FALSE) +
+  geom_errorbar(aes(ymin = lower.CL, ymax = upper.CL), width=.4, size=.9, position = position_dodge(0.4),color = "black") +
+  theme_bw() +
+  theme(axis.title = element_text(face = "bold"), axis.text = element_text(face = "bold"),plot.caption = element_text(hjust = 0)) +
+  ylab(expression(paste("amplitude modulation in %"))) +
+     ggtitle (sprintf("SSVEP signal modulation post_cue - pre_cue | vis. location: %s",title_dataselection),
+       subtitle="amplitude values in % of pre-cue amplitude averaged across all conditions | separate for pre_cue_task") +
+  scale_x_discrete("pre cue task") +
+  labs(caption  = paste0("\nMeans sharing a letter are ",
+                         "not significantly different.",
+                         "(Un-adjusted comparisons)."), hjust=0.5) +
+  geom_text(nudge_x = c(0, -0),
+            nudge_y = c(4.7,  4.7),
+            color   = "black")
+
+
+anova_lsmeans_c <- lsmeans(model2test, c("post_cue_attention"), by="pre_cue_task")
+CLD = cld(anova_lsmeans_c,
+          alpha=0.05,
+          Letters=letters,      ### Use lower-case letters for .group
+          adjust="tukey")
+CLD$.group=gsub(" ", "", CLD$.group)
+
+
+ggplot(CLD, aes(x = pre_cue_task, y = lsmean, color = post_cue_attention, fill = post_cue_attention,  label = .group)) +
+  stat_summary(fun.data = mean_se, geom = "bar", position = "dodge") +
+  geom_hline(yintercept=0, show.legend = FALSE) +
+  geom_errorbar(aes(ymin = lower.CL, ymax = upper.CL), width=.4, size=.9, position = position_dodge(0.89),color = "black") +
+  theme_bw() +
+  theme(axis.title = element_text(face = "bold"), axis.text = element_text(face = "bold"),plot.caption = element_text(hjust = 0)) +
+  ylab(expression(paste("amplitude modulation in %"))) +
+     ggtitle (sprintf("SSVEP signal modulation post_cue - pre_cue | vis. location: %s",title_dataselection),
+       subtitle="amplitude values in % of pre-cue amplitude averaged across all conditions | separate for post_cue_attention and pre-cue task") +
+  scale_x_discrete("pre_cue_task" ) +
+  labs(caption  = paste0("\nMeans sharing a letter are ",
+                         "not significantly different.",
+                         "(Un-adjusted comparisons)."), hjust=0.5) +
+  geom_text(nudge_x = c(0.1, -0.1, 0.1, -0.1),
+            nudge_y = c(4.7,  4.7, 4.7,  4.7),
+            color   = "black")
+
+anova_lsmeans_c <- lsmeans(model2test, c("alpha_bin"))
+CLD = cld(anova_lsmeans_c,
+          alpha=0.05,
+          Letters=letters,      ### Use lower-case letters for .group
+          adjust="tukey")
+CLD$.group=gsub(" ", "", CLD$.group)
+
+ggplot(CLD, aes(x = alpha_bin, y = lsmean, color = alpha_bin, fill = alpha_bin, label = .group)) +
+  stat_summary(fun.data = mean_se, geom = "bar", position = "dodge") +
+  geom_hline(yintercept=0, show.legend = FALSE) +
+  geom_errorbar(aes(ymin = lower.CL, ymax = upper.CL), width=.4, size=.9, position = position_dodge(0.4),color = "black") +
+  theme_bw() +
+  theme(axis.title = element_text(face = "bold"), axis.text = element_text(face = "bold"),plot.caption = element_text(hjust = 0)) +
+  ylab(expression(paste("amplitude modulation in %"))) +
+     ggtitle (sprintf("SSVEP signal modulation post_cue - pre_cue | vis. location: %s",title_dataselection),
+       subtitle="amplitude values in % of pre-cue amplitude averaged across all conditions | separate for alpha bins") +
+  scale_x_discrete("pre-cue task") +
+  labs(caption  = paste0("\nMeans sharing a letter are ",
+                         "not significantly different.",
+                         "(Un-adjusted comparisons)."), hjust=0.5) +
+  geom_text(nudge_x = c(0, -0),
+            nudge_y = c(4.7,  4.7),
+            color   = "black")
+
+# polynomial contrast
+tidy(contrast(lsmeans(model2test, ~alpha_bin),method="poly")) %>%
+  mutate(
+    `p.value` = cell_spec(ifelse(round(`p.value`,4)<.001,"< .001",round(`p.value`,4)),
+                        color = ifelse(is.nan(`p.value`),"blue", ifelse(`p.value` < .05, "green", "red")),
+                        bold = ifelse(is.nan(`p.value`),F, ifelse(`p.value` < .05, T,F)),
+                        align = "center")) %>%
+  kable(escape = F, digits = c(3,3,3,3,3,3,3,3,3), caption = ("polynomial contrasts")) %>%
+
+  kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
+# 
+# 
+# 
+# model2test = best_model
+anova_lsmeans_c <- lsmeans(model2test, c("post_cue_attention"), by="alpha_bin")
+
+CLD = cld(anova_lsmeans_c,
+          alpha=0.05,
+          Letters=letters,      ### Use lower-case letters for .group
+          adjust="tukey")
+CLD$.group=gsub(" ", "", CLD$.group)
+
+
+ggplot(CLD, aes(x = alpha_bin, y = lsmean, color = post_cue_attention, fill = post_cue_attention, label = .group)) +
+  stat_summary(fun.data = mean_se, geom = "bar", position = "dodge") +
+  geom_hline(yintercept=0, show.legend = FALSE) +
+  geom_errorbar(aes(ymin = lower.CL, ymax = upper.CL), width=.4, size=.9, position = position_dodge(0.89),color = "black") +
+  theme_bw() +
+  theme(axis.title = element_text(face = "bold"), axis.text = element_text(face = "bold"),plot.caption = element_text(hjust = 0)) +
+  ylab(expression(paste("amplitude modulation in %"))) +
+     ggtitle (sprintf("SSVEP signal modulation post_cue - pre_cue | vis. location: %s",title_dataselection),
+       subtitle="amplitude values in % of pre-cue amplitude averaged across all conditions | separate for post_cue_attention and alpha bins") +
+  scale_x_discrete("alpha bin", labels = c(1,2,3,4,5) ) +
+  labs(caption  = paste0("\nMeans sharing a letter are ",
+                         "not significantly different.",
+                         "(Un-adjusted comparisons)."), hjust=0.5) +
+  geom_text(nudge_x = c(0.1, -0.1, 0.1, -0.1, 0.1, -0.1, 0.1, -0.1, 0.1, -0.1),
+            nudge_y = c(4.7,  4.7, 4.7,  4.7, 4.7 , 4.7,  4.7, 4.7, 4.7, 4.7),
+            color   = "black")
+
+
+
+
+
+plot_model(model2test, bpe.style = "dot",show.values = TRUE)
+plot_model(model2test, type = "resid")
+# plot_model(model2test, type = "pred", terms = c("post_cue_attention","alpha_bin"))
+# plot_model(model2test, type = "pred", terms = c("alpha_bin","post_cue_attention"))
+
+
+
+
+
+```
+
+### Actual modelling of alpha DATA | linear mixed models  
+<br>  
+
+1.  Model selection: which models are "superior"?  
+<br>  
+    1.  Model selection via step function [`lmerTest::step`] with Kenward-Roger approximation
+        + from most complex model
+        + Create linear mixed models: model post-cue amplitude modulations
+        + Which parameters are systematically related to changes of alpha amplitude?
+            + (**model_postAtt_T_PreCueTask_T_alpha**) with random slopes for pre_cue_task X post_cue_attention and random intercepts are modelled
+            + post-cue alpha amplitude modulation is related intersubject differences
+            + post-cue alpha amplitude modulation is related to post-cue attention condition
+            + post-cue alpha amplitude modulation is related to pre-cue task condition
+            + post-cue alpha amplitude modulation is related to post-cue alpha amplitude modulation (dependent on relation of ipsi alpha to contra alpha represented in alpha bins)
+             
+<br>  
+
+```{r linear_mixed_model_model_selection_step_alpha, fig.height=6, fig.width=10, warning=FALSE, tidy.opts=list(blank=FALSE, width.cutoff=60)}
+lmer_model_dat_st <- model_dat_st %>%
+  filter(sort_basis=="sort_r_alpha_M_l_alpha") %>%
+  ungroup()
+  lmer_model_dat_st$alpha_bin <- as.factor(lmer_model_dat_st$alpha_bin)
+
+
+alpha_model_postAtt_T_PreCueTask_T_alpha <-lmerTest::lmer(lateral_alpha ~ post_cue_attention * pre_cue_task * alpha_bin + 
+                                               (post_cue_attention*pre_cue_task | subjects),
+                  data=lmer_model_dat_st, REML=TRUE)
+model_estimation <- lmerTest::step(alpha_model_postAtt_T_PreCueTask_T_alpha, ddf="Kenward-Roger", reduce.random=FALSE)
+best_model <- get_model(model_estimation)
+# print model estimation
+# model_estimation$random %>%
+#   kable(escape = F, digits = c(3,3,3,3), caption = c("random effects | stepwise elimintion")) %>%
+#   kable_styling("striped", full_width = F, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8),position = "left")
+model_estimation$fixed %>%
+  mutate(
+    `Pr(>F)` = cell_spec(ifelse(round(`Pr(>F)`,4)<.001,"< .001",round(`Pr(>F)`,4)), 
+                        color = ifelse(is.nan(`Pr(>F)`),"blue", ifelse(`Pr(>F)` < .05, "green", "red")),
+                        bold = ifelse(is.nan(`Pr(>F)`),F, ifelse(`Pr(>F)` < .05, T,F)),
+                        align = "center")) %>%
+  mutate(`eliminated factor` = rownames(model_estimation$fixed)) %>%
+  dplyr::select(colnames(.)[c(8,1:7)]) %>%
+  kable(escape = F, digits = c(3,3,3,3), caption = c("fixed effects | stepwise elimination")) %>%
+  kable_styling("striped", full_width = F, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8),position = "left")
+```
+
+2.  model description of best model
+    + Best model is `r toString(best_model@call)`  
+<br>  
+
+``` {r linear_mixed_model_model_description_alpha, fig.height=6, fig.width=10, warning=FALSE}
+model2test = best_model
+
+anova_lsmeans_c <- lsmeans(model2test, c("post_cue_attention")) 
+CLD = cld(anova_lsmeans_c,
+          alpha=0.05,
+          Letters=letters,      ### Use lower-case letters for .group
+          adjust="tukey")
+CLD$.group=gsub(" ", "", CLD$.group)
+
+ggplot(CLD, aes(x = post_cue_attention, y = lsmean, color = post_cue_attention, fill = post_cue_attention, label = .group)) +
+  stat_summary(fun.data = mean_se, geom = "bar", position = "dodge") +
+  geom_hline(yintercept=0, show.legend = FALSE) +
+  geom_errorbar(aes(ymin = lower.CL, ymax = upper.CL), width=.4, size=.9, position = position_dodge(0.4),color = "black") +
+  theme_bw() +
+  theme(axis.title = element_text(face = "bold"), axis.text = element_text(face = "bold"),plot.caption = element_text(hjust = 0)) +
+  ylab(expression(paste("amplitude modulation in %"))) +
+     ggtitle (sprintf("alpha signal modulation post_cue - pre_cue | vis. location: %s",title_dataselection), 
+       subtitle="amplitude values in % of pre-cue amplitude averaged across all conditions | separate for post_cue_attention") +
+  scale_x_discrete("post cue attention") +
+  labs(caption  = paste0("\nMeans sharing a letter are ",
+                         "not significantly different.",
+                         "(Un-adjusted comparisons)."), hjust=0.5) +
+  geom_text(nudge_x = c(0, -0),
+            nudge_y = c(4.7,  4.7),
+            color   = "black")
+
+# anova_lsmeans_c <- lsmeans(model2test, c("pre_cue_task"))
+# CLD = cld(anova_lsmeans_c,
+#           alpha=0.05,
+#           Letters=letters,      ### Use lower-case letters for .group
+#           adjust="tukey")
+# CLD$.group=gsub(" ", "", CLD$.group)
+# 
+# ggplot(CLD, aes(x = pre_cue_task, y = lsmean, color = pre_cue_task, fill = pre_cue_task, label = .group)) +
+#   stat_summary(fun.data = mean_se, geom = "bar", position = "dodge") +
+#   geom_hline(yintercept=0, show.legend = FALSE) +
+#   geom_errorbar(aes(ymin = lower.CL, ymax = upper.CL), width=.4, size=.9, position = position_dodge(0.4),color = "black") +
+#   theme_bw() +
+#   theme(axis.title = element_text(face = "bold"), axis.text = element_text(face = "bold"),plot.caption = element_text(hjust = 0)) +
+#   ylab(expression(paste("amplitude modulation in %"))) +
+#      ggtitle (sprintf("alpha signal modulation post_cue - pre_cue | vis. location: %s",title_dataselection),
+#        subtitle="amplitude values in % of pre-cue amplitude averaged across all conditions | separate for pre_cue_task") +
+#   scale_x_discrete("pre cue task") +
+#   labs(caption  = paste0("\nMeans sharing a letter are ",
+#                          "not significantly different.",
+#                          "(Un-adjusted comparisons)."), hjust=0.5) +
+#   geom_text(nudge_x = c(0, -0),
+#             nudge_y = c(4.7,  4.7),
+#             color   = "black")
+# 
+# 
+# anova_lsmeans_c <- lsmeans(model2test, c("post_cue_attention"), by="pre_cue_task")
+# CLD = cld(anova_lsmeans_c,
+#           alpha=0.05,
+#           Letters=letters,      ### Use lower-case letters for .group
+#           adjust="tukey")
+# CLD$.group=gsub(" ", "", CLD$.group)
+# 
+# 
+# ggplot(CLD, aes(x = pre_cue_task, y = lsmean, color = post_cue_attention, fill = post_cue_attention,  label = .group)) +
+#   stat_summary(fun.data = mean_se, geom = "bar", position = "dodge") +
+#   geom_hline(yintercept=0, show.legend = FALSE) +
+#   geom_errorbar(aes(ymin = lower.CL, ymax = upper.CL), width=.4, size=.9, position = position_dodge(0.89),color = "black") +
+#   theme_bw() +
+#   theme(axis.title = element_text(face = "bold"), axis.text = element_text(face = "bold"),plot.caption = element_text(hjust = 0)) +
+#   ylab(expression(paste("amplitude modulation in %"))) +
+#      ggtitle (sprintf("alpha signal modulation post_cue - pre_cue | vis. location: %s",title_dataselection),
+#        subtitle="amplitude values in % of pre-cue amplitude averaged across all conditions | separate for post_cue_attention and pre-cue task") +
+#   scale_x_discrete("pre_cue_task" ) +
+#   labs(caption  = paste0("\nMeans sharing a letter are ",
+#                          "not significantly different.",
+#                          "(Un-adjusted comparisons)."), hjust=0.5) +
+#   geom_text(nudge_x = c(0.1, -0.1, 0.1, -0.1),
+#             nudge_y = c(4.7,  4.7, 4.7,  4.7),
+#             color   = "black")
+
+anova_lsmeans_c <- lsmeans(model2test, c("alpha_bin"))
+CLD = cld(anova_lsmeans_c,
+          alpha=0.05,
+          Letters=letters,      ### Use lower-case letters for .group
+          adjust="tukey")
+CLD$.group=gsub(" ", "", CLD$.group)
+
+ggplot(CLD, aes(x = alpha_bin, y = lsmean, color = alpha_bin, fill = alpha_bin, label = .group)) +
+  stat_summary(fun.data = mean_se, geom = "bar", position = "dodge") +
+  geom_hline(yintercept=0, show.legend = FALSE) +
+  geom_errorbar(aes(ymin = lower.CL, ymax = upper.CL), width=.4, size=.9, position = position_dodge(0.4),color = "black") +
+  theme_bw() +
+  theme(axis.title = element_text(face = "bold"), axis.text = element_text(face = "bold"),plot.caption = element_text(hjust = 0)) +
+  ylab(expression(paste("amplitude modulation in %"))) +
+     ggtitle (sprintf("alpha signal modulation post_cue - pre_cue | vis. location: %s",title_dataselection),
+       subtitle="amplitude values in % of pre-cue amplitude averaged across all conditions | separate for alpha bins") +
+  scale_x_discrete("pre-cue task") +
+  labs(caption  = paste0("\nMeans sharing a letter are ",
+                         "not significantly different.",
+                         "(Un-adjusted comparisons)."), hjust=0.5) +
+  geom_text(nudge_x = c(0, -0),
+            nudge_y = c(4.7,  4.7),
+            color   = "black")
+
+# polynomial contrast
+tidy(contrast(lsmeans(best_model, ~alpha_bin),method="poly")) %>%
+  mutate(
+    `p.value` = cell_spec(ifelse(round(`p.value`,4)<.001,"< .001",round(`p.value`,4)),
+                        color = ifelse(is.nan(`p.value`),"blue", ifelse(`p.value` < .05, "green", "red")),
+                        bold = ifelse(is.nan(`p.value`),F, ifelse(`p.value` < .05, T,F)),
+                        align = "center")) %>%
+  kable(escape = F, digits = c(3,3,3,3,3,3,3,3,3), caption = ("polynomial contrasts")) %>%
+
+  kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
+
+
+
+model2test = best_model
+anova_lsmeans_c <- lsmeans(model2test, c("post_cue_attention"), by="alpha_bin")
+
+CLD = cld(anova_lsmeans_c,
+          alpha=0.05,
+          Letters=letters,      ### Use lower-case letters for .group
+          adjust="tukey")
+CLD$.group=gsub(" ", "", CLD$.group)
+
+
+ggplot(CLD, aes(x = alpha_bin, y = lsmean, color = post_cue_attention, fill = post_cue_attention, label = .group)) +
+  stat_summary(fun.data = mean_se, geom = "bar", position = "dodge") +
+  geom_hline(yintercept=0, show.legend = FALSE) +
+  geom_errorbar(aes(ymin = lower.CL, ymax = upper.CL), width=.4, size=.9, position = position_dodge(0.89),color = "black") +
+  theme_bw() +
+  theme(axis.title = element_text(face = "bold"), axis.text = element_text(face = "bold"),plot.caption = element_text(hjust = 0)) +
+  ylab(expression(paste("amplitude modulation in %"))) +
+     ggtitle (sprintf("alpha signal modulation post_cue - pre_cue | vis. location: %s",title_dataselection),
+       subtitle="amplitude values in % of pre-cue amplitude averaged across all conditions | separate for post_cue_attention and alpha bins") +
+  scale_x_discrete("alpha bin", labels = c(1,2,3,4,5) ) +
+  labs(caption  = paste0("\nMeans sharing a letter are ",
+                         "not significantly different.",
+                         "(Un-adjusted comparisons)."), hjust=0.5) +
+  geom_text(nudge_x = c(0.1, -0.1, 0.1, -0.1, 0.1, -0.1, 0.1, -0.1, 0.1, -0.1),
+            nudge_y = c(4.7,  4.7, 4.7,  4.7, 4.7 , 4.7,  4.7, 4.7, 4.7, 4.7),
+            color   = "black")
+
+
+
+
+
+plot_model(model2test, bpe.style = "dot",show.values = TRUE)
+# plot_model(model2test, type = "pred", terms = c("post_cue_attention","alpha_bin"))
+# plot_model(model2test, type = "pred", terms = c("alpha_bin","post_cue_attention"))
+
+
+
+
+
+```

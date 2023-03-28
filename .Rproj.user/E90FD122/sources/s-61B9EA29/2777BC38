@@ -1,0 +1,27 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1579876421727.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "2013516359",
+    "id" : "2777BC38",
+    "lastKnownWriteTime" : 1582554676,
+    "last_content_update" : 1582554676819,
+    "path" : "C:/Users/psy05cvd/Dropbox/work/R-statistics/experiments/ssvep_posnalpha_behave/ssvep_posnalpha_behave_analysis_behavior.Rmd",
+    "project_path" : "ssvep_posnalpha_behave_analysis_behavior.Rmd",
+    "properties" : {
+        "cursorPosition" : "542,6",
+        "docOutlineVisible" : "0",
+        "scrollLine" : "541",
+        "tempName" : "Untitled1"
+    },
+    "read_only" : false,
+    "read_only_alternatives" : [
+    ],
+    "relative_order" : 3,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_markdown"
+}

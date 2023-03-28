@@ -1,0 +1,8 @@
+"0","# read in data"
+"0","# filter subjects"
+"0","sub_sample = c(1:7)"
+"0",""
+"0","DataIn <- read_excel(DATAPath) %>%"
+"0","  mutate(subjects = as.factor(dense_rank(subjects)))%>%"
+"0","  filter(subjects %in% sub_sample)"
+"0","head(DataIn)"

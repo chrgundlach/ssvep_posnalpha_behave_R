@@ -1,0 +1,25 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1580502112729.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "4070685519",
+    "id" : "EC6E8FF5",
+    "lastKnownWriteTime" : 1568967206,
+    "last_content_update" : 1568967206,
+    "path" : "C:/Users/psy05cvd/Dropbox/work/R-statistics/experiments/TACS_ClosedLoop_VisAlpha/tACS_closed_loop_analysis_timebins.Rmd",
+    "project_path" : null,
+    "properties" : {
+        "cursorPosition" : "218,67",
+        "scrollLine" : "221"
+    },
+    "read_only" : false,
+    "read_only_alternatives" : [
+    ],
+    "relative_order" : 7,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_markdown"
+}

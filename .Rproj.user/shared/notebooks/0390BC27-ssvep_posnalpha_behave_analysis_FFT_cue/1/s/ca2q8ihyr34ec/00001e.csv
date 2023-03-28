@@ -1,0 +1,8 @@
+"0",""
+"0",""
+"0","# extract the posterior draws"
+"0","post_fit <- posterior_samples(fit_validity_alpha1_alpha2, , add_chain = T)"
+"0",""
+"0","# plot the intercept for chains"
+"0","mcmc_dens_overlay(post_fit, pars = c(""b_Intercept"")) +"
+"0","  theme(panel.grid = element_blank())"
