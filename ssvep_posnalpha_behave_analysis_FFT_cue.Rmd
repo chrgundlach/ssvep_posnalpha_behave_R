@@ -58,6 +58,9 @@ library(tidybayes)
 library(bayesplot)
 library(modelr)
 library(broom.mixed)
+library(magrittr)
+library(rstan)
+library(posterior)
 
 library(ggdist)
 
@@ -2386,7 +2389,11 @@ fit_z_SSVEP_alpha = brm(formula = post_RT ~ visualAlpha_contra_target + visualAl
           )  # Save all that hard work.
 
 # visual alpha contra target and contra non-target and SSVEP  + validity
+<<<<<<< Updated upstream
 fit_z_validity_SSVEP_alpha = brm(formula = post_RT ~ cue_validity_label + visualAlpha_contra_target + visualAlpha_contra_nontarget + SSVEP_z_contra_target + (cue_validity_label|subject),
+=======
+fit_z_validity_SSVEP_alpha = brm(formula = post_RT ~ cue_validity_label + visualAlpha_contra_target + visualAlpha_contra_nontarget + SSVEP_contra_target + (cue_validity_label|subject),
+>>>>>>> Stashed changes
           data = modeldata5, 
           family = shifted_lognormal(),
           file = 'fit_z_validity_SSVEP_alpha_slog',
@@ -2397,7 +2404,11 @@ fit_z_validity_SSVEP_alpha = brm(formula = post_RT ~ cue_validity_label + visual
           )  # Save all that hard work.
 
 fit_z_validity_x_SSVEP_alpha = brm(
+<<<<<<< Updated upstream
   formula = post_RT ~ cue_validity_label * visualAlpha_contra_target + cue_validity_label * visualAlpha_contra_nontarget + cue_z_validity_label * SSVEP_contra_target + (cue_validity_label|subject),
+=======
+  formula = post_RT ~ cue_validity_label * visualAlpha_contra_target + cue_validity_label * visualAlpha_contra_nontarget + cue_validity_label * SSVEP_contra_target + (cue_validity_label|subject),
+>>>>>>> Stashed changes
           data = modeldata5, 
           family = shifted_lognormal(),
           file = 'fit_z_validity_x_SSVEP_alpha_slog',
@@ -2679,20 +2690,21 @@ model_comp_BayesR2
 ```
 
 
-###   **model description**
+###   **model description | best model**
 <br>
 
 ```{r brms model for RTs best model description, fig.height=6, fig.width=10, warning=FALSE, eval = TRUE}
 # it seems as the model with visual alpha contra to the target and contra to the non target is superior?
-summary(fit_validity_alpha1_alpha2)
+best_brms_model <-  fit_validity_alpha1_alpha2
+summary(best_brms_model)
 
-plot(fit_validity_alpha1_alpha2, ask = FALSE)
-plot(conditional_effects(fit_validity_alpha1_alpha2), ask = FALSE)
-plot(conditional_effects(fit_validity_alpha1_alpha2, spaghetti=TRUE, ndraws = 100, points = TRUE), ask = FALSE)
+plot(best_brms_model, ask = FALSE)
+plot(conditional_effects(best_brms_model), ask = FALSE)
+plot(conditional_effects(best_brms_model, spaghetti=TRUE, ndraws = 100, points = TRUE), ask = FALSE)
 
 
 # extract the posterior draws
-post_fit <- posterior_samples(fit_validity_alpha1_alpha2, , add_chain = T)
+post_fit <- posterior_samples(best_brms_model, , add_chain = T)
 
 # plot the intercept for chains
 mcmc_dens_overlay(post_fit, pars = c("b_Intercept")) +
@@ -2701,59 +2713,241 @@ mcmc_dens_overlay(post_fit, pars = c("b_cue_validity_labelneutral")) +
   theme(panel.grid = element_blank())
 
 # rhat
-brms::rhat(fit_validity_alpha1_alpha2)["b_Intercept"]
+brms::rhat(best_brms_model)["b_Intercept"]
 
 
-pp_check(fit_validity_alpha1_alpha2)
-pp_check(fit_validity_alpha1_alpha2, type = "error_hist", ndraws=11)
-pp_check(fit_validity_alpha1_alpha2, type = "scatter_avg", ndraws=100)
-pp_check(fit_validity_alpha1_alpha2, type = "stat_2d")
-pp_check(fit_validity_alpha1_alpha2, type = "loo_pit")
+pp_check(best_brms_model)
+pp_check(best_brms_model, type = "error_hist", ndraws=11)
+pp_check(best_brms_model, type = "scatter_avg", ndraws=100)
+pp_check(best_brms_model, type = "stat_2d")
+pp_check(best_brms_model, type = "loo_pit")
 
-posterior_summary(fit_validity_alpha1_alpha2)
+best_brms_model.draws <- as_draws_df(best_brms_model)
+# tidybayes::summarise_draws(best_brms_model.draws) #not working
+
 
 
 
 ```
 
-<br>
-### working with the model
 
-#### use it to predict data
-
-```{r predict datas, fig.height=6, fig.width=10, warning=FALSE, eval = TRUE}
-# it seems as the model with visual alpha contra to the target and contra to the non target is superior?
-# alter data to extract post-cue alpha contra to target
-plot(fit_validity_alpha1_alpha2, ask = FALSE)
-plot(conditional_effects(fit_validity_alpha1_alpha2), ask = FALSE)
-
-# extract all fixed effects (and confidence intervals) that are relevant for the model
-# we basically modelled the fixed effects to affect the difficulty, mu-parameter
-tidy(fit_validity_alpha1_alpha2, effects = c("fixed"),
-     conf.int = TRUE, conf.level = 0.95)
-fixef(fit_validity_alpha1_alpha2)
-
-# other parameters relevant for the response time curves modelled as a shifted lognormal distribution: ndt = shift; sigma = scale
-# can be extracted from the summary function (with confidence intervals)
-summary(fit_validity_alpha1_alpha2)
-posterior_summary(as.data.frame(fit_validity_alpha1_alpha2)$sigma)
-posterior_summary(as.data.frame(fit_validity_alpha1_alpha2)$ndt)
-
-# predict RTs with model
-bestmodel.modeldata <- fit_validity_alpha1_alpha2$data
-# with all posteriors
-# bestmodel.predict <- posterior_predict(fit_validity_alpha1_alpha2)
-# summarized
-bestmodel.predict <- predict(fit_validity_alpha1_alpha2)
-# combine
-
-bestmodel.modeldata <- cbind(bestmodel.modeldata, as.data.frame(bestmodel.predict))
-
-```
 
 <br>
-#### plot predicted data
+#### use best model and estimate and visualize effects
 
-```{r plt attempts 1, fig.height=6, fig.width=10, warning=FALSE, eval = TRUE}
+```{r best model effect estimation,  fig.height=3.5, fig.width=5, warning=FALSE, eval = TRUE}
+# based on https://www.andrewheiss.com/blog/2021/11/10/ame-bayes-re-guide/
+# which model to use?
+bestmodel.ef.model <- fit_validity_alpha1_alpha2
+# what is the data of the model?
+bestmodel.ef.data <- fit_validity_alpha1_alpha2$data
+# see data
+head(bestmodel.ef.data)
+
+# show effects of the model
+tidy(bestmodel.ef.model)
+
+# create new data to use for posterior predictive distribution
+bestmodel.ef.newdata <- expand_grid(
+  cue_validity_label = c('valid','neutral','invalid'),
+  contra_target = c(10),
+  contra_nontarget = c(10),
+  subject = c(90)
+)
+# with NA for irrelevant factors (does it work? --> NO!)
+bestmodel.ef.newdata2 <- expand_grid(
+  cue_validity_label = c('valid','neutral','invalid'),
+  contra_target = as.factor(NA),
+  contra_nontarget = as.factor(NA),
+  subject = as.factor(NA)
+)
+
+# use range of data from orignal study 
+bestmodel.ef.newdata3 <- expand_grid(
+  cue_validity_label = c('valid','neutral','invalid'),
+  contra_target = median(bestmodel.ef.data$contra_target),
+  contra_nontarget = median(bestmodel.ef.data$contra_nontarget),
+  # contra_target = seq(min(bestmodel.ef.data$contra_target),max(bestmodel.ef.data$contra_target),1),
+  # contra_nontarget = seq(min(bestmodel.ef.data$contra_nontarget),max(bestmodel.ef.data$contra_nontarget),1),
+  # subject = as.factor(unique(bestmodel.ef.data$subject))
+  subject = as.factor(c(120)) # for a 'new' subject
+)
+
+# use 'predicted_draws' to draw from posterior predictive distribution
+# this still incorporates variance of each individual observation in the model
+# we may not want to have this around for marginal effects, awe we're more focused on the expected value
+bestmodel.ef.tidy_pred <- bestmodel.ef.model %>%
+  predicted_draws(newdata = bestmodel.ef.newdata3, allow_new_levels = TRUE)
+head(bestmodel.ef.tidy_pred)
+
+# use 'expected draws' ('epred_draws') as we're more intereste in the expected value of the outcome
+# which means we’re more focused on the uncertainty in the model parameters and not necessarily the individual-level residuals
+# same as fitte function (only with nicer wrapper)
+bestmodel.ef.tidy_exppred <- bestmodel.ef.model %>%
+  epred_draws(newdata = bestmodel.ef.newdata3, allow_new_levels = TRUE)
+head(bestmodel.ef.tidy_exppred)
+
+# plot variance and effects of predicted data
+ggplot(bestmodel.ef.tidy_exppred, aes(x = .epred, fill = cue_validity_label)) +
+  stat_halfeye(position = position_dodgejust(width = .3)) +
+  labs(x = "predicted RT in ms", y = "Density", fill = "Cue Validity") +
+  scale_fill_manual(values=c("#F1831A", "#293C4A", "#198A83")) +
+  scale_color_manual(values=c("#F1831A", "#293C4A", "#198A83"))
+theme(legend.position = "bottom")
+
+
+# different plot
+theme_set(theme_bw())
+plot1 <-
+  ggplot(bestmodel.ef.tidy_exppred, aes(
+    x = .epred, 
+    fill = cue_validity_label, fill_ramp = after_stat(abs(x)), 
+    color_ramp = after_stat(-dnorm(x, 0, 2))
+  )) +
+  stat_slab(
+    height = 2, color = "gray15",
+    expand = TRUE, trim = TRUE,
+    fill_type = "segments",
+    show.legend = FALSE,
+    position = position_dodgejust(0.3),
+  )+
+  theme(axis.text.y=element_blank(),axis.ticks.y=element_blank(), axis.title.y = element_blank())+
+  theme(axis.text.x=element_blank(),axis.ticks.x=element_blank(), axis.title.x = element_blank())+
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())+
+  scale_fill_manual(values=c("#F1831A", "#293C4A", "#198A83")) +
+  scale_color_manual(values=c("#F1831A", "#293C4A", "#198A83"))+
+  xlim(c(450, 900))
+
+plot2 <-
+  ggplot(bestmodel.ef.tidy_exppred, aes(
+    x = .epred, 
+    fill = cue_validity_label
+  )) +
+  stat_pointinterval(position = position_dodge(width = .4, preserve = "single"), 
+                     aes(color=cue_validity_label)) +
+  theme(axis.text.y=element_blank(),axis.ticks.y=element_blank(), axis.title.y = element_blank())+
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())+
+  scale_x_continuous(name="RT in ms", breaks=waiver(), labels=waiver(), limits=c(450,900))+
+  scale_fill_manual(values=c("#F1831A", "#293C4A", "#198A83")) +
+  scale_color_manual(values=c("#F1831A", "#293C4A", "#198A83"))
+
+# cowplot::plot_grid(plot1, plot2, plot3, ncol = 3,labels = "AUTO")
+plotttitle <- ggdraw() + draw_label("predicted RT in ms | average parameters", fontface='bold')
+plotplots <- ggarrange(plot1, plot2, nrow = 2, align = "v", heights =c(4,2), common.legend = TRUE)
+ggarrange(plotttitle, plotplots, nrow = 2, heights=c(0.1, 1))
+
+
+# now we want to see the effects using emmeans
+# check cue validity effect via pairwise comparisons
+# first the emmeans (point estimate = median)
+bestmodel.ef.model %>% 
+  emmeans(~ cue_validity_label,
+          epred = TRUE)%>%
+  kable(escape = F, digits = c(3,3,3,6,3,3,3,3,3), 
+        caption = c("average marginal effect | point measure = median of RT in ms")) %>%
+  # kable_classic(full_width = F) %>%
+  column_spec(1, bold = T)%>%
+  kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
+
+# pairwise comparisons
+bestmodel.ef.model %>% 
+  emmeans(~ cue_validity_label,
+          epred = TRUE)%>% 
+  contrast(method = "revpairwise")%>%
+  kable(escape = F, digits = c(3,3,3,6,3,3,3,3,3), 
+        caption = c("average marginal effect differences | point measure = median of RT in ms")) %>%
+  # kable_classic(full_width = F) %>%
+  column_spec(1, bold = T)%>%
+  kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
+
+
+# now gather all the single draws to be able to plot the variance
+bestmodel.ef.ef_draws_validity <- bestmodel.ef.model %>% 
+  emmeans(~ cue_validity_label,
+          epred = TRUE)%>% 
+  contrast(method = "revpairwise") %>%
+  gather_emmeans_draws()
+
+# plot the variance of the the effect (i.e. the averahe marginal effect)
+theme_set(theme_bw())
+ggplot(bestmodel.ef.ef_draws_validity, aes(x = .value, fill = contrast)) +
+  stat_halfeye() +
+  facet_grid(.~contrast) +
+  labs(x = "Average marginal effect in ms", y = "Density") +
+  theme(legend.position = "bottom")
+
+
+theme_set(theme_bw())
+ggplot(bestmodel.ef.ef_draws_validity, aes(y = contrast, x = .value)) +
+  stat_halfeye(
+    aes(fill = contrast, fill_ramp = after_stat(level)),
+    .width = c(.95, 1),
+    position = "dodgejust",
+  ) +
+  labs(
+    title = "Average marginal effect in ms", 
+    subtitle = "for all draws of the model",
+    fill_ramp = "interval",
+    x = "difference in ms"
+  )
+
+
+# now trying to get the regression line right for the alpha predictors
+
+
+## alpha contra target
+# use range of data from orignal study with varying alpha contra target (in range of original data)
+bestmodel.ef.newdata4 <- expand_grid(
+  cue_validity_label = c('valid','neutral','invalid'),
+  # contra_target = median(bestmodel.ef.data$contra_target),
+  contra_nontarget = median(bestmodel.ef.data$contra_nontarget),
+  contra_target = seq(min(bestmodel.ef.data$contra_target),max(bestmodel.ef.data$contra_target),1),
+  # contra_nontarget = seq(min(bestmodel.ef.data$contra_nontarget),max(bestmodel.ef.data$contra_nontarget),1),
+  # subject = as.factor(unique(bestmodel.ef.data$subject))
+  subject = as.factor(c(120)) # for a 'new' subject
+)
+
+# use 'expected draws' ('epred_draws') as we're more intereste in the expected value of the outcome
+# which means we’re more focused on the uncertainty in the model parameters and not necessarily the individual-level residuals
+# same as fitte function (only with nicer wrapper)
+bestmodel.ef.tidy_exppred2 <- bestmodel.ef.model %>%
+  epred_draws(newdata = bestmodel.ef.newdata4, allow_new_levels = TRUE)
+head(bestmodel.ef.tidy_exppred2)
+
+theme_set(theme_bw())
+ggplot(bestmodel.ef.tidy_exppred2, aes(x = contra_target, y = .epred)) +
+  stat_lineribbon(.width = c(0.5, 0.8, 0.95, 1)) + 
+  scale_fill_brewer(palette = "Reds") +
+  labs(x = "alpha amplitude contra target", y = "predicted RT",
+       fill = "Credible interval") +
+  theme(legend.position = "bottom")
+
+## alpha contra nontarget
+# use range of data from orignal study with varying alpha contra target (in range of original data)
+bestmodel.ef.newdata5 <- expand_grid(
+  cue_validity_label = c('valid','neutral','invalid'),
+  contra_target = median(bestmodel.ef.data$contra_target),
+  # contra_nontarget = median(bestmodel.ef.data$contra_nontarget),
+  # contra_target = seq(min(bestmodel.ef.data$contra_target),max(bestmodel.ef.data$contra_target),1),
+  contra_nontarget = seq(min(bestmodel.ef.data$contra_nontarget),max(bestmodel.ef.data$contra_nontarget),1),
+  # subject = as.factor(unique(bestmodel.ef.data$subject))
+  subject = as.factor(c(120)) # for a 'new' subject
+)
+
+# use 'expected draws' ('epred_draws') as we're more intereste in the expected value of the outcome
+# which means we’re more focused on the uncertainty in the model parameters and not necessarily the individual-level residuals
+# same as fitte function (only with nicer wrapper)
+bestmodel.ef.tidy_exppred3 <- bestmodel.ef.model %>%
+  epred_draws(newdata = bestmodel.ef.newdata5, allow_new_levels = TRUE)
+head(bestmodel.ef.tidy_exppred3)
+
+theme_set(theme_bw())
+ggplot(bestmodel.ef.tidy_exppred3, aes(x = contra_nontarget, y = .epred)) +
+  stat_lineribbon(.width = c(0.5, 0.8, 0.95, 1)) + 
+  scale_fill_brewer(palette = "Blues") +
+  labs(x = "alpha amplitude contra nontarget", y = "predicted RT",
+       fill = "Credible interval") +
+  theme(legend.position = "bottom")
+
 
 ```
