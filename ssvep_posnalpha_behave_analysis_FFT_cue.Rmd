@@ -2227,7 +2227,7 @@ fit_z_validity_visalpha = brm(formula = post_RT ~ cue_validity_label + post_cue_
           # file_refit = "always"
           )  # Save all that hard work.
 
-visual alpha contra target * validity
+# visual alpha contra target * validity
 fit_z_validity_x_visalpha = brm(formula = post_RT ~ cue_validity_label * post_cue_vis_alpha_contra_target + (cue_validity_label|subject),
           data = modeldata2, 
           family = shifted_lognormal(),
@@ -2249,7 +2249,9 @@ fit_z_alpha2 = brm(formula = post_RT ~ post_cue_vis_alpha_contra_nontarget + (1|
           family = shifted_lognormal(),
           file = 'fit_z_visalpha2_slog',
           save_pars = save_pars(all = TRUE),
-          file_refit = "on_change"# file_refit = "always"
+          file_refit = "on_change",
+          cores = 4
+          # file_refit = "always"
           )  # Save all that hard work.
 
 # visual alpha contra nontarget + validity
@@ -2258,7 +2260,8 @@ fit_z_validity_alpha2 = brm(formula = post_RT ~ cue_validity_label + post_cue_vi
           family = shifted_lognormal(),
           file = 'fit_z_validity_visalpha2_slog',
           save_pars = save_pars(all = TRUE),
-          file_refit = "on_change"
+          file_refit = "on_change",
+          cores = 4
           # file_refit = "always"
           )  # Save all that hard work.
 
@@ -2268,7 +2271,8 @@ fit_z_validity_x_alpha2 = brm(formula = post_RT ~ cue_validity_label * post_cue_
           family = shifted_lognormal(),
           file = 'fit_z_validity_x_visalpha2_slog',
           save_pars = save_pars(all = TRUE),
-          file_refit = "on_change"
+          file_refit = "on_change",
+          cores = 4
           # file_refit = "always"
           )  # Save all that hard work.
 
@@ -2276,7 +2280,7 @@ fit_z_validity_x_alpha2 = brm(formula = post_RT ~ cue_validity_label * post_cue_
 # alter data to extract post-cue alpha contra to target
 modeldata4 = DATA.In_longer %>%
   filter(post_hit == "hit", signal == "visualAlpha", time == "[500 1500]ms")%>%
-  dplyr::select(subject, trialnumber, cue_validity_label, post_RT, pos_rel_target, amplitude) %>%
+  dplyr::select(subject, trialnumber, cue_validity_label, post_RT, pos_rel_target, Zamplitude) %>%
   pivot_wider(names_from = "pos_rel_target", values_from = Zamplitude)
 
 # visual alpha contra target and contra non-target
@@ -2285,7 +2289,8 @@ fit_z_alpha1_alpha2 = brm(formula = post_RT ~ contra_target + contra_nontarget +
           family = shifted_lognormal(),
           file = 'fit_z_visalpha1_visalpha2_slog',
           save_pars = save_pars(all = TRUE),
-          file_refit = "on_change"
+          file_refit = "on_change",
+          cores = 4
           # file_refit = "always"
           )  # Save all that hard work.
 
@@ -2295,7 +2300,8 @@ fit_z_validity_alpha1_alpha2 = brm(formula = post_RT ~ cue_validity_label + cont
           family = shifted_lognormal(),
           file = 'fit_z_validity_visalpha1_visalpha2_slog',
           save_pars = save_pars(all = TRUE),
-          file_refit = "on_change"
+          file_refit = "on_change",
+          cores = 4
           # file_refit = "always"
           )  # Save all that hard work.
 
@@ -2306,7 +2312,8 @@ fit_z_validity_x_alpha1_alpha2 = brm(
           family = shifted_lognormal(),
           file = 'fit_z_validity_x_visalpha1_visalpha2_slog',
           save_pars = save_pars(all = TRUE),
-          file_refit = "on_change"
+          file_refit = "on_change",
+          cores = 4
           # file_refit = "always"
           )  # Save all that hard work.
 
@@ -2332,7 +2339,8 @@ fit_z_SSVEP = brm(formula = post_RT ~ post_cue_SSVEP_contra_target + (1|subject)
           family = shifted_lognormal(),
           file = 'fit_z_ssvep_slog',
           save_pars = save_pars(all = TRUE),
-          file_refit = "on_change"
+          file_refit = "on_change",
+          cores = 4
           # file_refit = "always"
           )  # Save all that hard work.
 
@@ -2342,7 +2350,8 @@ fit_z_validity_SSVEP = brm(formula = post_RT ~ cue_validity_label + post_cue_SSV
           family = shifted_lognormal(),
           file = 'fit_z_validity_ssvep_slog',
           save_pars = save_pars(all = TRUE),
-          file_refit = "on_change"
+          file_refit = "on_change",
+          cores = 4
           # file_refit = "always"
           )  # Save all that hard work.
 
@@ -2351,7 +2360,8 @@ fit_z_validity_x_SSVEP = brm(formula = post_RT ~ cue_validity_label * post_cue_S
           family = shifted_lognormal(),
           file = 'fit_z_validity_x_ssvep_slog',
           save_pars = save_pars(all = TRUE),
-          file_refit = "on_change"
+          file_refit = "on_change",
+          cores = 4
           # file_refit = "always"
           )  # Save all that hard work.
 
@@ -2361,7 +2371,7 @@ fit_z_validity_x_SSVEP = brm(formula = post_RT ~ cue_validity_label * post_cue_S
 # alter data to extract post-cue alpha contra to target
 modeldata5 = DATA.In_longer %>%
   filter(post_hit == "hit", signal != "motorAlpha", time == "[500 1500]ms")%>%
-  dplyr::select(subject, trialnumber, cue_validity_label, post_RT, signal, pos_rel_target, amplitude) %>%
+  dplyr::select(subject, trialnumber, cue_validity_label, post_RT, signal, pos_rel_target, Zamplitude) %>%
   pivot_wider(names_from = c("signal", "pos_rel_target"), values_from = Zamplitude)
 
 # visual alpha contra target and contra non-target and SSVEP
@@ -2370,27 +2380,30 @@ fit_z_SSVEP_alpha = brm(formula = post_RT ~ visualAlpha_contra_target + visualAl
           family = shifted_lognormal(),
           file = 'fit_z_SSVEP_alpha_slog',
           save_pars = save_pars(all = TRUE),
-          file_refit = "on_change"
+          file_refit = "on_change",
+          cores = 4
           # file_refit = "always"
           )  # Save all that hard work.
 
 # visual alpha contra target and contra non-target and SSVEP  + validity
-fit_validity_SSVEP_alpha = brm(formula = post_RT ~ cue_validity_label + visualAlpha_contra_target + visualAlpha_contra_nontarget + SSVEP_z_contra_target + (cue_validity_label|subject),
+fit_z_validity_SSVEP_alpha = brm(formula = post_RT ~ cue_validity_label + visualAlpha_contra_target + visualAlpha_contra_nontarget + SSVEP_z_contra_target + (cue_validity_label|subject),
           data = modeldata5, 
           family = shifted_lognormal(),
           file = 'fit_z_validity_SSVEP_alpha_slog',
           save_pars = save_pars(all = TRUE),
-          file_refit = "on_change"
+          file_refit = "on_change",
+          cores = 4
           # file_refit = "always"
           )  # Save all that hard work.
 
-fit_validity_x_SSVEP_alpha = brm(
+fit_z_validity_x_SSVEP_alpha = brm(
   formula = post_RT ~ cue_validity_label * visualAlpha_contra_target + cue_validity_label * visualAlpha_contra_nontarget + cue_z_validity_label * SSVEP_contra_target + (cue_validity_label|subject),
           data = modeldata5, 
           family = shifted_lognormal(),
           file = 'fit_z_validity_x_SSVEP_alpha_slog',
           save_pars = save_pars(all = TRUE),
-          file_refit = "on_change"
+          file_refit = "on_change",
+          cores = 4
           # file_refit = "always"
           )  # Save all that hard work.
 
@@ -2426,6 +2439,23 @@ fit_validity_x_SSVEP <- add_criterion(fit_validity_x_SSVEP, c("loo", "waic", "ba
 fit_SSVEP_alpha <- add_criterion(fit_SSVEP_alpha, c("loo", "waic", "bayes_R2"))
 fit_validity_SSVEP_alpha <- add_criterion(fit_validity_SSVEP_alpha, c("loo", "waic", "bayes_R2"))
 fit_validity_x_SSVEP_alpha <- add_criterion(fit_validity_x_SSVEP_alpha, c("loo", "waic", "bayes_R2"))
+
+# zscored models
+fit_z_visalpha <- add_criterion(fit_z_visalpha, c("loo", "waic", "bayes_R2"))
+fit_z_validity_visalpha <- add_criterion(fit_z_validity_visalpha, c("loo", "waic", "bayes_R2"))
+fit_z_validity_x_visalpha <- add_criterion(fit_z_validity_x_visalpha, c("loo", "waic", "bayes_R2"))
+fit_z_alpha2 <- add_criterion(fit_z_alpha2, c("loo", "waic", "bayes_R2"))
+fit_z_validity_alpha2 <- add_criterion(fit_z_validity_alpha2, c("loo", "waic", "bayes_R2"))
+fit_z_validity_x_alpha2 <- add_criterion(fit_z_validity_x_alpha2, c("loo", "waic", "bayes_R2"))
+fit_z_alpha1_alpha2 <- add_criterion(fit_z_alpha1_alpha2, c("loo", "waic", "bayes_R2"))
+fit_z_validity_alpha1_alpha2 <- add_criterion(fit_z_validity_alpha1_alpha2, c("loo", "waic", "bayes_R2"))
+fit_z_validity_x_alpha1_alpha2 <- add_criterion(fit_z_validity_x_alpha1_alpha2, c("loo", "waic", "bayes_R2"))
+fit_z_SSVEP <- add_criterion(fit_z_SSVEP, c("loo", "waic", "bayes_R2"))
+fit_z_validity_SSVEP <- add_criterion(fit_z_validity_SSVEP, c("loo", "waic", "bayes_R2"))
+fit_z_validity_x_SSVEP <- add_criterion(fit_z_validity_x_SSVEP, c("loo", "waic", "bayes_R2"))
+fit_z_SSVEP_alpha <- add_criterion(fit_z_SSVEP_alpha, c("loo", "waic", "bayes_R2"))
+fit_z_validity_SSVEP_alpha <- add_criterion(fit_z_validity_SSVEP_alpha, c("loo", "waic", "bayes_R2"))
+fit_z_validity_x_SSVEP_alpha <- add_criterion(fit_z_validity_x_SSVEP_alpha, c("loo", "waic", "bayes_R2"))
 
 
 
