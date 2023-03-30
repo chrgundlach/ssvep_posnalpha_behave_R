@@ -2483,6 +2483,26 @@ priors = c(
   set_prior('normal(150, 50)', class = 'ndt')  # some variability between participants
 )
 
+priors_intercept = c(
+  set_prior('normal(6.2, 0.5)', class = 'Intercept'),  # around exp(6) = 600ms
+  set_prior('normal(0.26, 0.5)', class = 'sigma'),  # SD of individual rts in log-units exp 5.298 = 200
+  set_prior('normal(0.1, 0.5)', class = 'sd'),  # some variability between participants
+  set_prior('normal(150, 50)', class = 'ndt')  # some variability between participants
+)
+
+priors_ndt = c(
+  set_prior('normal(6.2, 0.5)', class = 'Intercept'),  # around exp(6) = 600ms
+  set_prior('normal(0.26, 0.5)', class = 'sigma'),  # SD of individual rts in log-units exp 5.298 = 200
+  set_prior('normal(0,  0.5)', class = 'b'),  # around 150 ms in each direction of effect
+  set_prior('normal(0.1, 0.5)', class = 'sd')  # some variability between participants
+  )
+
+priors_intercept_ndt = c(
+  set_prior('normal(6.2, 0.5)', class = 'Intercept'),  # around exp(6) = 600ms
+  set_prior('normal(0.26, 0.5)', class = 'sigma'),  # SD of individual rts in log-units exp 5.298 = 200
+  set_prior('normal(0.1, 0.5)', class = 'sd')  # some variability between participants
+  )
+
 # alter data to extract post-cue alpha contra to target
 modeldata2 = DATA.In_longer %>%
   filter(post_hit == "hit", signal == "visualAlpha", time == "[500 1500]ms", pos_rel_target == "contra_target")%>%
@@ -2505,6 +2525,16 @@ testfit_validity_drawpriorsOnly = brm(
 pp_check(testfit_validity_drawpriorsOnly)+
   coord_cartesian(xlim = c(-1, 1000))
 
+get_prior(formula = bf(post_RT ~ cue_validity_label + (cue_validity_label|subject), ndt ~ 1 + (1|subject)),
+  data = modeldata2, 
+  family = shifted_lognormal()
+)
+
+get_prior(formula = bf(post_RT ~ cue_validity_label + (cue_validity_label|subject)),
+  data = modeldata2, 
+  family = shifted_lognormal()
+)
+
 # now do real models
 # intercept model without priors
 testfit_intecept_noPRIORs = brm(
@@ -2526,10 +2556,12 @@ testfit_intecept_withPRIORs = brm(
   file = 'testfit_intecept_withPRIORs_slog',
   save_pars = save_pars(all = TRUE),
   file_refit = "on_change",
-  prior = priors,
+  prior = priors_intercept,
   cores = 4
   # file_refit = "always"
 )  # Save all that hard work.
+
+
 
 # validity model without priors
 testfit_validity_noPRIORs = brm(
@@ -2570,9 +2602,7 @@ testfit_validity_drawpriorsOnly = brm(
   # file_refit = "always"
 )  # Save all that hard work.
 
-# grapically check priors
-pp_check(testfit_validity_drawpriorsOnly)+
-  coord_cartesian(xlim = c(-1, 1000))
+
 
 # now do real models with ndt shift
 # intercept model without priors
@@ -2595,7 +2625,7 @@ testfit_intecept_ndt_withPRIORs = brm(
   file = 'testfit_intecept_ndt_withPRIORs_slog',
   save_pars = save_pars(all = TRUE),
   file_refit = "on_change",
-  prior = priors,
+  prior = priors_intercept_ndt,
   cores = 4
   # file_refit = "always"
 )  # Save all that hard work.
@@ -2620,12 +2650,39 @@ testfit_validity_ndt_withPRIORs = brm(
   file = 'testfit_validity_ndt_withPRIORs_slog',
   save_pars = save_pars(all = TRUE),
   file_refit = "on_change",
-  prior = priors,
+  prior = priors_ndt,
   cores = 4
   # file_refit = "always"
 )  # Save all that hard work.
 
 
+# add information criteria
+testfit_intecept_noPRIORs <- add_criterion(testfit_intecept_noPRIORs, c("loo", "waic", "bayes_R2"))
+testfit_intecept_withPRIORs <- add_criterion(testfit_intecept_withPRIORs, c("loo", "waic", "bayes_R2"))
+testfit_intecept_ndt_noPRIORs <- add_criterion(testfit_intecept_ndt_noPRIORs, c("loo", "waic", "bayes_R2"))
+testfit_intecept_ndt_withPRIORs <- add_criterion(testfit_intecept_ndt_withPRIORs, c("loo", "waic", "bayes_R2"))
+testfit_validity_noPRIORs <- add_criterion(testfit_validity_noPRIORs, c("loo", "waic", "bayes_R2"))
+testfit_validity_withPRIORs <- add_criterion(testfit_validity_withPRIORs, c("loo", "waic", "bayes_R2"))
+testfit_validity_ndt_noPRIORs <- add_criterion(testfit_validity_ndt_noPRIORs, c("loo", "waic", "bayes_R2"))
+testfit_validity_ndt_withPRIORs <- add_criterion(testfit_validity_ndt_withPRIORs, c("loo", "waic", "bayes_R2"))
+
+
+plot(testfit_intecept_noPRIORs, ask = FALSE)
+plot(conditional_effects(testfit_intecept_noPRIORs), ask = FALSE)
+plot(testfit_intecept_withPRIORs, ask = FALSE)
+plot(conditional_effects(testfit_intecept_withPRIORs), ask = FALSE)
+plot(testfit_intecept_ndt_noPRIORs, ask = FALSE)
+plot(conditional_effects(testfit_intecept_ndt_noPRIORs), ask = FALSE)
+plot(testfit_intecept_ndt_withPRIORs, ask = FALSE)
+plot(conditional_effects(testfit_intecept_ndt_withPRIORs), ask = FALSE)
+plot(testfit_validity_noPRIORs, ask = FALSE)
+plot(conditional_effects(testfit_validity_noPRIORs), ask = FALSE)
+plot(testfit_validity_withPRIORs, ask = FALSE)
+plot(conditional_effects(testfit_validity_withPRIORs), ask = FALSE)
+plot(testfit_validity_ndt_noPRIORs, ask = FALSE)
+plot(conditional_effects(testfit_validity_ndt_noPRIORs), ask = FALSE)
+plot(testfit_validity_ndt_withPRIORs, ask = FALSE)
+plot(conditional_effects(testfit_validity_ndt_withPRIORs), ask = FALSE)
 
 ```
 
