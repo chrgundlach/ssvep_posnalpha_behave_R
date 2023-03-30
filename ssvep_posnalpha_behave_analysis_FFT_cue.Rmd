@@ -2449,6 +2449,286 @@ fit_z_validity_x_SSVEP_alpha = brm(
 ```
 
 
+### **estimating models | ndt/shift vary across subjects**
+<br>
+
+as above but having ndt/shift vary across subjects
+
+``` {r brms model for RTs 03 eval, fig.height=6, fig.width=10, warning=FALSE, eval = TRUE}
+#define priors: [needs rechecking!]
+# prior_summary(fit_visalpha) to show priors
+priors = c(
+  set_prior('normal(6.397, 5.29832)', class = 'Intercept'),  # around exp(6) = 600ms
+  set_prior('normal(5.29832,5.29832)', class = 'sigma'),  # SD of individual rts in log-units exp 5.298 = 200
+  set_prior('normal(0,  5.01064)', class = 'b'),  # around 150 ms in each direction of effect
+  set_prior('normal(6.21461, 6.21461)', class = 'sd')  # some variability between participants
+)
+
+modeldata = DATA.In_long %>%
+  filter(post_hit == "hit")
+
+# intercept model
+fit_ndt_intercept = brm(formula = bf(post_RT ~ 1 + (1|subject), ndt ~ 1 + (1|subject)),
+          data = modeldata, 
+          family = shifted_lognormal(),
+          file = 'fit_ndt_intercept_slog',
+          save_pars = save_pars(all = TRUE),
+          file_refit = "on_change",
+          cores = 4
+          # file_refit = "always"
+          )  # Save all that hard work.
+
+
+# validity model
+fit_ndt_validity = brm(formula = bf(post_RT ~ cue_validity_label + (cue_validity_label|subject), ndt ~ 1 + (1|subject)),
+          data = modeldata, 
+          family = shifted_lognormal(),
+          file = 'fit_ndt_validity_slog',
+          save_pars = save_pars(all = TRUE),
+          file_refit = "on_change",
+          cores = 4
+          # file_refit = "always"
+          )  # Save all that hard work.
+
+
+
+# # validity model with specified priors
+# fit_validity_pr = brm(formula = post_RT ~ cue_validity_label + (1|subject),
+#           data = modeldata, 
+#           family = shifted_lognormal(),
+#           file = 'fit_validity_withpriors_slog',
+#           save_pars = save_pars(all = TRUE),
+#           file_refit = "on_change",
+#           prior=priors
+#           # file_refit = "always"
+#           )  # Save all that hard work.
+
+# alter data to extract post-cue alpha contra to target
+modeldata2 = DATA.In_longer %>%
+  filter(post_hit == "hit", signal == "visualAlpha", time == "[500 1500]ms", pos_rel_target == "contra_target")%>%
+  mutate(post_cue_vis_alpha_contra_target = amplitude)
+
+# visual alpha contra target
+fit_ndt_visalpha = brm(formula = bf(post_RT ~ post_cue_vis_alpha_contra_target + (1|subject), ndt ~ 1 + (1|subject)),
+          data = modeldata2, 
+          family = shifted_lognormal(),
+          file = 'fit_ndt_visalpha_slog',
+          save_pars = save_pars(all = TRUE),
+          file_refit = "on_change",
+          cores = 4
+          # file_refit = "always"
+          )  # Save all that hard work.
+
+# visual alpha contra target + validity
+fit_ndt_validity_visalpha = brm(
+  formula = bf(post_RT ~ cue_validity_label + post_cue_vis_alpha_contra_target + (cue_validity_label|subject), ndt ~ 1 + (1|subject)),
+          data = modeldata2, 
+          family = shifted_lognormal(),
+          file = 'fit_ndt_validity_visalpha_slog',
+          save_pars = save_pars(all = TRUE),
+          file_refit = "on_change",
+          cores = 4
+          # file_refit = "always"
+          )  # Save all that hard work.
+
+# visual alpha contra target * validity
+fit_ndt_validity_x_visalpha = brm(
+  formula = bf(post_RT ~ cue_validity_label * post_cue_vis_alpha_contra_target + (cue_validity_label|subject), ndt ~ 1 + (1|subject)),
+          data = modeldata2, 
+          family = shifted_lognormal(),
+          file = 'fit_ndt_validity_x_visalpha_slog',
+          save_pars = save_pars(all = TRUE),
+          file_refit = "on_change",
+          cores = 4
+          # file_refit = "always"
+          )  # Save all that hard work.
+
+# alter data to extract post-cue alpha contra to nontarget
+modeldata3 = DATA.In_longer %>%
+  filter(post_hit == "hit", signal == "visualAlpha", time == "[500 1500]ms", pos_rel_target == "contra_nontarget")%>%
+  mutate(post_cue_vis_alpha_contra_nontarget = amplitude)
+
+# visual alpha contra nontarget 
+fit_ndt_alpha2 = brm(formula = bf(post_RT ~ post_cue_vis_alpha_contra_nontarget + (1|subject), ndt ~ 1 + (1|subject)),
+          data = modeldata3, 
+          family = shifted_lognormal(),
+          file = 'fit_ndt_visalpha2_slog',
+          save_pars = save_pars(all = TRUE),
+          file_refit = "on_change"# file_refit = "always",
+          cores = 4
+          )  # Save all that hard work.
+
+# visual alpha contra nontarget + validity
+fit_ndt_validity_alpha2 = brm(
+  formula = bf(post_RT ~ cue_validity_label + post_cue_vis_alpha_contra_nontarget + (cue_validity_label|subject), 
+               ndt ~ 1 + (1|subject)),
+          data = modeldata3, 
+          family = shifted_lognormal(),
+          file = 'fit_ndt_validity_visalpha2_slog',
+          save_pars = save_pars(all = TRUE),
+          file_refit = "on_change",
+          cores = 4
+          # file_refit = "always"
+          )  # Save all that hard work.
+
+# visual alpha contra nontarget + validity
+fit_ndt_validity_x_alpha2 = brm(
+  formula = bf(post_RT ~ cue_validity_label * post_cue_vis_alpha_contra_nontarget + (cue_validity_label|subject), 
+               ndt ~ 1 + (1|subject)),
+          data = modeldata3, 
+          family = shifted_lognormal(),
+          file = 'fit_ndt_validity_x_visalpha2_slog',
+          save_pars = save_pars(all = TRUE),
+          file_refit = "on_change",
+          cores = 4
+          # file_refit = "always"
+          )  # Save all that hard work.
+
+# combined alpha model
+# alter data to extract post-cue alpha contra to target
+modeldata4 = DATA.In_longer %>%
+  filter(post_hit == "hit", signal == "visualAlpha", time == "[500 1500]ms")%>%
+  dplyr::select(subject, trialnumber, cue_validity_label, post_RT, pos_rel_target, amplitude) %>%
+  pivot_wider(names_from = "pos_rel_target", values_from = amplitude)
+
+# visual alpha contra target and contra non-target
+fit_ndt_alpha1_alpha2 = brm(
+  formula = bf(post_RT ~ contra_target + contra_nontarget + (1|subject), ndt ~ 1 + (1|subject)),
+          data = modeldata4, 
+          family = shifted_lognormal(),
+          file = 'fit_ndt_visalpha1_visalpha2_slog',
+          save_pars = save_pars(all = TRUE),
+          file_refit = "on_change",
+          cores = 4
+          # file_refit = "always"
+          )  # Save all that hard work.
+
+# visual alpha contra target and contra non-target + validity
+fit_ndt_validity_alpha1_alpha2 = brm(
+  formula = bf(post_RT ~ cue_validity_label + contra_target + contra_nontarget + (cue_validity_label|subject), ndt ~ 1 + (1|subject)),
+          data = modeldata4, 
+          family = shifted_lognormal(),
+          file = 'fit_ndt_validity_visalpha1_visalpha2_slog',
+          save_pars = save_pars(all = TRUE),
+          file_refit = "on_change",
+          cores = 4
+          # file_refit = "always"
+          )  # Save all that hard work.
+
+# visual alpha contra target and contra non-target + validity
+fit_ndt_validity_x_alpha1_alpha2 = brm(
+  formula = bf(post_RT ~ cue_validity_label * contra_target + cue_validity_label * contra_nontarget + (cue_validity_label|subject),
+                ndt ~ 1 + (1|subject)),
+          data = modeldata4, 
+          family = shifted_lognormal(),
+          file = 'fit_ndt_validity_x_visalpha1_visalpha2_slog',
+          save_pars = save_pars(all = TRUE),
+          file_refit = "on_change",
+          cores = 4
+          # file_refit = "always"
+          )  # Save all that hard work.
+
+# # visual alpha contra target and contra non-target + validity with random factor validity
+# fit_validity_alpha1_alpha2_v2 = brm(formula = post_RT ~ cue_validity_label + contra_target + contra_nontarget + (cue_validity_label|subject),
+#           data = modeldata4, 
+#           family = shifted_lognormal(),
+#           file = 'fit_validity_visalpha1_visalpha2_v2_slog',
+#           save_pars = save_pars(all = TRUE),
+#           file_refit = "on_change"
+#           # file_refit = "always"
+#           )  # Save all that hard work.
+
+
+# alter data to extract post-cue target SSVEP
+modeldata5 = DATA.In_longer %>%
+  filter(post_hit == "hit", signal == "SSVEP", time == "[500 1500]ms", pos_rel_target == "contra_target")%>%
+  mutate(post_cue_SSVEP_contra_target = amplitude)
+
+# SSVEP model
+fit_ndt_SSVEP = brm(
+  formula = bf(post_RT ~ post_cue_SSVEP_contra_target + (1|subject), ndt ~ 1 + (1|subject)),
+          data = modeldata5, 
+          family = shifted_lognormal(),
+          file = 'fit_ndt_ssvep_slog',
+          save_pars = save_pars(all = TRUE),
+          file_refit = "on_change",
+          cores = 4
+          # file_refit = "always"
+          )  # Save all that hard work.
+
+# SSVEP + validity model
+fit_ndt_validity_SSVEP = brm(
+  formula = bf(post_RT ~ cue_validity_label + post_cue_SSVEP_contra_target + (cue_validity_label|subject), ndt ~ 1 + (1|subject)),
+          data = modeldata5, 
+          family = shifted_lognormal(),
+          file = 'fit_ndt_validity_ssvep_slog',
+          save_pars = save_pars(all = TRUE),
+          file_refit = "on_change",
+          cores = 4
+          # file_refit = "always"
+          )  # Save all that hard work.
+
+fit_ndt_validity_x_SSVEP = brm(
+  formula = bf(post_RT ~ cue_validity_label * post_cue_SSVEP_contra_target + (cue_validity_label|subject), ndt ~ 1 + (1|subject)),
+          data = modeldata5, 
+          family = shifted_lognormal(),
+          file = 'fit_ndt_validity_x_ssvep_slog',
+          save_pars = save_pars(all = TRUE),
+          file_refit = "on_change",
+          cores = 4
+          # file_refit = "always"
+          )  # Save all that hard work.
+
+
+
+# combined alpha + SSVEP model (most complex)
+# alter data to extract post-cue alpha contra to target
+modeldata5 = DATA.In_longer %>%
+  filter(post_hit == "hit", signal != "motorAlpha", time == "[500 1500]ms")%>%
+  dplyr::select(subject, trialnumber, cue_validity_label, post_RT, signal, pos_rel_target, amplitude) %>%
+  pivot_wider(names_from = c("signal", "pos_rel_target"), values_from = amplitude)
+
+# visual alpha contra target and contra non-target and SSVEP
+fit_ndt_SSVEP_alpha = brm(
+  formula = bf(post_RT ~ visualAlpha_contra_target + visualAlpha_contra_nontarget + SSVEP_contra_target + (1|subject),
+                ndt ~ 1 + (1|subject)),
+          data = modeldata5, 
+          family = shifted_lognormal(),
+          file = 'fit_ndt_SSVEP_alpha_slog',
+          save_pars = save_pars(all = TRUE),
+          file_refit = "on_change",
+          cores = 4
+          # file_refit = "always"
+          )  # Save all that hard work.
+
+# visual alpha contra target and contra non-target and SSVEP  + validity
+fit_ndt_validity_SSVEP_alpha = brm(
+  formula = bf(post_RT ~ cue_validity_label + visualAlpha_contra_target + visualAlpha_contra_nontarget + SSVEP_contra_target + (cue_validity_label|subject), ndt ~ 1 + (1|subject)),
+          data = modeldata5, 
+          family = shifted_lognormal(),
+          file = 'fit_ndt_validity_SSVEP_alpha_slog',
+          save_pars = save_pars(all = TRUE),
+          file_refit = "on_change",
+          cores = 4
+          # file_refit = "always"
+          )  # Save all that hard work.
+
+fit_ndt_validity_x_SSVEP_alpha = brm(
+  formula = bf(post_RT ~ cue_validity_label * visualAlpha_contra_target + cue_validity_label * visualAlpha_contra_nontarget + cue_validity_label * SSVEP_contra_target + (cue_validity_label|subject), ndt ~ 1 + (1|subject)),
+          data = modeldata5, 
+          family = shifted_lognormal(),
+          file = 'fit_ndt_validity_x_SSVEP_alpha_slog',
+          save_pars = save_pars(all = TRUE),
+          file_refit = "on_change",
+          cores = 4
+          # file_refit = "always"
+          )  # Save all that hard work.
+
+
+
+```
+
+
 ### **estimating models with manual priors before**
 <br>
 
@@ -2668,22 +2948,34 @@ testfit_validity_ndt_withPRIORs <- add_criterion(testfit_validity_ndt_withPRIORs
 
 
 plot(testfit_intecept_noPRIORs, ask = FALSE)
-plot(conditional_effects(testfit_intecept_noPRIORs), ask = FALSE)
-plot(testfit_intecept_withPRIORs, ask = FALSE)
-plot(conditional_effects(testfit_intecept_withPRIORs), ask = FALSE)
+# plot(testfit_intecept_withPRIORs, ask = FALSE)
 plot(testfit_intecept_ndt_noPRIORs, ask = FALSE)
-plot(conditional_effects(testfit_intecept_ndt_noPRIORs), ask = FALSE)
-plot(testfit_intecept_ndt_withPRIORs, ask = FALSE)
-plot(conditional_effects(testfit_intecept_ndt_withPRIORs), ask = FALSE)
+# plot(testfit_intecept_ndt_withPRIORs, ask = FALSE)
 plot(testfit_validity_noPRIORs, ask = FALSE)
 plot(conditional_effects(testfit_validity_noPRIORs), ask = FALSE)
 plot(testfit_validity_withPRIORs, ask = FALSE)
 plot(conditional_effects(testfit_validity_withPRIORs), ask = FALSE)
 plot(testfit_validity_ndt_noPRIORs, ask = FALSE)
 plot(conditional_effects(testfit_validity_ndt_noPRIORs), ask = FALSE)
-plot(testfit_validity_ndt_withPRIORs, ask = FALSE)
-plot(conditional_effects(testfit_validity_ndt_withPRIORs), ask = FALSE)
+# plot(testfit_validity_ndt_withPRIORs, ask = FALSE)
+# plot(conditional_effects(testfit_validity_ndt_withPRIORs), ask = FALSE)
 
+
+# all models with validity as predictor
+loo_compare(testfit_intecept_noPRIORs, testfit_intecept_withPRIORs, testfit_intecept_ndt_noPRIORs,
+            testfit_validity_noPRIORs, testfit_validity_withPRIORs, testfit_validity_ndt_noPRIORs,
+            criterion = c("loo"))%>%
+  kable(escape = F, digits = c(6,6,6,6,6,6,6,6,6), caption = c("intercept and validity models | prior or not | loo comparison")) %>%
+  kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
+
+as.data.frame(rbind(
+  bayes_R2(testfit_intecept_noPRIORs), bayes_R2(testfit_intecept_withPRIORs), bayes_R2(testfit_intecept_ndt_noPRIORs),
+  bayes_R2(testfit_validity_noPRIORs), bayes_R2(testfit_validity_withPRIORs), bayes_R2(testfit_validity_ndt_noPRIORs)),
+  row.names = c("testfit_intecept_noPRIORs","testfit_intecept_withPRIORs","testfit_intecept_ndt_noPRIORs",
+                "testfit_validity_noPRIORs", "testfit_validity_withPRIORs", "testfit_validity_ndt_noPRIORs"))%>%
+  kable(escape = F, digits = c(6,6,6,6,6,6,6,6,6), caption = c("intercept and validity models | prior or not | bayes_R2")) %>%
+  kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
+  
 ```
 
 
