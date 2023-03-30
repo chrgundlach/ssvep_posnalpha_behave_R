@@ -1966,27 +1966,34 @@ it seems to work much better when modelling random effects
 intercept model                       **RT ~ 1 + ( 1 | subjects)**
 validity model                        **RT ~ Cue + ( cue | subjects)**
 
-visual alpha models
+*visual alpha models*
 contra target                         **RT ~ visual_alpha_Targ + ( 1 | subjects)**
 contra target + validity              **RT ~ Cue +  visual_alpha_Targ + ( cue | subjects)**
 contra nontarget                      **RT ~ visual_alpha_NonTarg + ( 1 | subjects)**
 contra nontarget + validity           **RT ~ Cue +  visual_alpha_NonTarg + ( cue | subjects)**
 
-ssvep models
+*ssvep models*
 target ssvep                          **RT ~ SSVEP + ( 1 | subjects)**
 target ssvep + validity               **RT ~ Cue + SSVEP + ( cue | subjects)**
 
-combined alpha models
-contra target + nontarget             **RT ~ visual_alpha_Targ + visual_alpha_NonTarg + ( 1 | subjects)**
-contra target + nontarget + validity  **RT ~ Cue + visual_alpha_Targ + visual_alpha_NonTarg + ( 1 | subjects)**
+*combined alpha models*
+contra target + contra nontarget             **RT ~ visual_alpha_Targ + visual_alpha_NonTarg + ( 1 | subjects)**
+contra target + contra nontarget + validity  **RT ~ Cue + visual_alpha_Targ + visual_alpha_NonTarg + ( cue | subjects)**
+
+*combined total model*
+alpha contra target + alpha contra nontarget + target SSVEP + validity **RT ~ Cue + visual_alpha_Targ + visual_alpha_NonTarg + SSVEP +( cue | subjects)**
+
+
+all models were additionally modelled with interaction terms of cue * signal
 
 
 ``` {r brms model for RTs 01 eval, fig.height=6, fig.width=10, warning=FALSE, eval = TRUE}
 #define priors: [needs rechecking!]
+# prior_summary(fit_visalpha) to show priors
 priors = c(
   set_prior('normal(6.397, 5.29832)', class = 'Intercept'),  # around exp(6) = 600ms
   set_prior('normal(5.29832,5.29832)', class = 'sigma'),  # SD of individual rts in log-units exp 5.298 = 200
-  set_prior('normal(0,  5.01064)', class = 'b'),  # around 150 ms in each direction
+  set_prior('normal(0,  5.01064)', class = 'b'),  # around 150 ms in each direction of effect
   set_prior('normal(6.21461, 6.21461)', class = 'sd')  # some variability between participants
 )
 
@@ -2225,9 +2232,9 @@ fit_validity_x_SSVEP_alpha = brm(
 ### **estimating models zscored data**
 <br>
 
-with z-scored alpha and SSVEP amplitudes
+as above but with alpha and SSVEP signals z-scored for each subject prior to model evaluation
 
-``` {r brms model for RTs 01 eval, fig.height=6, fig.width=10, warning=FALSE, eval = TRUE}
+``` {r brms model for RTs 02 eval, fig.height=6, fig.width=10, warning=FALSE, eval = TRUE}
 
 
 # alter data to extract post-cue alpha contra to target
@@ -2416,11 +2423,7 @@ fit_z_SSVEP_alpha = brm(formula = post_RT ~ visualAlpha_contra_target + visualAl
           )  # Save all that hard work.
 
 # visual alpha contra target and contra non-target and SSVEP  + validity
-<<<<<<< Updated upstream
-fit_z_validity_SSVEP_alpha = brm(formula = post_RT ~ cue_validity_label + visualAlpha_contra_target + visualAlpha_contra_nontarget + SSVEP_z_contra_target + (cue_validity_label|subject),
-=======
 fit_z_validity_SSVEP_alpha = brm(formula = post_RT ~ cue_validity_label + visualAlpha_contra_target + visualAlpha_contra_nontarget + SSVEP_contra_target + (cue_validity_label|subject),
->>>>>>> Stashed changes
           data = modeldata5, 
           family = shifted_lognormal(),
           file = 'fit_z_validity_SSVEP_alpha_slog',
@@ -2431,11 +2434,7 @@ fit_z_validity_SSVEP_alpha = brm(formula = post_RT ~ cue_validity_label + visual
           )  # Save all that hard work.
 
 fit_z_validity_x_SSVEP_alpha = brm(
-<<<<<<< Updated upstream
-  formula = post_RT ~ cue_validity_label * visualAlpha_contra_target + cue_validity_label * visualAlpha_contra_nontarget + cue_z_validity_label * SSVEP_contra_target + (cue_validity_label|subject),
-=======
   formula = post_RT ~ cue_validity_label * visualAlpha_contra_target + cue_validity_label * visualAlpha_contra_nontarget + cue_validity_label * SSVEP_contra_target + (cue_validity_label|subject),
->>>>>>> Stashed changes
           data = modeldata5, 
           family = shifted_lognormal(),
           file = 'fit_z_validity_x_SSVEP_alpha_slog',
@@ -2444,6 +2443,187 @@ fit_z_validity_x_SSVEP_alpha = brm(
           cores = 4
           # file_refit = "always"
           )  # Save all that hard work.
+
+
+
+```
+
+
+### **estimating models with manual priors before**
+<br>
+
+as above but with alpha and SSVEP signals z-scored for each subject prior to model evaluation
+
+``` {r brms model for RTs 03 eval, fig.height=6, fig.width=10, warning=FALSE, eval = TRUE}
+#define priors: [needs rechecking!]
+# prior_summary(fit_visalpha) to show priors
+# some thoughts here https://discourse.mc-stan.org/t/weakly-informative-priors-for-shifted-lognormal/16206
+# and here https://lindeloev.shinyapps.io/shiny-rt/#43_priors_and_descriptives
+priors = c(
+  set_prior('normal(6.397, 6.397)', class = 'Intercept'),  # around exp(6) = 600ms
+  set_prior('normal(5.70378,5.70378)', class = 'sigma'),  # SD of individual rts in log-units exp 5.70378 = 300
+  set_prior('normal(0,  5.70378)', class = 'b'),  # around 150 ms in each direction of effect exp 5.70378 = 300
+  set_prior('normal(6.21461, 6.21461)', class = 'sd')  # some variability between participants
+  # set_prior('normal(1.7, 1.7)', class = 'ndt') # some variability in the shift 238.399 ms exp(exp(1.7))
+)
+
+priors = c(
+  set_prior('normal(6.397, 3)', class = 'Intercept'),  # around exp(6) = 600ms
+  set_prior('normal(5.29832,3)', class = 'sigma'),  # SD of individual rts in log-units exp 5.298 = 200
+  set_prior('normal(0,  5.01064)', class = 'b'),  # around 150 ms in each direction of effect
+  set_prior('normal(6.21461, 3)', class = 'sd')  # some variability between participants
+)
+
+# informed by plot(fit_validity, ask = FALSE) [only ones that really work]
+priors = c(
+  set_prior('normal(6.2, 0.5)', class = 'Intercept'),  # around exp(6) = 600ms
+  set_prior('normal(0.26, 0.5)', class = 'sigma'),  # SD of individual rts in log-units exp 5.298 = 200
+  set_prior('normal(0,  0.5)', class = 'b'),  # around 150 ms in each direction of effect
+  set_prior('normal(0.1, 0.5)', class = 'sd'),  # some variability between participants
+  set_prior('normal(150, 50)', class = 'ndt')  # some variability between participants
+)
+
+# alter data to extract post-cue alpha contra to target
+modeldata2 = DATA.In_longer %>%
+  filter(post_hit == "hit", signal == "visualAlpha", time == "[500 1500]ms", pos_rel_target == "contra_target")%>%
+  mutate(post_cue_vis_alpha_contra_target = amplitude)
+
+# validity model for checking priors
+testfit_validity_drawpriorsOnly = brm(
+  formula = post_RT ~ cue_validity_label  + (cue_validity_label|subject),
+  data = modeldata2, 
+  family = shifted_lognormal(),
+  file = 'testfit_validity_drawpriorsOnly_slog',
+  save_pars = save_pars(all = TRUE),
+  file_refit = "on_change",
+  sample_prior = "only",
+  prior = priors
+  # file_refit = "always"
+)  # Save all that hard work.
+
+# grapically check priors
+pp_check(testfit_validity_drawpriorsOnly)+
+  coord_cartesian(xlim = c(-1, 1000))
+
+# now do real models
+# intercept model without priors
+testfit_intecept_noPRIORs = brm(
+  formula = post_RT ~ 1 + (1|subject),
+  data = modeldata2, 
+  family = shifted_lognormal(),
+  file = 'testfit_intecept_noPRIORs_slog',
+  save_pars = save_pars(all = TRUE),
+  file_refit = "on_change",
+  cores = 4
+  # file_refit = "always"
+)  # Save all that hard work.
+
+# intercept model with priors
+testfit_intecept_withPRIORs = brm(
+  formula = post_RT ~ 1 + (1|subject),
+  data = modeldata2, 
+  family = shifted_lognormal(),
+  file = 'testfit_intecept_withPRIORs_slog',
+  save_pars = save_pars(all = TRUE),
+  file_refit = "on_change",
+  prior = priors,
+  cores = 4
+  # file_refit = "always"
+)  # Save all that hard work.
+
+# validity model without priors
+testfit_validity_noPRIORs = brm(
+  formula = post_RT ~ cue_validity_label + (cue_validity_label|subject),
+  data = modeldata2, 
+  family = shifted_lognormal(),
+  file = 'testfit_validity_noPRIORs_slog',
+  save_pars = save_pars(all = TRUE),
+  file_refit = "on_change",
+  cores = 4
+  # file_refit = "always"
+)  # Save all that hard work.
+
+# validity model with priors
+testfit_validity_withPRIORs = brm(
+  formula = post_RT ~ cue_validity_label + (cue_validity_label|subject),
+  data = modeldata2, 
+  family = shifted_lognormal(),
+  file = 'testfit_validity_withPRIORs_slog',
+  save_pars = save_pars(all = TRUE),
+  file_refit = "on_change",
+  prior = priors,
+  cores = 4
+  # file_refit = "always"
+)  # Save all that hard work.
+
+
+# validity model for checking priors
+testfit_validity_drawpriorsOnly = brm(
+  formula = post_RT ~ cue_validity_label  + (cue_validity_label|subject),
+  data = modeldata2, 
+  family = shifted_lognormal(),
+  file = 'testfit_validity_drawpriorsOnly_slog',
+  save_pars = save_pars(all = TRUE),
+  file_refit = "on_change",
+  sample_prior = "only",
+  prior = priors
+  # file_refit = "always"
+)  # Save all that hard work.
+
+# grapically check priors
+pp_check(testfit_validity_drawpriorsOnly)+
+  coord_cartesian(xlim = c(-1, 1000))
+
+# now do real models with ndt shift
+# intercept model without priors
+testfit_intecept_ndt_noPRIORs = brm(
+  formula = bf(post_RT ~ 1 + (1|subject), ndt ~ 1 + (1|subject)),
+  data = modeldata2, 
+  family = shifted_lognormal(),
+  file = 'testfit_intecept_ndt_noPRIORs_slog',
+  save_pars = save_pars(all = TRUE),
+  file_refit = "on_change",
+  cores = 4
+  # file_refit = "always"
+)  # Save all that hard work.
+
+# intercept model with priors
+testfit_intecept_ndt_withPRIORs = brm(
+  formula = bf(post_RT ~ 1 + (1|subject), ndt ~ 1 + (1|subject)),
+  data = modeldata2, 
+  family = shifted_lognormal(),
+  file = 'testfit_intecept_ndt_withPRIORs_slog',
+  save_pars = save_pars(all = TRUE),
+  file_refit = "on_change",
+  prior = priors,
+  cores = 4
+  # file_refit = "always"
+)  # Save all that hard work.
+
+# validity model without priors
+testfit_validity_ndt_noPRIORs = brm(
+  formula = bf(post_RT ~ cue_validity_label + (cue_validity_label|subject), ndt ~ 1 + (1|subject)),
+  data = modeldata2, 
+  family = shifted_lognormal(),
+  file = 'testfit_validity_ndt_noPRIORs_slog',
+  save_pars = save_pars(all = TRUE),
+  file_refit = "on_change",
+  cores = 4
+  # file_refit = "always"
+)  # Save all that hard work.
+
+# validity model with priors
+testfit_validity_ndt_withPRIORs = brm(
+  formula = bf(post_RT ~ cue_validity_label + (cue_validity_label|subject), ndt ~ 1 + (1|subject)),
+  data = modeldata2, 
+  family = shifted_lognormal(),
+  file = 'testfit_validity_ndt_withPRIORs_slog',
+  save_pars = save_pars(all = TRUE),
+  file_refit = "on_change",
+  prior = priors,
+  cores = 4
+  # file_refit = "always"
+)  # Save all that hard work.
 
 
 
@@ -2673,17 +2853,114 @@ as.data.frame(rbind(
   kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
 
 
-# best SSVEP and best alpha models and combined
-loo_compare(fit_intercept, fit_validity, fit_validity_alpha1_alpha2, fit_validity_x_alpha1_alpha2, fit_validity_SSVEP,
-            fit_validity_x_SSVEP, fit_validity_SSVEP_alpha, fit_validity_x_SSVEP_alpha, criterion = c("loo"))%>%
+# all models with validity as predictor
+loo_compare(fit_intercept, fit_validity,
+            fit_validity_visalpha, fit_validity_x_visalpha,
+            fit_validity_alpha2, fit_validity_x_alpha2,
+            fit_validity_alpha1_alpha2, fit_validity_x_alpha1_alpha2, 
+            fit_validity_SSVEP, fit_validity_x_SSVEP, 
+            fit_validity_SSVEP_alpha, fit_validity_x_SSVEP_alpha, 
+            criterion = c("loo"))%>%
   kable(escape = F, digits = c(6,6,6,6,6,6,6,6,6), caption = c("alpha, ssvep and combined models | loo comparison")) %>%
   kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
 
 as.data.frame(rbind(
-  bayes_R2(fit_intercept), bayes_R2(fit_validity), bayes_R2(fit_validity_alpha1_alpha2), bayes_R2(fit_validity_x_alpha1_alpha2),
-  bayes_R2(fit_validity_SSVEP), bayes_R2(fit_validity_x_SSVEP), bayes_R2(fit_validity_SSVEP_alpha), bayes_R2(fit_validity_x_SSVEP_alpha)),
-  row.names = c("fit_intercept","fit_validity","fit_validity_alpha1_alpha2", "fit_validity_x_alpha1_alpha2","fit_validity_SSVEP",
-                "fit_validity_x_SSVEP", "fit_validity_SSVEP_alpha", "fit_validity_x_SSVEP_alpha"))%>%
+  bayes_R2(fit_intercept), bayes_R2(fit_validity),
+  bayes_R2(fit_validity_visalpha), bayes_R2(fit_validity_x_visalpha),
+  bayes_R2(fit_validity_alpha2), bayes_R2(fit_validity_x_alpha2),
+  bayes_R2(fit_validity_alpha1_alpha2), bayes_R2(fit_validity_x_alpha1_alpha2),
+  bayes_R2(fit_validity_SSVEP), bayes_R2(fit_validity_x_SSVEP),
+  bayes_R2(fit_validity_SSVEP_alpha), bayes_R2(fit_validity_x_SSVEP_alpha)),
+  row.names = c("fit_intercept","fit_validity",
+                "fit_validity_visalpha", "fit_validity_x_visalpha",
+                "fit_validity_alpha2", "fit_validity_x_alpha2",
+                "fit_validity_alpha1_alpha2", "fit_validity_x_alpha1_alpha2",
+                "fit_validity_SSVEP","fit_validity_x_SSVEP",
+                "fit_validity_SSVEP_alpha", "fit_validity_x_SSVEP_alpha"))%>%
+  kable(escape = F, digits = c(6,6,6,6,6,6,6,6,6), caption = c("alpha, ssvep and combined models | bayes_R2")) %>%
+  kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
+
+
+```
+
+
+###   **model comparison zscored signals** each measure
+<br>
+
+```{r brms model for RTs explorative diagnostic2 z, fig.height=6, fig.width=10, warning=FALSE, eval = TRUE}
+# alpha contra target
+loo_compare(fit_intercept, fit_validity, fit_z_visalpha, fit_z_validity_visalpha, fit_z_validity_x_visalpha, criterion = c("loo"))%>%
+  kable(escape = F, digits = c(6,6,6,6,6,6,6,6,6), caption = c("alpha contra target models | loo comparison")) %>%
+  kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
+
+as.data.frame(rbind(
+  bayes_R2(fit_intercept), bayes_R2(fit_validity), bayes_R2(fit_z_visalpha), bayes_R2(fit_z_validity_visalpha), bayes_R2(fit_z_validity_x_visalpha)),
+  row.names = c("fit_intercept","fit_validity","fit_z_visalpha","fit_z_validity_visalpha","fit_z_validity_x_visalpha"))%>%
+  kable(escape = F, digits = c(6,6,6,6,6,6,6,6,6), caption = c("alpha contra target models | bayes_R2")) %>%
+  kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
+
+# alpha contra nontarget
+loo_compare(fit_intercept, fit_validity, fit_z_alpha2, fit_z_validity_alpha2, fit_z_validity_x_alpha2, criterion = c("loo"))%>%
+  kable(escape = F, digits = c(6,6,6,6,6,6,6,6,6), caption = c("alpha contra nontarget models | loo comparison")) %>%
+  kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
+
+as.data.frame(rbind(
+  bayes_R2(fit_intercept), bayes_R2(fit_validity), bayes_R2(fit_z_alpha2), bayes_R2(fit_z_validity_alpha2), bayes_R2(fit_z_validity_x_alpha2)),
+  row.names = c("fit_intercept","fit_validity","fit_z_alpha2","fit_z_validity_alpha2","fit_z_validity_x_alpha2"))%>%
+  kable(escape = F, digits = c(6,6,6,6,6,6,6,6,6), caption = c("alpha contra nontarget models | bayes_R2")) %>%
+  kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
+
+# target ssvep
+loo_compare(fit_intercept, fit_validity, fit_z_SSVEP, fit_z_validity_SSVEP, fit_z_validity_x_SSVEP, criterion = c("loo"))%>%
+  kable(escape = F, digits = c(6,6,6,6,6,6,6,6,6), caption = c("target SSVEP models | loo comparison")) %>%
+  kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
+
+as.data.frame(rbind(
+  bayes_R2(fit_intercept), bayes_R2(fit_validity), bayes_R2(fit_z_SSVEP), bayes_R2(fit_z_validity_SSVEP), bayes_R2(fit_z_validity_x_SSVEP)),
+  row.names = c("fit_intercept","fit_validity","fit_z_SSVEP","fit_z_validity_SSVEP","fit_z_validity_x_SSVEP"))%>%
+  kable(escape = F, digits = c(6,6,6,6,6,6,6,6,6), caption = c("target SSVEP models | bayes_R2")) %>%
+  kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
+
+# alpha validity combined models
+loo_compare(fit_intercept, fit_validity, fit_z_validity_visalpha, fit_z_validity_alpha2, fit_z_validity_x_visalpha, fit_z_validity_x_alpha2,
+            fit_z_validity_alpha1_alpha2, fit_z_validity_x_alpha1_alpha2, criterion = c("loo"))%>%
+  kable(escape = F, digits = c(6,6,6,6,6,6,6,6,6), caption = c("combined alpha models | loo comparison")) %>%
+  kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
+
+as.data.frame(rbind(
+  bayes_R2(fit_intercept), bayes_R2(fit_validity), bayes_R2(fit_z_validity_visalpha), bayes_R2(fit_z_validity_alpha2),
+  bayes_R2(fit_z_validity_x_visalpha), bayes_R2(fit_z_validity_x_alpha2), bayes_R2(fit_z_validity_alpha1_alpha2),
+  bayes_R2(fit_z_validity_x_alpha1_alpha2)),
+  row.names = c("fit_intercept","fit_validity","fit_z_validity_visalpha", "fit_z_validity_alpha2","fit_z_validity_x_visalpha",
+                "fit_z_validity_x_alpha2", "fit_z_validity_alpha1_alpha2", "fit_z_validity_x_alpha1_alpha2"))%>%
+  kable(escape = F, digits = c(6,6,6,6,6,6,6,6,6), caption = c("combined alpha models | bayes_R2")) %>%
+  kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
+
+
+# all models with validity as predictor
+loo_compare(fit_intercept, fit_validity,
+            fit_z_validity_visalpha, fit_z_validity_x_visalpha,
+            fit_z_validity_alpha2, fit_z_validity_x_alpha2,
+            fit_z_validity_alpha1_alpha2, fit_z_validity_x_alpha1_alpha2, 
+            fit_z_validity_SSVEP, fit_z_validity_x_SSVEP, 
+            fit_z_validity_SSVEP_alpha, fit_z_validity_x_SSVEP_alpha, 
+            criterion = c("loo"))%>%
+  kable(escape = F, digits = c(6,6,6,6,6,6,6,6,6), caption = c("alpha, ssvep and combined models | loo comparison")) %>%
+  kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
+
+as.data.frame(rbind(
+  bayes_R2(fit_intercept), bayes_R2(fit_validity),
+  bayes_R2(fit_z_validity_visalpha), bayes_R2(fit_z_validity_x_visalpha),
+  bayes_R2(fit_z_validity_alpha2), bayes_R2(fit_z_validity_x_alpha2),
+  bayes_R2(fit_z_validity_alpha1_alpha2), bayes_R2(fit_z_validity_x_alpha1_alpha2),
+  bayes_R2(fit_z_validity_SSVEP), bayes_R2(fit_z_validity_x_SSVEP),
+  bayes_R2(fit_z_validity_SSVEP_alpha), bayes_R2(fit_z_validity_x_SSVEP_alpha)),
+  row.names = c("fit_intercept","fit_validity",
+                "fit_z_validity_visalpha", "fit_z_validity_x_visalpha",
+                "fit_z_validity_alpha2", "fit_z_validity_x_alpha2",
+                "fit_z_validity_alpha1_alpha2", "fit_z_validity_x_alpha1_alpha2",
+                "fit_z_validity_SSVEP","fit_z_validity_x_SSVEP",
+                "fit_z_validity_SSVEP_alpha", "fit_z_validity_x_SSVEP_alpha"))%>%
   kable(escape = F, digits = c(6,6,6,6,6,6,6,6,6), caption = c("alpha, ssvep and combined models | bayes_R2")) %>%
   kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
 
