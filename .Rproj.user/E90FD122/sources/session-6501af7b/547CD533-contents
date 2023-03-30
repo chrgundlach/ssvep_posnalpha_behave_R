@@ -910,7 +910,31 @@ ggarrange(plotttitle, plotplots, nrow = 2, heights=c(0.1, 1))
 ```
 
 
-## decriptive data 
+## decriptive data
+<br>  
+
+### behavioral measures
+
+validity x target_position
+
+```{r R_valXside, echo=FALSE}
+DATA.In_longer %>%
+  dplyr::select(subject, trialnumber, cue_validity_label, post_event_pos_label, post_hit, post_RT)%>%
+  filter(post_hit=="hit")%>%
+  group_by(subject, trialnumber,cue_validity_label)%>%
+  summarise(post_RT=mean(post_RT))%>%
+  group_by(cue_validity_label)%>%
+  summarize(Mean_RT = mean(post_RT), Median_RT = median(post_RT), SD_RT = SD(post_RT))%>%
+  ungroup()%>%
+  mutate(cue_validity_label = factor(cue_validity_label, levels=c('invalid','neutral','valid'), ordered = T))%>%
+  kable(escape = F, digits = c(3,3,3,6,3,3,3,3,3), caption = c("descriptives for response times in ms")) %>%
+  # kable_classic(full_width = F) %>%
+  column_spec(1, bold = T)%>%
+  kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
+  
+  
+```
+
 <br>  
 
 ### electrophysiological measures
@@ -1943,15 +1967,18 @@ intercept model                       **RT ~ 1 + ( 1 | subjects)**
 validity model                        **RT ~ Cue + ( cue | subjects)**
 
 visual alpha models
-contra target                         **RT ~ visual alpha + ( 1 | subjects)**
-contra target + validity              **RT ~ Cue + visual alpha + ( cue | subjects)**
-contra nontarget                      **RT ~ visual alpha + ( 1 | subjects)**
-contra nontarget + validity           **RT ~ Cue + visual alpha + ( cue | subjects)**
-
+contra target                         **RT ~ visual_alpha_Targ + ( 1 | subjects)**
+contra target + validity              **RT ~ Cue +  visual_alpha_Targ + ( cue | subjects)**
+contra nontarget                      **RT ~ visual_alpha_NonTarg + ( 1 | subjects)**
+contra nontarget + validity           **RT ~ Cue +  visual_alpha_NonTarg + ( cue | subjects)**
 
 ssvep models
 target ssvep                          **RT ~ SSVEP + ( 1 | subjects)**
 target ssvep + validity               **RT ~ Cue + SSVEP + ( cue | subjects)**
+
+combined alpha models
+contra target + nontarget             **RT ~ visual_alpha_Targ + visual_alpha_NonTarg + ( 1 | subjects)**
+contra target + nontarget + validity  **RT ~ Cue + visual_alpha_Targ + visual_alpha_NonTarg + ( 1 | subjects)**
 
 
 ``` {r brms model for RTs 01 eval, fig.height=6, fig.width=10, warning=FALSE, eval = TRUE}
@@ -2839,7 +2866,7 @@ ggarrange(plotttitle, plotplots, nrow = 2, heights=c(0.1, 1))
 
 # now we want to see the effects using emmeans
 # check cue validity effect via pairwise comparisons
-# first the emmeans (point estimate = median)
+# first the emmeans (point estimate = median of distrbution)
 bestmodel.ef.model %>% 
   emmeans(~ cue_validity_label,
           epred = TRUE)%>%
@@ -2860,9 +2887,32 @@ bestmodel.ef.model %>%
   column_spec(1, bold = T)%>%
   kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
 
-
-# now gather all the single draws to be able to plot the variance
+# now gather all the single draws to be able to plot the variance predicted RTs for different validity levels
 bestmodel.ef.ef_draws_validity <- bestmodel.ef.model %>% 
+  emmeans(~ cue_validity_label,
+          epred = TRUE)%>% 
+  gather_emmeans_draws()
+
+theme_set(theme_bw())
+ggplot(bestmodel.ef.ef_draws_validity, aes(y = cue_validity_label, x = .value)) +
+  stat_halfeye(
+    aes(fill = cue_validity_label, fill_ramp = after_stat(level)),
+    .width = c(.95, 1),
+    position = "dodgejust",
+  ) +
+  scale_fill_manual(values=c("#F1831A", "#293C4A", "#198A83")) +
+  scale_color_manual(values=c("#F1831A", "#293C4A", "#198A83"))+
+  labs(
+    title = "Average predicted RTs in ms", 
+    subtitle = "for all draws of the model",
+    fill_ramp = "interval",
+    x = "difference in ms",
+    y = "validity"
+  )
+
+
+# now gather all the single draws to be able to plot the variance of the contrast
+bestmodel.ef.ef_draws_validity_contr <- bestmodel.ef.model %>% 
   emmeans(~ cue_validity_label,
           epred = TRUE)%>% 
   contrast(method = "revpairwise") %>%
@@ -2870,25 +2920,28 @@ bestmodel.ef.ef_draws_validity <- bestmodel.ef.model %>%
 
 # plot the variance of the the effect (i.e. the averahe marginal effect)
 theme_set(theme_bw())
-ggplot(bestmodel.ef.ef_draws_validity, aes(x = .value, fill = contrast)) +
+ggplot(bestmodel.ef.ef_draws_validity_contr, aes(x = .value, fill = contrast)) +
   stat_halfeye() +
+  geom_vline(xintercept = 0)+
   facet_grid(.~contrast) +
   labs(x = "Average marginal effect in ms", y = "Density") +
   theme(legend.position = "bottom")
 
 
 theme_set(theme_bw())
-ggplot(bestmodel.ef.ef_draws_validity, aes(y = contrast, x = .value)) +
+ggplot(bestmodel.ef.ef_draws_validity_contr, aes(y = contrast, x = .value)) +
   stat_halfeye(
     aes(fill = contrast, fill_ramp = after_stat(level)),
     .width = c(.95, 1),
     position = "dodgejust",
   ) +
+  geom_vline(xintercept = 0)+
   labs(
     title = "Average marginal effect in ms", 
     subtitle = "for all draws of the model",
     fill_ramp = "interval",
-    x = "difference in ms"
+    x = "difference in ms",
+    y = "validity"
   )
 
 
@@ -2948,6 +3001,44 @@ ggplot(bestmodel.ef.tidy_exppred3, aes(x = contra_nontarget, y = .epred)) +
   labs(x = "alpha amplitude contra nontarget", y = "predicted RT",
        fill = "Credible interval") +
   theme(legend.position = "bottom")
+
+# now lets get the slop of the modulation by alpha
+bestmodel.ef.slope_contraTarget <- bestmodel.ef.model %>% 
+  emtrends(~ 1, # 1 means, we want the average slop
+           var = "contra_target",
+           epred = TRUE) %>% 
+  gather_emmeans_draws()
+
+bestmodel.ef.slope_contraNontarget <- bestmodel.ef.model %>% 
+  emtrends(~ 1, # 1 means, we want the average slop
+           var = "contra_nontarget",
+           epred = TRUE) %>% 
+  gather_emmeans_draws()
+
+bestmodel.ef.slopes_alpha <- bind_rows(
+  "contra_target" = bestmodel.ef.slope_contraTarget,
+  "contra_nontarget" = bestmodel.ef.slope_contraNontarget,
+  .id = "alpha_signal") %>% 
+  mutate(alpha_signal = fct_inorder(alpha_signal))
+
+theme_set(theme_bw())
+ggplot(bestmodel.ef.slopes_alpha, aes( x = .value)) +
+  stat_halfeye(
+    aes(fill = alpha_signal, fill_ramp = after_stat(level)),
+    .width = c(.95, 1),
+  ) +
+  # stat_dots(aes(fill = alpha_signal,color = alpha_signal, fill_ramp = after_stat(level), colour_ramp = after_stat(level)),
+  #           .width = c(.95, 1))+
+  geom_vline(xintercept = 0)+
+  scale_fill_manual(values=c("red3","steelblue")) +
+  scale_color_manual(values=c("red3", "steelblue"))+
+  labs(
+    title = "Average marginal effect: alpha slopes", 
+    subtitle = "for all draws of the model",
+    fill_ramp = "interval",
+    colour_ramp = "interval",
+    x = "slope"
+  )
 
 
 ```

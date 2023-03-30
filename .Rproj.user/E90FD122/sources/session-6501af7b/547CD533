@@ -3,7 +3,7 @@
     "path": "C:/Users/psy05cvd/Dropbox/work/R-statistics/experiments/ssvep_posnalpha_behave/ssvep_posnalpha_behave_analysis_FFT_cue.Rmd",
     "project_path": "ssvep_posnalpha_behave_analysis_FFT_cue.Rmd",
     "type": "r_markdown",
-    "hash": "3863832314",
+    "hash": "2535577568",
     "contents": "",
     "dirty": false,
     "created": 1678702219308.0,
@@ -12,16 +12,16 @@
     "properties": {
         "source_window_id": "",
         "Source": "Source",
-        "cursorPosition": "2949,35",
-        "scrollLine": "2922",
+        "cursorPosition": "1980,51",
+        "scrollLine": "1957",
         "docOutlineVisible": "1"
     },
     "folds": "",
-    "lastKnownWriteTime": 1680121169,
+    "lastKnownWriteTime": 1680128147,
     "encoding": "UTF-8",
     "collab_server": "",
     "source_window": "",
-    "last_content_update": 1680121218103,
+    "last_content_update": 1680128147287,
     "read_only": false,
     "read_only_alternatives": []
 }
