@@ -778,7 +778,7 @@ modeldata6 = DATA.In_longer %>%
 
 # visual alpha contra target
 fit_posttarg_motoralpha = brm(formula = post_RT ~ post_target_malpha_contra_target + (1|subject),
-          data = modeldata2, 
+          data = modeldata6, 
           family = shifted_lognormal(),
           file = 'fit_posttarg_motoralpha_slog',
           save_pars = save_pars(all = TRUE),
@@ -789,7 +789,7 @@ fit_posttarg_motoralpha = brm(formula = post_RT ~ post_target_malpha_contra_targ
 
 # visual alpha contra target + validity
 fit_posttarg_validity_motoralpha = brm(formula = post_RT ~ cue_validity_label + post_target_malpha_contra_target + (cue_validity_label|subject),
-          data = modeldata2, 
+          data = modeldata6, 
           family = shifted_lognormal(),
           file = 'fit_posttarg_validity_motoralpha_slog',
           save_pars = save_pars(all = TRUE),
@@ -800,7 +800,7 @@ fit_posttarg_validity_motoralpha = brm(formula = post_RT ~ cue_validity_label + 
 
 # visual alpha contra target * validity
 fit_posttarg_validity_x_motoralpha = brm(formula = post_RT ~ cue_validity_label * post_target_malpha_contra_target + (cue_validity_label|subject),
-          data = modeldata2, 
+          data = modeldata6, 
           family = shifted_lognormal(),
           file = 'fit_posttarg_validity_x_motoralpha_slog',
           save_pars = save_pars(all = TRUE),
