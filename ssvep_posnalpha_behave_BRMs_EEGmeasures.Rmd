@@ -415,8 +415,8 @@ The models specified so far:
 * by target alpha + validtiy: **target_SSVEP ~ vis_alpha_target + cue ( cue | subjects)**
 * by nontarget alpha: **target_SSVEP ~ vis_alpha_nontarget + ( 1 | subjects)**
 * by nontarget alpha + validtiy: **target_SSVEP ~ vis_alpha_nontarget + cue ( cue | subjects)**
-* by nontarget + target alpha: **target_SSVEP ~ vis_alpha_nontarget + ( 1 | subjects)**
-* by nontarget + target alpha + validtiy: **target_SSVEP ~ vis_alpha_nontarget + cue ( cue | subjects)** 
+* by nontarget + target alpha: **target_SSVEP ~ vis_alpha_nontarget + vis_alpha_target + ( 1 | subjects)**
+* by nontarget + target alpha + validtiy: **target_SSVEP ~ vis_alpha_nontarget + vis_alpha_target + cue ( cue | subjects)** 
 
 
 all models were additionally modelled with interaction terms of **cue x signal**
