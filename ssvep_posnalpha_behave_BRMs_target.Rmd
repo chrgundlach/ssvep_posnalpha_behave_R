@@ -859,22 +859,24 @@ One approach would be to check all the *alpha* and *ssvep* models separately fir
 In addition we can compute a Byesian version of the R² value for brms regression models for all the models.
 
 ```{r model comparisons, fig.height=6, fig.width=10, warning=FALSE, eval = TRUE}
-# alpha contra target
+# pre-target alpha contra target
 loo_compare(fit_intercept, fit_validity, fit_visalpha, fit_validity_visalpha, fit_validity_x_visalpha, criterion = c("loo"))%>%
   kable(escape = F, digits = c(6,6,6,6,6,6,6,6,6), caption = c("alpha contra target models | loo comparison")) %>%
   kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
 
-# alpha contra nontarget
+# pre-target alpha alpha contra nontarget
 loo_compare(fit_intercept, fit_validity, fit_alpha2, fit_validity_alpha2, fit_validity_x_alpha2, criterion = c("loo"))%>%
   kable(escape = F, digits = c(6,6,6,6,6,6,6,6,6), caption = c("alpha contra nontarget models | loo comparison")) %>%
   kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
 
-# target ssvep
+# pre-target alpha target ssvep
 loo_compare(fit_intercept, fit_validity, fit_SSVEP, fit_validity_SSVEP, fit_validity_x_SSVEP, criterion = c("loo"))%>%
   kable(escape = F, digits = c(6,6,6,6,6,6,6,6,6), caption = c("target SSVEP models | loo comparison")) %>%
   kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
 
-# all models with validity as predictor
+#
+
+# pre-target alpha all models with validity as predictor
 loo_compare(fit_intercept, fit_validity,
             fit_validity_visalpha, fit_validity_x_visalpha,
             fit_validity_alpha2, fit_validity_x_alpha2,
@@ -924,7 +926,20 @@ data.frame(model_weight = model_weights(fit_intercept, fit_validity,
 #   kable(escape = F, digits = c(6,6,6,6,6,6,6,6,6), 
 #         caption = c("alpha, ssvep and combined models | model weights via loo_model_weights(...)")) %>%
 #   kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
-  
+
+# post-target motor alpha
+  loo_compare(fit_intercept, fit_validity, fit_posttarg_motoralpha, fit_posttarg_validity_motoralpha, fit_posttarg_validity_x_motoralpha,
+            criterion = c("loo"))%>%
+  kable(escape = F, digits = c(6,6,6,6,6,6,6,6,6), caption = c("alpha, ssvep and combined models | loo comparison")) %>%
+  kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
+
+as.data.frame(rbind(
+  bayes_R2(fit_intercept), bayes_R2(fit_validity),
+  bayes_R2(fit_posttarg_motoralpha), bayes_R2(fit_posttarg_validity_motoralpha),  bayes_R2(fit_posttarg_validity_x_motoralpha)),
+  row.names = c("fit_intercept","fit_validity",
+                "fit_posttarg_motoralpha", "fit_posttarg_validity_motoralpha","fit_posttarg_validity_x_motoralpha"))%>%
+  kable(escape = F, digits = c(6,6,6,6,6,6,6,6,6), caption = c("alpha, ssvep and combined models | bayes_R2")) %>%
+  kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
 
 
 # ## useful functions to evaluate best model

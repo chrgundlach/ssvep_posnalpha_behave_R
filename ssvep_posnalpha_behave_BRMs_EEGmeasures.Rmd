@@ -438,7 +438,7 @@ fit_EEG_SSVEP_intercept = brm(formula = target_SSVEP ~ 1 + (1|subject),
           # file_refit = "always"
           )  # Save all that hard work.
 
-fit_EEG_SSVEP_validity = brm(formula = target_SSVEP ~ 1 + cue + (cue|subject),
+fit_EEG_SSVEP_validity = brm(formula = target_SSVEP ~ 1 + cue_validity_label + (cue_validity_label|subject),
           data = modeldata, 
           family = shifted_lognormal(),
           file = 'fit_EEG_SSVEP_validity_slog',
@@ -464,7 +464,7 @@ fit_EEG_vis_alpha_targ_intercept = brm(formula = contra_target ~ 1 + (1|subject)
           # file_refit = "always"
           )  # Save all that hard work.
 
-fit_EEG_vis_alpha_targ_validity = brm(formula = contra_target ~ 1 + cue + (cue|subject),
+fit_EEG_vis_alpha_targ_validity = brm(formula = contra_target ~ 1 + cue_validity_label + (cue_validity_label|subject),
           data = modeldata2, 
           family = shifted_lognormal(),
           file = 'fit_EEG_vis_alpha_targ_validity_slog',
@@ -484,7 +484,7 @@ fit_EEG_vis_alpha_nontarg_intercept = brm(formula = contra_nontarget ~ 1 + (1|su
           # file_refit = "always"
           )  # Save all that hard work.
 
-fit_EEG_vis_alpha_nontarg_validity = brm(formula = contra_nontarget ~ 1 + cue + (cue|subject),
+fit_EEG_vis_alpha_nontarg_validity = brm(formula = contra_nontarget ~ 1 + cue_validity_label + (cue_validity_label|subject),
           data = modeldata2, 
           family = shifted_lognormal(),
           file = 'fit_EEG_vis_alpha_nontarg_validity_slog',
@@ -511,7 +511,7 @@ fit_EEG_mot_alpha_targ_intercept = brm(formula = contra_target ~ 1 + (1|subject)
           # file_refit = "always"
           )  # Save all that hard work.
 
-fit_EEG_mot_alpha_targ_validity = brm(formula = contra_target ~ 1 + cue + (cue|subject),
+fit_EEG_mot_alpha_targ_validity = brm(formula = contra_target ~ 1 + cue_validity_label + (cue_validity_label|subject),
           data = modeldata2, 
           family = shifted_lognormal(),
           file = 'fit_EEG_mot_alpha_targ_validity_slog',
@@ -531,7 +531,7 @@ fit_EEG_mot_alpha_nontarg_intercept = brm(formula = contra_nontarget ~ 1 + (1|su
           # file_refit = "always"
           )  # Save all that hard work.
 
-fit_EEG_mot_alpha_nontarg_validity = brm(formula = contra_nontarget ~ 1 + cue + (cue|subject),
+fit_EEG_mot_alpha_nontarg_validity = brm(formula = contra_nontarget ~ 1 + cue_validity_label + (cue_validity_label|subject),
           data = modeldata2, 
           family = shifted_lognormal(),
           file = 'fit_EEG_mot_alpha_nontarg_validity_slog',
@@ -566,7 +566,7 @@ fit_EEG_SSVEP_alpha_target = brm(formula = target_SSVEP ~ contra_target_visualAl
           # file_refit = "always"
           )  # Save all that hard work.
 
-fit_EEG_SSVEP_validity_alpha_target = brm(formula = target_SSVEP ~ cue + contra_target_visualAlpha + (cue|subject),
+fit_EEG_SSVEP_validity_alpha_target = brm(formula = target_SSVEP ~ cue_validity_label + contra_target_visualAlpha + (cue_validity_label|subject),
           data = modeldata3, 
           family = shifted_lognormal(),
           file = 'fit_EEG_SSVEP_validity_alpha_target_slog',
@@ -586,7 +586,7 @@ fit_EEG_SSVEP_alpha_nontarget = brm(formula = target_SSVEP ~ contra_nontarget_vi
           # file_refit = "always"
           )  # Save all that hard work.
 
-fit_EEG_SSVEP_validity_alpha_nontarget = brm(formula = target_SSVEP ~ cue + contra_nontarget_visualAlpha + (cue|subject),
+fit_EEG_SSVEP_validity_alpha_nontarget = brm(formula = target_SSVEP ~ cue_validity_label + contra_nontarget_visualAlpha + (cue_validity_label|subject),
           data = modeldata3, 
           family = shifted_lognormal(),
           file = 'fit_EEG_SSVEP_validity_alpha_target_slog',
@@ -606,7 +606,7 @@ fit_EEG_SSVEP_alpha_target_nontarget = brm(formula = target_SSVEP ~ contra_targe
           # file_refit = "always"
           )  # Save all that hard work.
 
-fit_EEG_SSVEP_validity_alpha_target_nontarget = brm(formula = target_SSVEP ~ cue + contra_target_visualAlpha + contra_nontarget_visualAlpha + (cue|subject),
+fit_EEG_SSVEP_validity_alpha_target_nontarget = brm(formula = target_SSVEP ~ cue_validity_label + contra_target_visualAlpha + contra_nontarget_visualAlpha + (cue_validity_label|subject),
           data = modeldata3, 
           family = shifted_lognormal(),
           file = 'fit_EEG_SSVEP_validity_alpha_nontarget_slog',
