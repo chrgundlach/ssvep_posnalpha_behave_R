@@ -2554,7 +2554,8 @@ fit_ndt_alpha2 = brm(formula = bf(post_RT ~ post_cue_vis_alpha_contra_nontarget 
           family = shifted_lognormal(),
           file = 'fit_ndt_visalpha2_slog',
           save_pars = save_pars(all = TRUE),
-          file_refit = "on_change"# file_refit = "always",
+          file_refit = "on_change",
+          # file_refit = "always",
           cores = 4
           )  # Save all that hard work.
 
