@@ -839,6 +839,9 @@ fit_validity_x_SSVEP <- add_criterion(fit_validity_x_SSVEP, c("loo", "waic", "ba
 fit_SSVEP_alpha <- add_criterion(fit_SSVEP_alpha, c("loo", "waic", "bayes_R2"))
 fit_validity_SSVEP_alpha <- add_criterion(fit_validity_SSVEP_alpha, c("loo", "waic", "bayes_R2"))
 fit_validity_x_SSVEP_alpha <- add_criterion(fit_validity_x_SSVEP_alpha, c("loo", "waic", "bayes_R2"))
+fit_posttarg_motoralpha <- add_criterion(fit_posttarg_motoralpha, c("loo", "waic", "bayes_R2"))
+fit_posttarg_validity_motoralpha <- add_criterion(fit_posttarg_validity_motoralpha, c("loo", "waic", "bayes_R2"))
+fit_posttarg_validity_x_motoralpha <- add_criterion(fit_posttarg_validity_x_motoralpha, c("loo", "waic", "bayes_R2"))
 
 ```
 
