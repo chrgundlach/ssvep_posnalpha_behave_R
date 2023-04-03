@@ -193,8 +193,8 @@ So we wanted to know whether (trial-by-trial) variance of reaction times to spat
 
 ```{r RT distribution all trials, results = "hide",  fig.height=3.5, fig.width=5, warning = FALSE, message=FALSE}
 dat_plot <- DATA.In_longer %>%
-  dplyr::select(subject, trialnumber, cue_validity_label, post_event_pos_label, post_hit, post_RT)%>%
-  filter(post_hit=="hit")%>%
+  dplyr::select(subject, trialnumber, cue_validity_label, post_event_pos_label, time, post_hit, post_RT)%>%
+  filter(post_hit=="hit", time=="[500 1500]ms")%>%
   group_by(subject, trialnumber,cue_validity_label)%>%
   dplyr::summarise(post_RT=mean(post_RT))
 
@@ -207,7 +207,8 @@ ggplot(dat_plot, aes(x=post_RT)) +
     subtitle = "all trials for N = 28 subjects",
     x = "RT in ms",
     y = "density"
-  )
+  )+ 
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())
 ```
 
 <br>
@@ -215,8 +216,8 @@ ggplot(dat_plot, aes(x=post_RT)) +
 
 ```{r SSVEP and alpha distribution all trials, results = "hide",  fig.height=3.5, fig.width=8, warning = FALSE, message=FALSE}
 dat_plot <- DATA.In_longer %>%
-  dplyr::select(subject, trialnumber, cue_validity_label, pos_rel_target, amplitude, signal, post_hit)%>%
-  filter(post_hit=="hit")%>%
+  dplyr::select(subject, trialnumber,time, cue_validity_label, pos_rel_target, amplitude, signal, post_hit)%>%
+  filter(post_hit=="hit", time=="[500 1500]ms")%>%
   group_by(subject, trialnumber,cue_validity_label, signal)%>%
   summarise(amplitude=mean(amplitude))
 
@@ -240,8 +241,8 @@ We do know that all these signals are modulated by attention. But do the electro
 ```{r RT, alpha and SSVEP distributions, results = "hide",  fig.height=3.5, fig.width=5, warning = FALSE, message=FALSE}
 
 dat_plot <- DATA.In_longer %>%
-  dplyr::select(subject, trialnumber, cue_validity_label, post_event_pos_label, post_hit, post_RT)%>%
-  filter(post_hit=="hit")%>%
+  dplyr::select(subject, trialnumber, time, cue_validity_label, post_event_pos_label, post_hit, post_RT)%>%
+  filter(post_hit=="hit", time=="[500 1500]ms")%>%
   group_by(subject, trialnumber,cue_validity_label)%>%
   summarise(post_RT=mean(post_RT))
 
