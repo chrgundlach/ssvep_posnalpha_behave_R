@@ -423,233 +423,202 @@ all models were additionally modelled with interaction terms of **cue x signal**
 
 
 ```{r model fits, results = "hide",  fig.height=3.5, fig.width=5, warning = FALSE, message=FALSE}
-modeldata = DATA.In_long %>%
-  filter(post_hit == "hit")
-
-# intercept model
-fit_intercept = brm(formula = post_RT ~ 1 + (1|subject),
-          data = modeldata, 
-          family = shifted_lognormal(),
-          file = 'fit_intercept_slog',
-          save_pars = save_pars(all = TRUE),
-          file_refit = "on_change"
-          # file_refit = "always"
-          )  # Save all that hard work.
-
-
-# validity model
-fit_validity = brm(formula = post_RT ~ cue_validity_label + (cue_validity_label|subject),
-          data = modeldata, 
-          family = shifted_lognormal(),
-          file = 'fit_validity_slog',
-          save_pars = save_pars(all = TRUE),
-          file_refit = "on_change"
-          # file_refit = "always"
-          )  # Save all that hard work.
-
-
-
-# # validity model with specified priors
-# fit_validity_pr = brm(formula = post_RT ~ cue_validity_label + (1|subject),
-#           data = modeldata, 
-#           family = shifted_lognormal(),
-#           file = 'fit_validity_withpriors_slog',
-#           save_pars = save_pars(all = TRUE),
-#           file_refit = "on_change",
-#           prior=priors
-#           # file_refit = "always"
-#           )  # Save all that hard work.
-
-# alter data to extract post-cue alpha contra to target
-modeldata2 = DATA.In_longer %>%
-  filter(post_hit == "hit", signal == "visualAlpha", time == "[500 1500]ms", pos_rel_target == "contra_target")%>%
-  mutate(post_cue_vis_alpha_contra_target = amplitude)
-
-# visual alpha contra target
-fit_visalpha = brm(formula = post_RT ~ post_cue_vis_alpha_contra_target + (1|subject),
-          data = modeldata2, 
-          family = shifted_lognormal(),
-          file = 'fit_visalpha_slog',
-          save_pars = save_pars(all = TRUE),
-          file_refit = "on_change"
-          # file_refit = "always"
-          )  # Save all that hard work.
-
-# visual alpha contra target + validity
-fit_validity_visalpha = brm(formula = post_RT ~ cue_validity_label + post_cue_vis_alpha_contra_target + (cue_validity_label|subject),
-          data = modeldata2, 
-          family = shifted_lognormal(),
-          file = 'fit_validity_visalpha_slog',
-          save_pars = save_pars(all = TRUE),
-          file_refit = "on_change"
-          # file_refit = "always"
-          )  # Save all that hard work.
-
-# visual alpha contra target * validity
-fit_validity_x_visalpha = brm(formula = post_RT ~ cue_validity_label * post_cue_vis_alpha_contra_target + (cue_validity_label|subject),
-          data = modeldata2, 
-          family = shifted_lognormal(),
-          file = 'fit_validity_x_visalpha_slog',
-          save_pars = save_pars(all = TRUE),
-          file_refit = "on_change"
-          # file_refit = "always"
-          )  # Save all that hard work.
-
-# alter data to extract post-cue alpha contra to nontarget
-modeldata3 = DATA.In_longer %>%
-  filter(post_hit == "hit", signal == "visualAlpha", time == "[500 1500]ms", pos_rel_target == "contra_nontarget")%>%
-  mutate(post_cue_vis_alpha_contra_nontarget = amplitude)
-
-# visual alpha contra nontarget 
-fit_alpha2 = brm(formula = post_RT ~ post_cue_vis_alpha_contra_nontarget + (1|subject),
-          data = modeldata3, 
-          family = shifted_lognormal(),
-          file = 'fit_visalpha2_slog',
-          save_pars = save_pars(all = TRUE),
-          file_refit = "on_change"# file_refit = "always"
-          )  # Save all that hard work.
-
-# visual alpha contra nontarget + validity
-fit_validity_alpha2 = brm(formula = post_RT ~ cue_validity_label + post_cue_vis_alpha_contra_nontarget + (cue_validity_label|subject),
-          data = modeldata3, 
-          family = shifted_lognormal(),
-          file = 'fit_validity_visalpha2_slog',
-          save_pars = save_pars(all = TRUE),
-          file_refit = "on_change"
-          # file_refit = "always"
-          )  # Save all that hard work.
-
-# visual alpha contra nontarget + validity
-fit_validity_x_alpha2 = brm(formula = post_RT ~ cue_validity_label * post_cue_vis_alpha_contra_nontarget + (cue_validity_label|subject),
-          data = modeldata3, 
-          family = shifted_lognormal(),
-          file = 'fit_validity_x_visalpha2_slog',
-          save_pars = save_pars(all = TRUE),
-          file_refit = "on_change"
-          # file_refit = "always"
-          )  # Save all that hard work.
-
-# combined alpha model
-# alter data to extract post-cue alpha contra to target
-modeldata4 = DATA.In_longer %>%
-  filter(post_hit == "hit", signal == "visualAlpha", time == "[500 1500]ms")%>%
-  dplyr::select(subject, trialnumber, cue_validity_label, post_RT, pos_rel_target, amplitude) %>%
-  pivot_wider(names_from = "pos_rel_target", values_from = amplitude)
-
-# visual alpha contra target and contra non-target
-fit_alpha1_alpha2 = brm(formula = post_RT ~ contra_target + contra_nontarget + (1|subject),
-          data = modeldata4, 
-          family = shifted_lognormal(),
-          file = 'fit_visalpha1_visalpha2_slog',
-          save_pars = save_pars(all = TRUE),
-          file_refit = "on_change"
-          # file_refit = "always"
-          )  # Save all that hard work.
-
-# visual alpha contra target and contra non-target + validity
-fit_validity_alpha1_alpha2 = brm(formula = post_RT ~ cue_validity_label + contra_target + contra_nontarget + (cue_validity_label|subject),
-          data = modeldata4, 
-          family = shifted_lognormal(),
-          file = 'fit_validity_visalpha1_visalpha2_slog',
-          save_pars = save_pars(all = TRUE),
-          file_refit = "on_change"
-          # file_refit = "always"
-          )  # Save all that hard work.
-
-# visual alpha contra target and contra non-target + validity
-fit_validity_x_alpha1_alpha2 = brm(
-  formula = post_RT ~ cue_validity_label * contra_target + cue_validity_label * contra_nontarget + (cue_validity_label|subject),
-          data = modeldata4, 
-          family = shifted_lognormal(),
-          file = 'fit_validity_x_visalpha1_visalpha2_slog',
-          save_pars = save_pars(all = TRUE),
-          file_refit = "on_change"
-          # file_refit = "always"
-          )  # Save all that hard work.
-
-# # visual alpha contra target and contra non-target + validity with random factor validity
-# fit_validity_alpha1_alpha2_v2 = brm(formula = post_RT ~ cue_validity_label + contra_target + contra_nontarget + (cue_validity_label|subject),
-#           data = modeldata4, 
-#           family = shifted_lognormal(),
-#           file = 'fit_validity_visalpha1_visalpha2_v2_slog',
-#           save_pars = save_pars(all = TRUE),
-#           file_refit = "on_change"
-#           # file_refit = "always"
-#           )  # Save all that hard work.
-
-
-# alter data to extract post-cue target SSVEP
-modeldata5 = DATA.In_longer %>%
+# alter data to extract post-cue target SSVEPs
+modeldata = DATA.In_longer %>%
   filter(post_hit == "hit", signal == "SSVEP", time == "[500 1500]ms", pos_rel_target == "contra_target")%>%
-  mutate(post_cue_SSVEP_contra_target = amplitude)
+  mutate(target_SSVEP = amplitude)
 
-# SSVEP model
-fit_SSVEP = brm(formula = post_RT ~ post_cue_SSVEP_contra_target + (1|subject),
-          data = modeldata5, 
+fit_EEG_SSVEP_intercept = brm(formula = target_SSVEP ~ 1 + (1|subject),
+          data = modeldata, 
           family = shifted_lognormal(),
-          file = 'fit_ssvep_slog',
+          file = 'fit_EEG_SSVEP_intercept_slog',
           save_pars = save_pars(all = TRUE),
-          file_refit = "on_change"
+          file_refit = "on_change",
+          cores = 4
           # file_refit = "always"
           )  # Save all that hard work.
 
-# SSVEP + validity model
-fit_validity_SSVEP = brm(formula = post_RT ~ cue_validity_label + post_cue_SSVEP_contra_target + (cue_validity_label|subject),
-          data = modeldata5, 
+fit_EEG_SSVEP_validity = brm(formula = target_SSVEP ~ 1 + cue + (cue|subject),
+          data = modeldata, 
           family = shifted_lognormal(),
-          file = 'fit_validity_ssvep_slog',
+          file = 'fit_EEG_SSVEP_validity_slog',
           save_pars = save_pars(all = TRUE),
-          file_refit = "on_change"
+          file_refit = "on_change",
+          cores = 4
           # file_refit = "always"
           )  # Save all that hard work.
 
-fit_validity_x_SSVEP = brm(formula = post_RT ~ cue_validity_label * post_cue_SSVEP_contra_target + (cue_validity_label|subject),
-          data = modeldata5, 
+# alter data to extract post-cue visual alpha
+modeldata2 = DATA.In_longer %>%
+  filter(post_hit == "hit", signal == "visualAlpha", time == "[500 1500]ms")%>%
+  dplyr::select(-side, -Zamplitude, -attention)%>%
+  pivot_wider(names_from = pos_rel_target, values_from = amplitude)
+
+fit_EEG_vis_alpha_targ_intercept = brm(formula = contra_target ~ 1 + (1|subject),
+          data = modeldata2, 
           family = shifted_lognormal(),
-          file = 'fit_validity_x_ssvep_slog',
+          file = 'fit_EEG_vis_alpha_targ_intercept_slog',
           save_pars = save_pars(all = TRUE),
-          file_refit = "on_change"
+          file_refit = "on_change",
+          cores = 4
+          # file_refit = "always"
+          )  # Save all that hard work.
+
+fit_EEG_vis_alpha_targ_validity = brm(formula = contra_target ~ 1 + cue + (cue|subject),
+          data = modeldata2, 
+          family = shifted_lognormal(),
+          file = 'fit_EEG_vis_alpha_targ_validity_slog',
+          save_pars = save_pars(all = TRUE),
+          file_refit = "on_change",
+          cores = 4
+          # file_refit = "always"
+          )  # Save all that hard work.
+
+fit_EEG_vis_alpha_nontarg_intercept = brm(formula = contra_nontarget ~ 1 + (1|subject),
+          data = modeldata2, 
+          family = shifted_lognormal(),
+          file = 'fit_EEG_vis_alpha_nontarg_intercept_slog',
+          save_pars = save_pars(all = TRUE),
+          file_refit = "on_change",
+          cores = 4
+          # file_refit = "always"
+          )  # Save all that hard work.
+
+fit_EEG_vis_alpha_nontarg_validity = brm(formula = contra_nontarget ~ 1 + cue + (cue|subject),
+          data = modeldata2, 
+          family = shifted_lognormal(),
+          file = 'fit_EEG_vis_alpha_nontarg_validity_slog',
+          save_pars = save_pars(all = TRUE),
+          file_refit = "on_change",
+          cores = 4
           # file_refit = "always"
           )  # Save all that hard work.
 
 
+# alter data to extract post-cue motor alpha
+modeldata3 = DATA.In_longer %>%
+  filter(post_hit == "hit", signal == "motorAlpha", time == "[500 1500]ms")%>%
+  dplyr::select(-side, -Zamplitude, -attention)%>%
+  pivot_wider(names_from = pos_rel_target, values_from = amplitude)
 
-# combined alpha + SSVEP model (most complex)
-# alter data to extract post-cue alpha contra to target
-modeldata5 = DATA.In_longer %>%
+fit_EEG_mot_alpha_targ_intercept = brm(formula = contra_target ~ 1 + (1|subject),
+          data = modeldata2, 
+          family = shifted_lognormal(),
+          file = 'fit_EEG_mot_alpha_targ_intercept_slog',
+          save_pars = save_pars(all = TRUE),
+          file_refit = "on_change",
+          cores = 4
+          # file_refit = "always"
+          )  # Save all that hard work.
+
+fit_EEG_mot_alpha_targ_validity = brm(formula = contra_target ~ 1 + cue + (cue|subject),
+          data = modeldata2, 
+          family = shifted_lognormal(),
+          file = 'fit_EEG_mot_alpha_targ_validity_slog',
+          save_pars = save_pars(all = TRUE),
+          file_refit = "on_change",
+          cores = 4
+          # file_refit = "always"
+          )  # Save all that hard work.
+
+fit_EEG_mot_alpha_nontarg_intercept = brm(formula = contra_nontarget ~ 1 + (1|subject),
+          data = modeldata2, 
+          family = shifted_lognormal(),
+          file = 'fit_EEG_mot_alpha_nontarg_intercept_slog',
+          save_pars = save_pars(all = TRUE),
+          file_refit = "on_change",
+          cores = 4
+          # file_refit = "always"
+          )  # Save all that hard work.
+
+fit_EEG_mot_alpha_nontarg_validity = brm(formula = contra_nontarget ~ 1 + cue + (cue|subject),
+          data = modeldata2, 
+          family = shifted_lognormal(),
+          file = 'fit_EEG_mot_alpha_nontarg_validity_slog',
+          save_pars = save_pars(all = TRUE),
+          file_refit = "on_change",
+          cores = 4
+          # file_refit = "always"
+          )  # Save all that hard work.
+
+
+modeldata3 = DATA.In_longer %>%
   filter(post_hit == "hit", signal != "motorAlpha", time == "[500 1500]ms")%>%
-  dplyr::select(subject, trialnumber, cue_validity_label, post_RT, signal, pos_rel_target, amplitude) %>%
-  pivot_wider(names_from = c("signal", "pos_rel_target"), values_from = amplitude)
+  dplyr::select(-side, -Zamplitude, -attention)%>%
+  pivot_wider(names_from = c(pos_rel_target, signal), values_from = amplitude)%>%
+  dplyr::rename(target_SSVEP = contra_target_SSVEP)
 
-# visual alpha contra target and contra non-target and SSVEP
-fit_SSVEP_alpha = brm(formula = post_RT ~ visualAlpha_contra_target + visualAlpha_contra_nontarget + SSVEP_contra_target + (1|subject),
-          data = modeldata5, 
+
+# * by target alpha: **target_SSVEP ~ vis_alpha_target + ( 1 | subjects)**
+# * by target alpha + validtiy: **target_SSVEP ~ vis_alpha_target + cue ( cue | subjects)**
+# * by nontarget alpha: **target_SSVEP ~ vis_alpha_nontarget + ( 1 | subjects)**
+# * by nontarget alpha + validtiy: **target_SSVEP ~ vis_alpha_nontarget + cue ( cue | subjects)**
+# * by nontarget + target alpha: **target_SSVEP ~ vis_alpha_nontarget + vis_alpha_target + ( 1 | subjects)**
+# * by nontarget + target alpha + validtiy: **target_SSVEP ~ vis_alpha_nontarget + vis_alpha_target + cue ( cue | subjects)** 
+  
+fit_EEG_SSVEP_alpha_target = brm(formula = target_SSVEP ~ contra_target_visualAlpha + (1|subject),
+          data = modeldata3, 
           family = shifted_lognormal(),
-          file = 'fit_SSVEP_alpha_slog',
+          file = 'fit_EEG_SSVEP_alpha_target_slog',
           save_pars = save_pars(all = TRUE),
-          file_refit = "on_change"
+          file_refit = "on_change",
+          cores = 4
           # file_refit = "always"
           )  # Save all that hard work.
 
-# visual alpha contra target and contra non-target and SSVEP  + validity
-fit_validity_SSVEP_alpha = brm(formula = post_RT ~ cue_validity_label + visualAlpha_contra_target + visualAlpha_contra_nontarget + SSVEP_contra_target + (cue_validity_label|subject),
-          data = modeldata5, 
+fit_EEG_SSVEP_validity_alpha_target = brm(formula = target_SSVEP ~ cue + contra_target_visualAlpha + (cue|subject),
+          data = modeldata3, 
           family = shifted_lognormal(),
-          file = 'fit_validity_SSVEP_alpha_slog',
+          file = 'fit_EEG_SSVEP_validity_alpha_target_slog',
           save_pars = save_pars(all = TRUE),
-          file_refit = "on_change"
+          file_refit = "on_change",
+          cores = 4
           # file_refit = "always"
           )  # Save all that hard work.
 
-fit_validity_x_SSVEP_alpha = brm(
-  formula = post_RT ~ cue_validity_label * visualAlpha_contra_target + cue_validity_label * visualAlpha_contra_nontarget + cue_validity_label * SSVEP_contra_target + (cue_validity_label|subject),
-          data = modeldata5, 
+fit_EEG_SSVEP_alpha_nontarget = brm(formula = target_SSVEP ~ contra_nontarget_visualAlpha + (1|subject),
+          data = modeldata3, 
           family = shifted_lognormal(),
-          file = 'fit_validity_x_SSVEP_alpha_slog',
+          file = 'fit_EEG_SSVEP_alpha_target_slog',
           save_pars = save_pars(all = TRUE),
-          file_refit = "on_change"
+          file_refit = "on_change",
+          cores = 4
           # file_refit = "always"
           )  # Save all that hard work.
+
+fit_EEG_SSVEP_validity_alpha_nontarget = brm(formula = target_SSVEP ~ cue + contra_nontarget_visualAlpha + (cue|subject),
+          data = modeldata3, 
+          family = shifted_lognormal(),
+          file = 'fit_EEG_SSVEP_validity_alpha_target_slog',
+          save_pars = save_pars(all = TRUE),
+          file_refit = "on_change",
+          cores = 4
+          # file_refit = "always"
+          )  # Save all that hard work.
+
+fit_EEG_SSVEP_alpha_target_nontarget = brm(formula = target_SSVEP ~ contra_target_visualAlpha + contra_nontarget_visualAlpha + (1|subject),
+          data = modeldata3, 
+          family = shifted_lognormal(),
+          file = 'fit_EEG_SSVEP_alpha_target_slog',
+          save_pars = save_pars(all = TRUE),
+          file_refit = "on_change",
+          cores = 4
+          # file_refit = "always"
+          )  # Save all that hard work.
+
+fit_EEG_SSVEP_validity_alpha_target_nontarget = brm(formula = target_SSVEP ~ cue + contra_target_visualAlpha + contra_nontarget_visualAlpha + (cue|subject),
+          data = modeldata3, 
+          family = shifted_lognormal(),
+          file = 'fit_EEG_SSVEP_validity_alpha_nontarget_slog',
+          save_pars = save_pars(all = TRUE),
+          file_refit = "on_change",
+          cores = 4
+          # file_refit = "always"
+          )  # Save all that hard work.
+
+
+
+
 
 ```
 
