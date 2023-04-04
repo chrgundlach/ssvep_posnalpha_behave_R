@@ -809,6 +809,46 @@ fit_posttarg_validity_x_motoralpha = brm(formula = post_RT ~ cue_validity_label 
           # file_refit = "always"
           )  # Save all that hard work.
 
+
+# pre-target motor alpha
+# alter data to extract post-cue alpha contra to target
+modeldata7 = DATA.In_longer %>%
+  filter(post_hit == "hit", signal == "motorAlpha", time == "[-1000 0]ms", pos_rel_target == "contra_target")%>%
+  mutate(pre_target_malpha_contra_target = amplitude)
+
+# visual alpha contra target
+fit_motoralpha = brm(formula = post_RT ~ pre_target_malpha_contra_target + (1|subject),
+          data = modeldata7, 
+          family = shifted_lognormal(),
+          file = 'fit_targ_motoralpha_slog',
+          save_pars = save_pars(all = TRUE),
+          file_refit = "on_change",
+          cores = 4
+          # file_refit = "always"
+          )  # Save all that hard work.
+
+# visual alpha contra target + validity
+fit_validity_motoralpha = brm(formula = post_RT ~ cue_validity_label + pre_target_malpha_contra_target + (cue_validity_label|subject),
+          data = modeldata7, 
+          family = shifted_lognormal(),
+          file = 'fit_targ_validity_motoralpha_slog',
+          save_pars = save_pars(all = TRUE),
+          file_refit = "on_change",
+          cores = 4
+          # file_refit = "always"
+          )  # Save all that hard work.
+
+# visual alpha contra target * validity
+fit_validity_x_motoralpha = brm(formula = post_RT ~ cue_validity_label * pre_target_malpha_contra_target + (cue_validity_label|subject),
+          data = modeldata7, 
+          family = shifted_lognormal(),
+          file = 'fit_targ_validity_x_motoralpha_slog',
+          save_pars = save_pars(all = TRUE),
+          file_refit = "on_change",
+          cores = 4
+          # file_refit = "always"
+          )  # Save all that hard work.
+
 ```
 
 ### Comparing models
@@ -839,6 +879,12 @@ fit_validity_x_SSVEP <- add_criterion(fit_validity_x_SSVEP, c("loo", "waic", "ba
 fit_SSVEP_alpha <- add_criterion(fit_SSVEP_alpha, c("loo", "waic", "bayes_R2"))
 fit_validity_SSVEP_alpha <- add_criterion(fit_validity_SSVEP_alpha, c("loo", "waic", "bayes_R2"))
 fit_validity_x_SSVEP_alpha <- add_criterion(fit_validity_x_SSVEP_alpha, c("loo", "waic", "bayes_R2"))
+
+fit_motoralpha <- add_criterion(fit_motoralpha, c("loo", "waic", "bayes_R2"))
+fit_validity_motoralpha <- add_criterion(fit_validity_motoralpha, c("loo", "waic", "bayes_R2"))
+fit_validity_x_motoralpha <- add_criterion(fit_validity_x_motoralpha, c("loo", "waic", "bayes_R2"))
+
+
 fit_posttarg_motoralpha <- add_criterion(fit_posttarg_motoralpha, c("loo", "waic", "bayes_R2"))
 fit_posttarg_validity_motoralpha <- add_criterion(fit_posttarg_validity_motoralpha, c("loo", "waic", "bayes_R2"))
 fit_posttarg_validity_x_motoralpha <- add_criterion(fit_posttarg_validity_x_motoralpha, c("loo", "waic", "bayes_R2"))
@@ -874,7 +920,10 @@ loo_compare(fit_intercept, fit_validity, fit_SSVEP, fit_validity_SSVEP, fit_vali
   kable(escape = F, digits = c(6,6,6,6,6,6,6,6,6), caption = c("target SSVEP models | loo comparison")) %>%
   kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
 
-#
+# pre-target motor alpha contra target
+loo_compare(fit_intercept, fit_validity, fit_motoralpha, fit_validity_motoralpha, fit_validity_x_motoralpha, criterion = c("loo"))%>%
+  kable(escape = F, digits = c(6,6,6,6,6,6,6,6,6), caption = c("motor alpha contra target models | loo comparison")) %>%
+  kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
 
 # pre-target alpha all models with validity as predictor
 loo_compare(fit_intercept, fit_validity,
@@ -1222,7 +1271,7 @@ bestmodel.ef.slope_contraTarget %>% median_hdi() %>%
 
 ```
 
-###  Extract marginal effects from actuall winning model model
+###  Extract marginal effects from actuall winning model 
 
 Now for illustrating the whole picture, lets plot the winning model
 
