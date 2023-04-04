@@ -404,7 +404,61 @@ plotplots <- ggarrange(plot1, plot2, nrow = 2, align = "v", heights =c(4,2), com
 ggarrange(plotttitle, plotplots, nrow = 2, heights=c(0.1, 1))
 
 
-# alpha contra target
+# motor alpha contra target
+dat_plot <- DATA.In_longer %>%
+  dplyr::select(subject, trialnumber, cue_validity_label, post_event_pos_label, post_hit, amplitude, signal, pos_rel_target, time)%>%
+  filter(post_hit=="hit", signal == "motorAlpha", pos_rel_target == "contra_target", time == "[500 1500]ms")
+
+mu <- dat_plot %>%
+  group_by(subject, cue_validity_label)%>%
+  summarize(amplitude = mean(amplitude,na.rm = TRUE))%>%
+  ungroup()%>%
+  group_by(cue_validity_label)%>%
+  summarize(grp.mean = mean(amplitude,na.rm = TRUE), grp.median = median(amplitude,na.rm = TRUE))
+
+theme_set(theme_bw())
+plot1 <-
+  ggplot(dat_plot, aes(
+    x = amplitude,
+    fill = cue_validity_label
+  )) +
+  stat_slab(
+    height = 2, color = "gray15",
+    expand = TRUE, trim = TRUE,
+    alpha = 0.8,
+    fill_type = "segments",
+    show.legend = FALSE,
+    position = position_dodgejust(0.3),
+  )+
+  theme(axis.text.y=element_blank(),axis.ticks.y=element_blank(), axis.title.y = element_blank())+
+  theme(axis.text.x=element_blank(),axis.ticks.x=element_blank(), axis.title.x = element_blank())+
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())+
+  scale_fill_manual(name = "cue", values=c("#F1831A", "#293C4A", "#198A83")) +
+  scale_color_manual(name = "cue", values=c("#F1831A", "#293C4A", "#198A83"))+
+  xlim(pl.xlim)
+
+plot2 <-
+  ggplot(dat_plot, aes(
+    x = amplitude, 
+    fill = cue_validity_label
+  )) +
+  stat_pointinterval(position = position_dodge(width = .4, preserve = "single"), 
+                     aes(color=cue_validity_label)) +
+  theme(axis.text.y=element_blank(),axis.ticks.y=element_blank(), axis.title.y = element_blank())+
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())+
+  scale_x_continuous(name= expression(paste("amplitude in ", mu,"V")), breaks=waiver(), labels=waiver(), limits=pl.xlim)+
+  scale_fill_manual(name = "cue", values=c("#F1831A", "#293C4A", "#198A83")) +
+  scale_color_manual(name = "cue", values=c("#F1831A", "#293C4A", "#198A83"))
+  
+
+
+# cowplot::plot_grid(plot1, plot2, plot3, ncol = 3,labels = "AUTO")
+plotttitle <- ggdraw() + draw_label("motor alpha-band amplitude contra target", fontface='bold')
+plotplots <- ggarrange(plot1, plot2, nrow = 2, align = "v", heights =c(4,2), common.legend = TRUE)
+ggarrange(plotttitle, plotplots, nrow = 2, heights=c(0.1, 1))
+
+
+# SSVEP contra target
 dat_plot <- DATA.In_longer %>%
   dplyr::select(subject, trialnumber, cue_validity_label, post_event_pos_label, post_hit, amplitude, signal, pos_rel_target, time)%>%
   filter(post_hit=="hit", signal == "SSVEP", pos_rel_target == "contra_target", time == "[500 1500]ms")
@@ -424,6 +478,7 @@ plot1 <-
   )) +
   stat_slab(
     height = 2, color = "gray15",
+    alpha = 0.8,
     expand = TRUE, trim = TRUE,
     fill_type = "segments",
     show.legend = FALSE,
@@ -511,6 +566,11 @@ The models specified so far:
 
 * target ssvep: **RT ~ SSVEP + ( 1 | subjects)**
 * target ssvep + validity: **RT ~ Cue + SSVEP + ( cue | subjects)**
+
+*motor alpha models*
+
+* contra target: **RT ~ motor_alpha_Targ + ( 1 | subjects)**
+* contra target + validity: **RT ~ Cue +  motor_alpha_Targ + ( cue | subjects)**
 
 *combined alpha models*
 
@@ -754,6 +814,45 @@ fit_validity_x_SSVEP_alpha = brm(
           # file_refit = "always"
           )  # Save all that hard work.
 
+# post-cue motor alpha
+# alter data to extract post-cue alpha contra to target
+modeldata6 = DATA.In_longer %>%
+  filter(post_hit == "hit", signal == "motorAlpha", time == "[500 1500]ms", pos_rel_target == "contra_target")%>%
+  mutate(target_malpha_contra_target = amplitude)
+
+# motor alpha contra target
+fit_motoralpha = brm(formula = post_RT ~ target_malpha_contra_target + (1|subject),
+          data = modeldata6, 
+          family = shifted_lognormal(),
+          file = 'fit_targ_motoralpha_slog',
+          save_pars = save_pars(all = TRUE),
+          file_refit = "on_change",
+          cores = 4
+          # file_refit = "always"
+          )  # Save all that hard work.
+
+# motor alpha contra target + validity
+fit_validity_motoralpha = brm(formula = post_RT ~ cue_validity_label + target_malpha_contra_target + (cue_validity_label|subject),
+          data = modeldata6, 
+          family = shifted_lognormal(),
+          file = 'fit_targ_validity_motoralpha_slog',
+          save_pars = save_pars(all = TRUE),
+          file_refit = "on_change",
+          cores = 4
+          # file_refit = "always"
+          )  # Save all that hard work.
+
+# motor alpha contra target * validity
+fit_validity_x_motoralpha = brm(formula = post_RT ~ cue_validity_label * target_malpha_contra_target + (cue_validity_label|subject),
+          data = modeldata6, 
+          family = shifted_lognormal(),
+          file = 'fit_targ_validity_x_motoralpha_slog',
+          save_pars = save_pars(all = TRUE),
+          file_refit = "on_change",
+          cores = 4
+          # file_refit = "always"
+          )  # Save all that hard work.
+
 ```
 
 ### Comparing models
@@ -785,6 +884,11 @@ fit_SSVEP_alpha <- add_criterion(fit_SSVEP_alpha, c("loo", "waic", "bayes_R2"))
 fit_validity_SSVEP_alpha <- add_criterion(fit_validity_SSVEP_alpha, c("loo", "waic", "bayes_R2"))
 fit_validity_x_SSVEP_alpha <- add_criterion(fit_validity_x_SSVEP_alpha, c("loo", "waic", "bayes_R2"))
 
+fit_motoralpha <- add_criterion(fit_motoralpha, c("loo", "waic", "bayes_R2"))
+fit_validity_motoralpha <- add_criterion(fit_validity_motoralpha, c("loo", "waic", "bayes_R2"))
+fit_validity_x_motoralpha <- add_criterion(fit_validity_x_motoralpha, c("loo", "waic", "bayes_R2"))
+
+
 ```
 
 #### actual comparisons between models
@@ -814,6 +918,11 @@ loo_compare(fit_intercept, fit_validity, fit_alpha2, fit_validity_alpha2, fit_va
 # target ssvep
 loo_compare(fit_intercept, fit_validity, fit_SSVEP, fit_validity_SSVEP, fit_validity_x_SSVEP, criterion = c("loo"))%>%
   kable(escape = F, digits = c(6,6,6,6,6,6,6,6,6), caption = c("target SSVEP models | loo comparison")) %>%
+  kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
+
+# motor alpha contra target
+loo_compare(fit_intercept, fit_validity, fit_motoralpha, fit_validity_motoralpha, fit_validity_x_motoralpha, criterion = c("loo"))%>%
+  kable(escape = F, digits = c(6,6,6,6,6,6,6,6,6), caption = c("motor alpha contra target models | loo comparison")) %>%
   kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
 
 # all models with validity as predictor

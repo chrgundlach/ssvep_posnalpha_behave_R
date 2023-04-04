@@ -700,106 +700,82 @@ One approach would be to check all the *alpha* and *ssvep* models separately fir
 In addition we can compute a Byesian version of the R² value for brms regression models for all the models.
 
 ```{r model comparisons, fig.height=6, fig.width=10, warning=FALSE, eval = TRUE}
-# alpha contra target
-loo_compare(fit_intercept, fit_validity, fit_visalpha, fit_validity_visalpha, fit_validity_x_visalpha, criterion = c("loo"))%>%
-  kable(escape = F, digits = c(6,6,6,6,6,6,6,6,6), caption = c("alpha contra target models | loo comparison")) %>%
+# SSVEP models
+loo_compare(fit_EEG_SSVEP_intercept, fit_EEG_SSVEP_validity, criterion = c("loo"))%>%
+  kable(escape = F, digits = c(6,6,6,6,6,6,6,6,6), caption = c("SSVEP models | loo comparison")) %>%
   kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
 
-# alpha contra nontarget
-loo_compare(fit_intercept, fit_validity, fit_alpha2, fit_validity_alpha2, fit_validity_x_alpha2, criterion = c("loo"))%>%
-  kable(escape = F, digits = c(6,6,6,6,6,6,6,6,6), caption = c("alpha contra nontarget models | loo comparison")) %>%
-  kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
-
-# target ssvep
-loo_compare(fit_intercept, fit_validity, fit_SSVEP, fit_validity_SSVEP, fit_validity_x_SSVEP, criterion = c("loo"))%>%
-  kable(escape = F, digits = c(6,6,6,6,6,6,6,6,6), caption = c("target SSVEP models | loo comparison")) %>%
-  kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
-
-# all models with validity as predictor
-loo_compare(fit_intercept, fit_validity,
-            fit_validity_visalpha, fit_validity_x_visalpha,
-            fit_validity_alpha2, fit_validity_x_alpha2,
-            fit_validity_alpha1_alpha2, fit_validity_x_alpha1_alpha2, 
-            fit_validity_SSVEP, fit_validity_x_SSVEP, 
-            fit_validity_SSVEP_alpha, fit_validity_x_SSVEP_alpha, 
+# vis alpha models
+loo_compare(fit_EEG_vis_alpha_targ_intercept, fit_EEG_vis_alpha_targ_validity, fit_EEG_vis_alpha_nontarg_intercept, fit_EEG_vis_alpha_nontarg_validity,
             criterion = c("loo"))%>%
-  kable(escape = F, digits = c(6,6,6,6,6,6,6,6,6), caption = c("alpha, ssvep and combined models | loo comparison")) %>%
+  kable(escape = F, digits = c(6,6,6,6,6,6,6,6,6), caption = c("vis alpha models | loo comparison")) %>%
+  kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
+
+# motor alpha models
+loo_compare(fit_EEG_mot_alpha_targ_intercept, fit_EEG_mot_alpha_targ_validity, fit_EEG_mot_alpha_nontarg_intercept, fit_EEG_mot_alpha_nontarg_validity,
+            criterion = c("loo"))%>%
+  kable(escape = F, digits = c(6,6,6,6,6,6,6,6,6), caption = c("motor alpha models | loo comparison")) %>%
+  kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
+
+
+# all SSVEP models with validity and alpha as predictor
+loo_compare(fit_EEG_SSVEP_intercept, fit_EEG_SSVEP_validity,
+            fit_EEG_SSVEP_alpha_target, fit_EEG_SSVEP_alpha_nontarget, fit_EEG_SSVEP_alpha_target_nontarget,
+            fit_EEG_SSVEP_validity_alpha_target, fit_EEG_SSVEP_validity_alpha_nontarget, fit_EEG_SSVEP_validity_alpha_target_nontarget,
+            fit_EEG_SSVEP_validity_x_alpha_target, fit_EEG_SSVEP_validity_x_alpha_nontarget, fit_EEG_SSVEP_validity_x_alpha_target_nontarget,
+            criterion = c("loo"))%>%
+  kable(escape = F, digits = c(6,6,6,6,6,6,6,6,6), caption = c("ssvep combined models | loo comparison")) %>%
   kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
 
 as.data.frame(rbind(
-  bayes_R2(fit_intercept), bayes_R2(fit_validity),
-  bayes_R2(fit_validity_visalpha), bayes_R2(fit_validity_x_visalpha),
-  bayes_R2(fit_validity_alpha2), bayes_R2(fit_validity_x_alpha2),
-  bayes_R2(fit_validity_alpha1_alpha2), bayes_R2(fit_validity_x_alpha1_alpha2),
-  bayes_R2(fit_validity_SSVEP), bayes_R2(fit_validity_x_SSVEP),
-  bayes_R2(fit_validity_SSVEP_alpha), bayes_R2(fit_validity_x_SSVEP_alpha)),
-  row.names = c("fit_intercept","fit_validity",
-                "fit_validity_visalpha", "fit_validity_x_visalpha",
-                "fit_validity_alpha2", "fit_validity_x_alpha2",
-                "fit_validity_alpha1_alpha2", "fit_validity_x_alpha1_alpha2",
-                "fit_validity_SSVEP","fit_validity_x_SSVEP",
-                "fit_validity_SSVEP_alpha", "fit_validity_x_SSVEP_alpha"))%>%
+  bayes_R2(fit_EEG_SSVEP_intercept), bayes_R2(fit_EEG_SSVEP_validity),
+  bayes_R2(fit_EEG_SSVEP_alpha_target), bayes_R2(fit_EEG_SSVEP_alpha_nontarget), bayes_R2(fit_EEG_SSVEP_alpha_target_nontarget),
+  bayes_R2(fit_EEG_SSVEP_validity_alpha_target), bayes_R2(fit_EEG_SSVEP_validity_alpha_nontarget), bayes_R2(fit_EEG_SSVEP_validity_alpha_target_nontarget),
+  bayes_R2(fit_EEG_SSVEP_validity_x_alpha_target), bayes_R2(fit_EEG_SSVEP_validity_x_alpha_nontarget), bayes_R2(fit_EEG_SSVEP_validity_x_alpha_target_nontarget)),
+  row.names = c("fit_EEG_SSVEP_intercept","fit_EEG_SSVEP_validity",
+                "fit_EEG_SSVEP_alpha_target", "fit_EEG_SSVEP_alpha_nontarget", "fit_EEG_SSVEP_alpha_target_nontarget",
+                "fit_EEG_SSVEP_validity_alpha_target", "fit_EEG_SSVEP_validity_alpha_nontarget", "fit_EEG_SSVEP_validity_alpha_target_nontarget",
+                "fit_EEG_SSVEP_validity_x_alpha_target", "fit_EEG_SSVEP_validity_x_alpha_nontarget", "fit_EEG_SSVEP_validity_x_alpha_target_nontarget"))%>%
   kable(escape = F, digits = c(6,6,6,6,6,6,6,6,6), caption = c("alpha, ssvep and combined models | bayes_R2")) %>%
   kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
 
-# extract model weights
-# via stacking: Each model in a set is fitted to the training data: a subset of p * N observations in data. From these models a prediction is produced on the remaining part of data (the test or hold-out data). These hold-out predictions are fitted to the hold-out observations, by optimising the weights by which the models are combined. This process is repeated R times, yielding a distribution of weights for each model (which Smyth & Wolpert (1998) referred to as an ‘empirical Bayesian estimate of posterior model probability’). A mean or median of model weights for each model is taken and re-scaled to sum to one.
-# or via loo epld score
-data.frame(model_weight = model_weights(fit_intercept, fit_validity,
-                            fit_validity_visalpha, fit_validity_x_visalpha,
-                            fit_validity_alpha2, fit_validity_x_alpha2,
-                            fit_validity_alpha1_alpha2, fit_validity_x_alpha1_alpha2, 
-                            fit_validity_SSVEP, fit_validity_x_SSVEP, 
-                            fit_validity_SSVEP_alpha, fit_validity_x_SSVEP_alpha,
-                            weights = "loo")) %>%
-  kable(escape = F, digits = c(6,6,6,6,6,6,6,6,6), caption = c("alpha, ssvep and combined models | model weights via model_weights(...)")) %>%
-  kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
 
-# # via loo_model_weights (takes long!)
-# data.frame(model_weight = brms::loo_model_weights(fit_intercept, fit_validity,
-#                             fit_validity_visalpha, fit_validity_x_visalpha,
-#                             fit_validity_alpha2, fit_validity_x_alpha2,
-#                             fit_validity_alpha1_alpha2, fit_validity_x_alpha1_alpha2,
-#                             fit_validity_SSVEP, fit_validity_x_SSVEP,
-#                             fit_validity_SSVEP_alpha, fit_validity_x_SSVEP_alpha)) %>%
-#   kable(escape = F, digits = c(6,6,6,6,6,6,6,6,6), 
-#         caption = c("alpha, ssvep and combined models | model weights via loo_model_weights(...)")) %>%
-#   kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
-  
 
 
 # ## useful functions to evaluate best model
 # # extract summary of model
-# summary(fit_validity_visalpha)
+# summary(fit_EEG_SSVEP_intercept)
+# summary(fit_EEG_SSVEP_validity)
+
 # # extract all fitted parameters with summary
-# tidy(fit_validity_visalpha)
+# tidy(fit_EEG_SSVEP_validity)
+
 # # see all coefficients
 # coef(fit_validity_visalpha)
+
 # # plot distributions of parameters and evaluation across single draws (catarpillar plot: should look like a noisy eeg channel)
-# plot(fit_validity_visalpha, ask = FALSE)
+# plot(fit_EEG_SSVEP_intercept, ask = FALSE)
+# plot(fit_EEG_SSVEP_validity, ask = FALSE)
+# plot(fit_EEG_vis_alpha_targ_intercept, ask = FALSE)
+# plot(fit_EEG_vis_alpha_targ_validity, ask = FALSE)
+
 # # plot effects
 # plot(conditional_effects(fit_validity_visalpha), ask = FALSE)
+
 # # plot fitted response times and random draws
-# pp_check(fit_validity_visalpha, ndraws=100, prefix = c("ppc"))
+# pp_check(fit_EEG_SSVEP_intercept, ndraws=100, prefix = c("ppc"))
+# pp_check(fit_EEG_SSVEP_validity, ndraws=100, prefix = c("ppc"))
+# pp_check(fit_EEG_SSVEP_alpha_target, ndraws=100, prefix = c("ppc"))
+# pp_check(fit_EEG_SSVEP_validity_alpha_target, ndraws=100, prefix = c("ppc"))
+
 # # plot some information criteria (basedon on loo, leave-one-out resampling)
-# print(loo(fit_validity_visalpha))
+# print(loo(fit_EEG_SSVEP_intercept))
+# print(loo(fit_EEG_SSVEP_validity))
 
 
 ```
 
-How to interprete the findings now?
-
-The first models do not really differ a lot with respect to their **elpd_diff** score. Putting penalty on the complexity, sensu Occam, the winning model is **`fit_validity_visalpha`** with the formula **'RT ~ Cue +  visual_alpha_Targ + ( cue | subjects)'**
-
-This means that in our data, the RT in each trial is best modelled by considering
-
-* interindividual differences
-* the attentional cue **valid**, **invalid**, **neutral**
-* single-trial post-cue **visual alpha** amplitudes contralateral to the target stimulus
-
-We can now describe the marginal effects for the best model. 
-
-###  Extract marginal effects from 'best' model
+###  Extract marginal effects from SSVEP model
 
 The procedure is nicely described here https://www.andrewheiss.com/blog/2021/11/10/ame-bayes-re-guide/
 
@@ -808,7 +784,7 @@ We first display the effects of the model...but they are hard to interprete as t
 ```{r best model marginal effects disp effects,  fig.height=3.5, fig.width=5,  warning = FALSE, message=FALSE, eval = TRUE}
 # based on https://www.andrewheiss.com/blog/2021/11/10/ame-bayes-re-guide/
 # which model to use?
-bestmodel.ef.model <- fit_validity_visalpha
+bestmodel.ef.model <- fit_EEG_SSVEP_validity
 # what is the data of the model?
 bestmodel.ef.data <- bestmodel.ef.model$data
 
@@ -829,7 +805,7 @@ Based on the new data we can extract **predicted values** or **expected predicte
 # use range of data from orignal study 
 bestmodel.ef.newdata3 <- expand_grid(
   cue_validity_label = c('valid','neutral','invalid'),
-  post_cue_vis_alpha_contra_target = median(bestmodel.ef.data$post_cue_vis_alpha_contra_target),
+  # post_cue_vis_alpha_contra_target = median(bestmodel.ef.data$post_cue_vis_alpha_contra_target),
   # contra_nontarget = median(bestmodel.ef.data$contra_nontarget),
   # contra_target = seq(min(bestmodel.ef.data$contra_target),max(bestmodel.ef.data$contra_target),1),
   # contra_nontarget = seq(min(bestmodel.ef.data$contra_nontarget),max(bestmodel.ef.data$contra_nontarget),1),
