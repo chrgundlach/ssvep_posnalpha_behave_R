@@ -1106,6 +1106,7 @@ theme_set(theme_bw())
 ggplot(bestmodel.ef.tidy_exppred2, aes(x = post_cue_vis_alpha_contra_target, y = .epred)) +
   stat_lineribbon(.width = c(0.5, 0.8, 0.95, 1)) + 
   scale_fill_brewer(palette = "Reds") +
+  # scale_fill_manual(values=c("red3")) +
   labs(x = "alpha amplitude contra target", y = "predicted RT",
        fill = "Credible interval") +
   theme(legend.position = "bottom")
@@ -1128,11 +1129,12 @@ ggplot(bestmodel.ef.slope_contraTarget, aes( x = .value)) +
   # stat_dots(aes(fill = alpha_signal,color = alpha_signal, fill_ramp = after_stat(level), colour_ramp = after_stat(level)),
   #           .width = c(.95, 1))+
   geom_vline(xintercept = 0)+
-  # scale_fill_manual(values=c("red3")) +
-  scale_color_brewer(palette = "Reds") +
-  scale_fill_brewer(palette = "Reds") +
+  scale_fill_manual(values=c("red3")) +
+  scale_color_manual(values=c("red3"))+
+  # scale_color_brewer(palette = "Reds") +
+  # scale_fill_brewer(palette = "Reds") +
   labs(
-    title = "Average marginal effect: alpha slopes", 
+    # title = "Average marginal effect: alpha slopes", 
     subtitle = "for all draws of the model",
     fill_ramp = "interval",
     colour_ramp = "interval",
