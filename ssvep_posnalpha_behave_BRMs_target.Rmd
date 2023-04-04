@@ -212,11 +212,11 @@ ggplot(dat_plot, aes(x=post_RT)) +
 <br>
 ...is related to trial-by-trial variance of amplitude values of pre-target [-1000 to 0]ms and post-cue [0 to 1000]ms  **alpha-band activity** and **SSVEPs**...
 
-```{r SSVEP and alpha distribution all trials, results = "hide",  fig.height=3.5, fig.width=8, warning = FALSE, message=FALSE}
+```{r SSVEP and alpha distribution all trials, fig.height=3.5, fig.width=8, message=FALSE, warning=FALSE, results="hide"}
 dat_plot <- DATA.In_longer %>%
-  dplyr::select(subject, trialnumber, time, cue_validity_label, pos_rel_target, amplitude, signal, post_hit)%>%
-  filter(post_hit=="hit")%>%
-  group_by(subject, trialnumber, time, cue_validity_label, signal)%>%
+  dplyr::select(subject, trialnumber,time, cue_validity_label, pos_rel_target, amplitude, signal, post_hit)%>%
+  filter(post_hit=="hit", time=="[-1000 0]ms")%>%
+  group_by(subject, trialnumber,cue_validity_label, signal)%>%
   summarise(amplitude=mean(amplitude))
 
 
@@ -930,7 +930,7 @@ data.frame(model_weight = model_weights(fit_intercept, fit_validity,
 # post-target motor alpha
   loo_compare(fit_intercept, fit_validity, fit_posttarg_motoralpha, fit_posttarg_validity_motoralpha, fit_posttarg_validity_x_motoralpha,
             criterion = c("loo"))%>%
-  kable(escape = F, digits = c(6,6,6,6,6,6,6,6,6), caption = c("alpha, ssvep and combined models | loo comparison")) %>%
+  kable(escape = F, digits = c(6,6,6,6,6,6,6,6,6), caption = c("post target motor alpha models | loo comparison")) %>%
   kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
 
 as.data.frame(rbind(
@@ -938,7 +938,7 @@ as.data.frame(rbind(
   bayes_R2(fit_posttarg_motoralpha), bayes_R2(fit_posttarg_validity_motoralpha),  bayes_R2(fit_posttarg_validity_x_motoralpha)),
   row.names = c("fit_intercept","fit_validity",
                 "fit_posttarg_motoralpha", "fit_posttarg_validity_motoralpha","fit_posttarg_validity_x_motoralpha"))%>%
-  kable(escape = F, digits = c(6,6,6,6,6,6,6,6,6), caption = c("alpha, ssvep and combined models | bayes_R2")) %>%
+  kable(escape = F, digits = c(6,6,6,6,6,6,6,6,6), caption = c("post target motor alpha models | bayes_R2")) %>%
   kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
 
 
@@ -1688,7 +1688,7 @@ ggplot(bestmodel.ef.ef_draws_validity_contr, aes(y = contrast, x = .value)) +
 
 We now can similarly extract the slopes of the **alpha** and **RT** relationship
 
-```{r best model marginal effects disp effects visual alpha -marginal means,  fig.height=3.5, fig.width=5,  warning = FALSE, message=FALSE, eval = TRUE}
+```{r motor alpha model marginal effects disp effects visual alpha -marginal means,  fig.height=3.5, fig.width=5,  warning = FALSE, message=FALSE, eval = TRUE}
 # now trying to get the regression line right for the alpha predictors
 
 
