@@ -579,7 +579,7 @@ fit_EEG_SSVEP_validity_alpha_target = brm(formula = target_SSVEP ~ cue_validity_
 fit_EEG_SSVEP_alpha_nontarget = brm(formula = target_SSVEP ~ contra_nontarget_visualAlpha + (1|subject),
           data = modeldata3, 
           family = shifted_lognormal(),
-          file = 'fit_EEG_SSVEP_alpha_target_slog',
+          file = 'fit_EEG_SSVEP_alpha_nontarget_slog',
           save_pars = save_pars(all = TRUE),
           file_refit = "on_change",
           cores = 4
@@ -589,7 +589,7 @@ fit_EEG_SSVEP_alpha_nontarget = brm(formula = target_SSVEP ~ contra_nontarget_vi
 fit_EEG_SSVEP_validity_alpha_nontarget = brm(formula = target_SSVEP ~ cue_validity_label + contra_nontarget_visualAlpha + (cue_validity_label|subject),
           data = modeldata3, 
           family = shifted_lognormal(),
-          file = 'fit_EEG_SSVEP_validity_alpha_target_slog',
+          file = 'fit_EEG_SSVEP_validity_alpha_nontarget_slog',
           save_pars = save_pars(all = TRUE),
           file_refit = "on_change",
           cores = 4
@@ -599,7 +599,7 @@ fit_EEG_SSVEP_validity_alpha_nontarget = brm(formula = target_SSVEP ~ cue_validi
 fit_EEG_SSVEP_alpha_target_nontarget = brm(formula = target_SSVEP ~ contra_target_visualAlpha + contra_nontarget_visualAlpha + (1|subject),
           data = modeldata3, 
           family = shifted_lognormal(),
-          file = 'fit_EEG_SSVEP_alpha_target_slog',
+          file = 'fit_EEG_SSVEP_alpha_target_nontarget_slog',
           save_pars = save_pars(all = TRUE),
           file_refit = "on_change",
           cores = 4
@@ -609,14 +609,43 @@ fit_EEG_SSVEP_alpha_target_nontarget = brm(formula = target_SSVEP ~ contra_targe
 fit_EEG_SSVEP_validity_alpha_target_nontarget = brm(formula = target_SSVEP ~ cue_validity_label + contra_target_visualAlpha + contra_nontarget_visualAlpha + (cue_validity_label|subject),
           data = modeldata3, 
           family = shifted_lognormal(),
-          file = 'fit_EEG_SSVEP_validity_alpha_nontarget_slog',
+          file = 'fit_EEG_SSVEP_validity_alpha_target_nontarget_slog',
           save_pars = save_pars(all = TRUE),
           file_refit = "on_change",
           cores = 4
           # file_refit = "always"
           )  # Save all that hard work.
 
+# interaction models
+fit_EEG_SSVEP_validity_x_alpha_target = brm(formula = target_SSVEP ~ cue_validity_label * contra_target_visualAlpha + (cue_validity_label|subject),
+          data = modeldata3, 
+          family = shifted_lognormal(),
+          file = 'fit_EEG_SSVEP_validity_x_alpha_target_slog',
+          save_pars = save_pars(all = TRUE),
+          file_refit = "on_change",
+          cores = 4
+          # file_refit = "always"
+          )  # Save all that hard work.
 
+fit_EEG_SSVEP_validity_x_alpha_nontarget = brm(formula = target_SSVEP ~ cue_validity_label * contra_nontarget_visualAlpha + (cue_validity_label|subject),
+          data = modeldata3, 
+          family = shifted_lognormal(),
+          file = 'fit_EEG_SSVEP_validity_x_alpha_nontarget_slog',
+          save_pars = save_pars(all = TRUE),
+          file_refit = "on_change",
+          cores = 4
+          # file_refit = "always"
+          )  # Save all that hard work.
+
+fit_EEG_SSVEP_validity_x_alpha_target_nontarget = brm(formula = target_SSVEP ~ cue_validity_label * contra_target_visualAlpha + cue_validity_label * contra_nontarget_visualAlpha + (cue_validity_label|subject),
+          data = modeldata3, 
+          family = shifted_lognormal(),
+          file = 'fit_EEG_SSVEP_validity_x_alpha_target_nontarget_slog',
+          save_pars = save_pars(all = TRUE),
+          file_refit = "on_change",
+          cores = 4
+          # file_refit = "always"
+          )  # Save all that hard work.
 
 
 
@@ -633,23 +662,27 @@ this also takes some time as it is based on a cross validation procedure; but on
 ``` {r add model ICs, fig.height=6, fig.width=10, warning=FALSE, eval = TRUE}
 # add relevant criteria for model comparison
 # compare models
-fit_intercept <- add_criterion(fit_intercept, c("loo", "waic", "bayes_R2"))
-fit_validity <- add_criterion(fit_validity, c("loo", "waic", "bayes_R2"))
-fit_visalpha <- add_criterion(fit_visalpha, c("loo", "waic", "bayes_R2"))
-fit_validity_visalpha <- add_criterion(fit_validity_visalpha, c("loo", "waic", "bayes_R2"))
-fit_validity_x_visalpha <- add_criterion(fit_validity_x_visalpha, c("loo", "waic", "bayes_R2"))
-fit_alpha2 <- add_criterion(fit_alpha2, c("loo", "waic", "bayes_R2"))
-fit_validity_alpha2 <- add_criterion(fit_validity_alpha2, c("loo", "waic", "bayes_R2"))
-fit_validity_x_alpha2 <- add_criterion(fit_validity_x_alpha2, c("loo", "waic", "bayes_R2"))
-fit_alpha1_alpha2 <- add_criterion(fit_alpha1_alpha2, c("loo", "waic", "bayes_R2"))
-fit_validity_alpha1_alpha2 <- add_criterion(fit_validity_alpha1_alpha2, c("loo", "waic", "bayes_R2"))
-fit_validity_x_alpha1_alpha2 <- add_criterion(fit_validity_x_alpha1_alpha2, c("loo", "waic", "bayes_R2"))
-fit_SSVEP <- add_criterion(fit_SSVEP, c("loo", "waic", "bayes_R2"))
-fit_validity_SSVEP <- add_criterion(fit_validity_SSVEP, c("loo", "waic", "bayes_R2"))
-fit_validity_x_SSVEP <- add_criterion(fit_validity_x_SSVEP, c("loo", "waic", "bayes_R2"))
-fit_SSVEP_alpha <- add_criterion(fit_SSVEP_alpha, c("loo", "waic", "bayes_R2"))
-fit_validity_SSVEP_alpha <- add_criterion(fit_validity_SSVEP_alpha, c("loo", "waic", "bayes_R2"))
-fit_validity_x_SSVEP_alpha <- add_criterion(fit_validity_x_SSVEP_alpha, c("loo", "waic", "bayes_R2"))
+fit_EEG_SSVEP_intercept <- add_criterion(fit_EEG_SSVEP_intercept, c("loo", "waic", "bayes_R2"))
+fit_EEG_SSVEP_validity <- add_criterion(fit_EEG_SSVEP_validity, c("loo", "waic", "bayes_R2"))
+fit_EEG_vis_alpha_targ_intercept <- add_criterion(fit_EEG_vis_alpha_targ_intercept, c("loo", "waic", "bayes_R2"))
+fit_EEG_vis_alpha_targ_validity <- add_criterion(fit_EEG_vis_alpha_targ_validity, c("loo", "waic", "bayes_R2"))
+fit_EEG_vis_alpha_nontarg_intercept <- add_criterion(fit_EEG_vis_alpha_nontarg_intercept, c("loo", "waic", "bayes_R2"))
+fit_EEG_vis_alpha_nontarg_validity <- add_criterion(fit_EEG_vis_alpha_nontarg_validity, c("loo", "waic", "bayes_R2"))
+fit_EEG_mot_alpha_targ_intercept <- add_criterion(fit_EEG_mot_alpha_targ_intercept, c("loo", "waic", "bayes_R2"))
+fit_EEG_mot_alpha_targ_validity <- add_criterion(fit_EEG_mot_alpha_targ_validity, c("loo", "waic", "bayes_R2"))
+fit_EEG_mot_alpha_nontarg_intercept <- add_criterion(fit_EEG_mot_alpha_nontarg_intercept, c("loo", "waic", "bayes_R2"))
+fit_EEG_mot_alpha_nontarg_validity <- add_criterion(fit_EEG_mot_alpha_nontarg_validity, c("loo", "waic", "bayes_R2"))
+
+fit_EEG_SSVEP_alpha_target <- add_criterion(fit_EEG_SSVEP_alpha_target, c("loo", "waic", "bayes_R2"))
+fit_EEG_SSVEP_alpha_nontarget <- add_criterion(fit_EEG_SSVEP_alpha_nontarget, c("loo", "waic", "bayes_R2"))
+fit_EEG_SSVEP_alpha_target_nontarget <- add_criterion(fit_EEG_SSVEP_alpha_target_nontarget, c("loo", "waic", "bayes_R2"))
+fit_EEG_SSVEP_validity_alpha_target <- add_criterion(fit_EEG_SSVEP_validity_alpha_target, c("loo", "waic", "bayes_R2"))
+fit_EEG_SSVEP_validity_alpha_nontarget <- add_criterion(fit_EEG_SSVEP_validity_alpha_nontarget, c("loo", "waic", "bayes_R2"))
+fit_EEG_SSVEP_validity_alpha_target_nontarget <- add_criterion(fit_EEG_SSVEP_validity_alpha_target_nontarget, c("loo", "waic", "bayes_R2"))
+
+fit_EEG_SSVEP_validity_x_alpha_target <- add_criterion(fit_EEG_SSVEP_validity_x_alpha_target, c("loo", "waic", "bayes_R2"))
+fit_EEG_SSVEP_validity_x_alpha_nontarget <- add_criterion(fit_EEG_SSVEP_validity_x_alpha_nontarget, c("loo", "waic", "bayes_R2"))
+fit_EEG_SSVEP_validity_x_alpha_target_nontarget <- add_criterion(fit_EEG_SSVEP_validity_x_alpha_target_nontarget, c("loo", "waic", "bayes_R2"))
 
 ```
 
