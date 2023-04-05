@@ -810,6 +810,7 @@ this also takes some time as it is based on a cross validation procedure; but on
 # compare models
 fit_intercept <- add_criterion(fit_intercept, c("loo", "waic", "bayes_R2"))
 fit_validity <- add_criterion(fit_validity, c("loo", "waic", "bayes_R2"))
+
 fit_visalpha <- add_criterion(fit_visalpha, c("loo", "waic", "bayes_R2"))
 fit_validity_visalpha <- add_criterion(fit_validity_visalpha, c("loo", "waic", "bayes_R2"))
 fit_validity_x_visalpha <- add_criterion(fit_validity_x_visalpha, c("loo", "waic", "bayes_R2"))
@@ -819,12 +820,17 @@ fit_validity_x_alpha2 <- add_criterion(fit_validity_x_alpha2, c("loo", "waic", "
 fit_alpha1_alpha2 <- add_criterion(fit_alpha1_alpha2, c("loo", "waic", "bayes_R2"))
 fit_validity_alpha1_alpha2 <- add_criterion(fit_validity_alpha1_alpha2, c("loo", "waic", "bayes_R2"))
 fit_validity_x_alpha1_alpha2 <- add_criterion(fit_validity_x_alpha1_alpha2, c("loo", "waic", "bayes_R2"))
+
 fit_SSVEP <- add_criterion(fit_SSVEP, c("loo", "waic", "bayes_R2"))
 fit_validity_SSVEP <- add_criterion(fit_validity_SSVEP, c("loo", "waic", "bayes_R2"))
 fit_validity_x_SSVEP <- add_criterion(fit_validity_x_SSVEP, c("loo", "waic", "bayes_R2"))
 fit_SSVEP_alpha <- add_criterion(fit_SSVEP_alpha, c("loo", "waic", "bayes_R2"))
 fit_validity_SSVEP_alpha <- add_criterion(fit_validity_SSVEP_alpha, c("loo", "waic", "bayes_R2"))
 fit_validity_x_SSVEP_alpha <- add_criterion(fit_validity_x_SSVEP_alpha, c("loo", "waic", "bayes_R2"))
+
+fit_motoralpha<- add_criterion(fit_motoralpha, c("loo", "waic", "bayes_R2"))
+fit_validity_motoralpha <- add_criterion(fit_validity_motoralpha, c("loo", "waic", "bayes_R2"))
+fit_validity_x_motoralpha <- add_criterion(fit_validity_x_motoralpha, c("loo", "waic", "bayes_R2"))
 
 ```
 
@@ -858,7 +864,7 @@ loo_compare(fit_intercept, fit_validity, fit_SSVEP, fit_validity_SSVEP, fit_vali
   kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
 
 # motor alpha contra target
-loo_compare(fit_intercept, fit_validity, fit_, fit_validity_motoralpha, fit_validity_x_motoralpha, criterion = c("loo"))%>%
+loo_compare(fit_intercept, fit_validity, fit_motoralpha, fit_validity_motoralpha, fit_validity_x_motoralpha, criterion = c("loo"))%>%
   kable(escape = F, digits = c(6,6,6,6,6,6,6,6,6), caption = c("motor alpha contra target models | loo comparison")) %>%
   kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
 
