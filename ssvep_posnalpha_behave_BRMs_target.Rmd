@@ -425,6 +425,7 @@ plot1 <-
     height = 2, color = "gray15",
     expand = TRUE, trim = TRUE,
     fill_type = "segments",
+    alpha = 0.8,
     show.legend = FALSE,
     position = position_dodgejust(0.3),
   )+
@@ -777,7 +778,7 @@ modeldata6 = DATA.In_longer %>%
   filter(post_hit == "hit", signal == "motorAlpha", time == "[0 1000]ms", pos_rel_target == "contra_target")%>%
   mutate(post_target_malpha_contra_target = amplitude)
 
-# visual alpha contra target
+# motor alpha contra target
 fit_posttarg_motoralpha = brm(formula = post_RT ~ post_target_malpha_contra_target + (1|subject),
           data = modeldata6, 
           family = shifted_lognormal(),
@@ -788,7 +789,7 @@ fit_posttarg_motoralpha = brm(formula = post_RT ~ post_target_malpha_contra_targ
           # file_refit = "always"
           )  # Save all that hard work.
 
-# visual alpha contra target + validity
+# motor alpha contra target + validity
 fit_posttarg_validity_motoralpha = brm(formula = post_RT ~ cue_validity_label + post_target_malpha_contra_target + (cue_validity_label|subject),
           data = modeldata6, 
           family = shifted_lognormal(),
@@ -799,7 +800,7 @@ fit_posttarg_validity_motoralpha = brm(formula = post_RT ~ cue_validity_label + 
           # file_refit = "always"
           )  # Save all that hard work.
 
-# visual alpha contra target * validity
+# motor alpha contra target * validity
 fit_posttarg_validity_x_motoralpha = brm(formula = post_RT ~ cue_validity_label * post_target_malpha_contra_target + (cue_validity_label|subject),
           data = modeldata6, 
           family = shifted_lognormal(),
@@ -817,7 +818,7 @@ modeldata7 = DATA.In_longer %>%
   filter(post_hit == "hit", signal == "motorAlpha", time == "[-1000 0]ms", pos_rel_target == "contra_target")%>%
   mutate(pre_target_malpha_contra_target = amplitude)
 
-# visual alpha contra target
+# motor alpha contra target
 fit_motoralpha = brm(formula = post_RT ~ pre_target_malpha_contra_target + (1|subject),
           data = modeldata7, 
           family = shifted_lognormal(),
@@ -828,7 +829,7 @@ fit_motoralpha = brm(formula = post_RT ~ pre_target_malpha_contra_target + (1|su
           # file_refit = "always"
           )  # Save all that hard work.
 
-# visual alpha contra target + validity
+# motor alpha contra target + validity
 fit_validity_motoralpha = brm(formula = post_RT ~ cue_validity_label + pre_target_malpha_contra_target + (cue_validity_label|subject),
           data = modeldata7, 
           family = shifted_lognormal(),
@@ -839,7 +840,7 @@ fit_validity_motoralpha = brm(formula = post_RT ~ cue_validity_label + pre_targe
           # file_refit = "always"
           )  # Save all that hard work.
 
-# visual alpha contra target * validity
+# motor alpha contra target * validity
 fit_validity_x_motoralpha = brm(formula = post_RT ~ cue_validity_label * pre_target_malpha_contra_target + (cue_validity_label|subject),
           data = modeldata7, 
           family = shifted_lognormal(),
@@ -1818,7 +1819,7 @@ Now for illustrating the whole picture, lets plot the motor alpha model
 
 **'RT ~ Cue + motor_alpha_Targ + ( cue | subjects)'**
 
-```{r motor alpha model marginal effects disp effects,  fig.height=3.5, fig.width=5,  warning = FALSE, message=FALSE, eval = TRUE}
+```{r motor alpha model post-target marginal effects disp effects,  fig.height=3.5, fig.width=5,  warning = FALSE, message=FALSE, eval = TRUE}
 # based on https://www.andrewheiss.com/blog/2021/11/10/ame-bayes-re-guide/
 # which model to use?
 bestmodel.ef.model <- fit_posttarg_validity_motoralpha
@@ -1839,7 +1840,7 @@ We then create a new data set with an alpha amplitude value fixed at the median 
 
 Based on the new data we can extract **predicted values** or **expected predicted values**. The former also includes the  uncertainty for each individual observation (e.g., observational-level residual variance) of each prediction. We're however more interested in the latter, which more focusses on the uncertainty in the model parameters and not necessarily the individual-level residuals.
 
-```{r motor alpha model marginal effects disp effects VALIDITY -data,  fig.height=3.5, fig.width=5,  warning = FALSE, message=FALSE, eval = TRUE}
+```{r motor alpha model post-target marginal effects disp effects VALIDITY -data,  fig.height=3.5, fig.width=5,  warning = FALSE, message=FALSE, eval = TRUE}
 # use range of data from orignal study 
 bestmodel.ef.newdata3 <- expand_grid(
   cue_validity_label = c('valid','neutral','invalid'),
@@ -1915,7 +1916,7 @@ ggarrange(plotttitle, plotplots, nrow = 2, heights=c(0.1, 1))
 
 Now with the `emmeans` package, we can extract the distribution of median RTs derived from the predicted RT-value distributions of each single draw/simulation. We can also directly calculate contrasts and derive the 95%-CI of the effects.
 
-```{r motor alpha model marginal effects disp effects VALIDITY -marginal means,  fig.height=3.5, fig.width=5,  warning = FALSE, message=FALSE, eval = TRUE}
+```{r motor alpha model post-target marginal effects disp effects VALIDITY -marginal means,  fig.height=3.5, fig.width=5,  warning = FALSE, message=FALSE, eval = TRUE}
 
 # now we want to see the effects using emmeans
 # check cue validity effect via pairwise comparisons
@@ -1992,7 +1993,7 @@ ggplot(bestmodel.ef.ef_draws_validity_contr, aes(y = contrast, x = .value)) +
 
 We now can similarly extract the slopes of the **alpha** and **RT** relationship
 
-```{r motor alpha model marginal effects disp effects visual alpha -marginal means,  fig.height=3.5, fig.width=5,  warning = FALSE, message=FALSE, eval = TRUE}
+```{r motor alpha model post-target marginal effects disp effects visual alpha -marginal means,  fig.height=3.5, fig.width=5,  warning = FALSE, message=FALSE, eval = TRUE}
 # now trying to get the regression line right for the alpha predictors
 
 
