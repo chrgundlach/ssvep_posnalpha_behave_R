@@ -512,6 +512,11 @@ The models specified so far:
 * target ssvep: **RT ~ SSVEP + ( 1 | subjects)**
 * target ssvep + validity: **RT ~ Cue + SSVEP + ( cue | subjects)**
 
+*motor alpha models* pre target and post-target
+
+* contra target motor alpha: **RT ~ motor_alpha + ( 1 | subjects)**
+* contra target motor alpha + validity: **RT ~ Cue + motor_alpha + ( cue | subjects)**
+
 *combined alpha models*
 
 * contra target + contra nontarget: **RT ~ visual_alpha_Targ + visual_alpha_NonTarg + ( 1 | subjects)**

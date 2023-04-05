@@ -476,7 +476,7 @@ modeldata3 = DATA.In_longer %>%
   mutate(motalpha = amplitude)
 
 fit_EEG_mot_alpha_intercept = brm(formula = motalpha ~ 1 + (1|subject),
-          data = modeldata2, 
+          data = modeldata3, 
           family = shifted_lognormal(),
           file = 'fit_EEGv2_mot_alpha_intercept_slog',
           save_pars = save_pars(all = TRUE),
@@ -486,7 +486,7 @@ fit_EEG_mot_alpha_intercept = brm(formula = motalpha ~ 1 + (1|subject),
           )  # Save all that hard work.
 
 fit_EEG_mot_alpha_validity = brm(formula = motalpha ~ 1 + attention + (attention|subject),
-          data = modeldata2, 
+          data = modeldata3, 
           family = shifted_lognormal(),
           file = 'fit_EEGv2_mot_alpha_validity_slog',
           save_pars = save_pars(all = TRUE),
