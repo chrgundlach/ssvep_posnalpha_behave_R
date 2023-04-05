@@ -527,6 +527,13 @@ The models specified so far:
 * alpha contra target + alpha contra nontarget + target SSVEP + validity: **RT ~ Cue + visual_alpha_Targ + visual_alpha_NonTarg + SSVEP +( cue | subjects)**
 
 
+*combined alpha and motor alpha models*
+* pre vis alpha + pre mot alpha + cue **RT ~ visual_alpha_pre + mot_alpha_pre + cue + ( cue | subjects)**
+* pre vis alpha + post mot alpha + cue **RT ~ visual_alpha_pre + mot_alpha_post + cue + ( cue | subjects)**
+* pre mot alpha + post mot alpha + cue **RT ~ mot_alpha_pre + mot_alpha_post + cue + ( cue | subjects)**
+* pre vis alphs + pre mot alpha + post mot alpha + cue **RT ~ visual_alpha_pre + mot_alpha_pre + mot_alpha_post + cue + ( cue | subjects)**
+
+
 all models were additionally modelled with interaction terms of **cue x signal**
 
 
@@ -856,6 +863,109 @@ fit_validity_x_motoralpha = brm(formula = post_RT ~ cue_validity_label * pre_tar
           # file_refit = "always"
           )  # Save all that hard work.
 
+# combined models
+modeldata8 = DATA.In_longer %>%
+  filter(post_hit == "hit", signal != c("SSVEP"),  pos_rel_target == "contra_target")%>%
+  dplyr::select(subject,trialnumber, cue_validity_label, signal, time, amplitude,post_RT)%>%
+  pivot_wider(names_from = c("signal","time"), values_from = amplitude)%>%
+  rename(motalpha_pre = `motorAlpha_[-1000 0]ms`,
+         motalpha_post = `motorAlpha_[0 1000]ms`,
+         visalpha_pre =`visualAlpha_[-1000 0]ms`,
+         visalpha_post = `visualAlpha_[0 1000]ms`)
+
+# *combined alpha and motor alpha models*
+# * pre vis alpha + pre mot alpha + cue **RT ~ visual_alpha_pre + mot_alpha_pre + cue + ( cue | subjects)**
+# * pre vis alpha + post mot alpha + cue **RT ~ visual_alpha_pre + mot_alpha_post + cue + ( cue | subjects)**
+# * pre mot alpha + post mot alpha + cue **RT ~ mot_alpha_pre + mot_alpha_post + cue + ( cue | subjects)**
+# * pre vis alphs + pre mot alpha + post mot alpha + cue **RT ~ visual_alpha_pre + mot_alpha_pre + mot_alpha_post + cue + ( cue | subjects)**
+
+# visalpha motoralpha validity
+fit_validity_visalpha_motalpha = brm(
+  formula = post_RT ~ cue_validity_label + visalpha_pre + motalpha_pre + (cue_validity_label|subject),
+          data = modeldata8, 
+          family = shifted_lognormal(),
+          file = 'fit_validity_visalpha_motalpha_slog',
+          save_pars = save_pars(all = TRUE),
+          file_refit = "on_change",
+          cores = 4
+          # file_refit = "always"
+          )  # Save all that hard work.
+
+# visalpha post motoralpha validity
+fit_validity_visalpha_post_motalpha = brm(
+  formula = post_RT ~ cue_validity_label + visalpha_pre + motalpha_post + (cue_validity_label|subject),
+          data = modeldata8, 
+          family = shifted_lognormal(),
+          file = 'fit_validity_visalpha_post_motalpha_slog',
+          save_pars = save_pars(all = TRUE),
+          file_refit = "on_change",
+          cores = 4
+          # file_refit = "always"
+          )  # Save all that hard work.
+
+# motalpha post motoralpha validity
+fit_validity_motalpha_post_motalpha = brm(
+  formula = post_RT ~ cue_validity_label + motalpha_pre + motalpha_post + (cue_validity_label|subject),
+          data = modeldata8, 
+          family = shifted_lognormal(),
+          file = 'fit_validity_motalpha_post_motalpha_slog',
+          save_pars = save_pars(all = TRUE),
+          file_refit = "on_change",
+          cores = 4
+          # file_refit = "always"
+          )  # Save all that hard work.
+
+# visalpha motalpha post motoralpha validity
+fit_validity_visalpha_motalpha_post_motalpha = brm(
+  formula = post_RT ~ cue_validity_label + visalpha_pre + motalpha_pre + motalpha_post + (cue_validity_label|subject),
+          data = modeldata8, 
+          family = shifted_lognormal(),
+          file = 'fit_validity_visalpha_motalpha_post_motalpha_slog',
+          save_pars = save_pars(all = TRUE),
+          file_refit = "on_change",
+          cores = 4
+          # file_refit = "always"
+          )  # Save all that hard work.
+
+
+# visalpha motoralpha validity
+fit_validity_x_visalpha_motalpha = brm(
+  formula = post_RT ~ cue_validity_label + visalpha_pre + motalpha_pre*cue_validity_label + (cue_validity_label|subject),
+          data = modeldata8, 
+          family = shifted_lognormal(),
+          file = 'fit_validity_x_visalpha_motalpha_slog',
+          save_pars = save_pars(all = TRUE),
+          file_refit = "on_change",
+          cores = 4
+          # file_refit = "always"
+          )  # Save all that hard work.
+
+# motalpha post motoralpha validity
+fit_validity_x_motalpha_post_motalpha = brm(
+  formula = post_RT ~ cue_validity_label * motalpha_pre + motalpha_post + cue_validity_label + (cue_validity_label|subject),
+          data = modeldata8, 
+          family = shifted_lognormal(),
+          file = 'fit_validity_x_motalpha_post_motalpha_slog',
+          save_pars = save_pars(all = TRUE),
+          file_refit = "on_change",
+          cores = 4
+          # file_refit = "always"
+          )  # Save all that hard work.
+
+# visalpha motalpha post motoralpha validity
+fit_validity_x_visalpha_motalpha_post_motalpha = brm(
+  formula = post_RT ~ cue_validity_label + visalpha_pre + cue_validity_label * motalpha_pre + motalpha_post + (cue_validity_label|subject),
+          data = modeldata8, 
+          family = shifted_lognormal(),
+          file = 'fit_validity_x_visalpha_motalpha_post_motalpha_slog',
+          save_pars = save_pars(all = TRUE),
+          file_refit = "on_change",
+          cores = 4
+          # file_refit = "always"
+          )  # Save all that hard work.
+
+
+
 ```
 
 ### Comparing models
@@ -895,6 +1005,17 @@ fit_validity_x_motoralpha <- add_criterion(fit_validity_x_motoralpha, c("loo", "
 fit_posttarg_motoralpha <- add_criterion(fit_posttarg_motoralpha, c("loo", "waic", "bayes_R2"))
 fit_posttarg_validity_motoralpha <- add_criterion(fit_posttarg_validity_motoralpha, c("loo", "waic", "bayes_R2"))
 fit_posttarg_validity_x_motoralpha <- add_criterion(fit_posttarg_validity_x_motoralpha, c("loo", "waic", "bayes_R2"))
+
+fit_validity_visalpha_motalpha <- add_criterion(fit_validity_visalpha_motalpha, c("loo", "waic", "bayes_R2"))
+fit_validity_visalpha_post_motalpha <- add_criterion(fit_validity_visalpha_post_motalpha, c("loo", "waic", "bayes_R2"))
+fit_validity_motalpha_post_motalpha <- add_criterion(fit_validity_motalpha_post_motalpha, c("loo", "waic", "bayes_R2"))
+fit_validity_visalpha_motalpha_post_motalpha <- add_criterion(
+  fit_validity_visalpha_motalpha_post_motalpha, c("loo", "waic", "bayes_R2"))
+fit_validity_x_visalpha_motalpha <- add_criterion(fit_validity_x_visalpha_motalpha, c("loo", "waic", "bayes_R2"))
+fit_validity_x_motalpha_post_motalpha <- add_criterion(fit_validity_x_motalpha_post_motalpha, c("loo", "waic", "bayes_R2"))
+fit_validity_x_visalpha_motalpha_post_motalpha <- add_criterion(
+  fit_validity_x_visalpha_motalpha_post_motalpha, c("loo", "waic", "bayes_R2"))
+
 
 ```
 
@@ -997,6 +1118,16 @@ as.data.frame(rbind(
   kable(escape = F, digits = c(6,6,6,6,6,6,6,6,6), caption = c("post target motor alpha models | bayes_R2")) %>%
   kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
 
+# additional all complex models
+loo_compare(fit_intercept, fit_validity, 
+            fit_posttarg_validity_motoralpha, fit_validity_motoralpha, fit_validity_visalpha,
+            fit_validity_motalpha_post_motalpha, fit_validity_visalpha_post_motalpha, fit_validity_visalpha_motalpha,
+            fit_validity_x_motalpha_post_motalpha, fit_validity_x_visalpha_motalpha,
+            fit_validity_visalpha_motalpha_post_motalpha,  fit_validity_x_visalpha_motalpha_post_motalpha,
+            criterion = c("loo"))%>%
+  kable(escape = F, digits = c(6,6,6,6,6,6,6,6,6), caption = c("post target motor alpha models | loo comparison")) %>%
+  kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
+
 
 # ## useful functions to evaluate best model
 # # extract summary of model
@@ -1013,6 +1144,7 @@ as.data.frame(rbind(
 # pp_check(fit_validity_visalpha, ndraws=100, prefix = c("ppc"))
 # # plot some information criteria (basedon on loo, leave-one-out resampling)
 # print(loo(fit_validity_visalpha))
+
 
 
 ```
