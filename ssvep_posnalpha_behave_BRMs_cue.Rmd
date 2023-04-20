@@ -64,6 +64,9 @@ library(magrittr)
 library(rstan)
 library(posterior)
 
+library(mediation)
+library(bayestestR)
+
 library(ggdist)
 
 # source('C:/Users/psy05cvd/Dropbox/work/R-statistics/general_functions/RainCloudPlots/tutorial_R/R_rainclouds.R')
@@ -1492,4 +1495,82 @@ ggplot(bestmodel.ef.slopes_alpha, aes( x = .value)) +
     colour_ramp = "interval",
     x = "slope"
   )
+```
+
+## exploratory mediation analysis
+Can we run a mediation analysis?
+
+based on the resources here: https://easystats.github.io/bayestestR/articles/mediation.html
+
+Does alpha-band activity mediate the attention effect? We have different models
+
+* fit_visalpha: contra target + validity: **RT ~ Cue +  visual_alpha_Targ + ( cue | subjects)**
+
+* contra target, validity model: **vis_alpha_target ~ 1 + cue + ( cue | subjects)**
+
+
+
+```{r winning model marginal effects disp effects visual alpha -marginal means,  fig.height=3.5, fig.width=5,  warning = FALSE, message=FALSE, eval = TRUE}
+
+# alter data to extract post-cue alpha contra to target
+modeldatat1 = DATA.In_longer %>%
+  filter(post_hit == "hit", signal == "visualAlpha", time == "[500 1500]ms", pos_rel_target == "contra_target")%>%
+  mutate(contra_target = amplitude)
+
+# visual alpha contra target
+med_model1 = brm(formula = post_RT ~ cue_validity_label + contra_target + (cue_validity_label|subject),
+          data = modeldatat1, 
+          family = shifted_lognormal(),
+          file = 'med_model1_slog',
+          save_pars = save_pars(all = TRUE),
+          file_refit = "on_change",
+          cores = 4
+          # file_refit = "always"
+          )  # Save all that hard work.
+
+
+# alter data to extract post-cue visual alpha
+modeldatat2 = DATA.In_longer %>%
+  filter(post_hit == "hit", signal == "visualAlpha", time == "[500 1500]ms")%>%
+  dplyr::select(-side, -Zamplitude, -attention)%>%
+  pivot_wider(names_from = pos_rel_target, values_from = amplitude)
+
+
+med_model2 = brm(formula = contra_target ~ 1 + cue_validity_label + (cue_validity_label|subject),
+          data = modeldatat2, 
+          family = shifted_lognormal(),
+          file = 'med_model2_slog',
+          save_pars = save_pars(all = TRUE),
+          file_refit = "on_change",
+          cores = 4
+          # file_refit = "always"
+          )  # Save all that hard work.
+
+
+f1 <- bf(contra_target ~ cue_validity_label + (cue_validity_label|subject))
+f2 <- bf(post_RT ~ cue_validity_label + contra_target + (cue_validity_label|subject))
+m2 <- brm(f1 + f2 + set_rescor(FALSE), 
+          data = modeldatat2,
+          family = shifted_lognormal(),
+          file = 'med_model2_slog',
+          save_pars = save_pars(all = TRUE),
+          file_refit = "on_change",
+          cores = 4)
+
+m3 <- stan_mvmer(
+  list(
+    contra_target ~ cue_validity_label + (cue_validity_label|subject),
+    post_RT ~ cue_validity_label + contra_target + (cue_validity_label|subject)
+  ),
+  data = modeldatat2,
+  cores = 4,
+  refresh = 0
+)
+
+summary(m2)
+plot(conditional_effects(m2), ask = FALSE)
+
+bayestestR::mediation(m2, treatment = "cue_validity_label", mediator = "contra_target")
+
+
 ```
