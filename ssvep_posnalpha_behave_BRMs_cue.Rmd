@@ -1565,35 +1565,40 @@ modeldatat2b = DATA.In_longer %>%
   pivot_wider(names_from = pos_rel_target, values_from = amplitude)%>%
   dplyr::select(subject, post_RT, contra_target, cue_validity_label)
 
-m3 <- stan_mvmer(
-  list(
-    contra_target ~ cue_validity_label + (cue_validity_label|subject),
-    post_RT ~ cue_validity_label + contra_target + (cue_validity_label|subject)
-  ),
-  data = modeldatat2b,
-  cores = 4
-)
+# m3 <- stan_mvmer(
+#   list(
+#     contra_target ~ cue_validity_label + (cue_validity_label|subject),
+#     post_RT ~ cue_validity_label + contra_target + (cue_validity_label|subject)
+#   ),
+#   data = modeldatat2b,
+#   cores = 4
+# )
+# 
+# m4 <- stan_mvmer(
+#   list(
+#     contra_target ~ cue_validity_label + (1|subject),
+#     post_RT ~ cue_validity_label + contra_target + (1|subject)
+#   ),
+#   data = modeldatat2b,
+#   cores = 4
+# )
 
-m4 <- stan_mvmer(
-  list(
-    contra_target ~ cue_validity_label + (1|subject),
-    post_RT ~ cue_validity_label + contra_target + (1|subject)
-  ),
-  data = modeldatat2b,
-  cores = 4
-)
+# summary(m3)
+# plot(conditional_effects(m3), ask = FALSE)
+# 
+# summary(m4)
+# plot(conditional_effects(m4), ask = FALSE)
+# 
+# bayestestR::mediation(m3, )
+# mediation(m3, centrality = "mean", ci = .95)
+# 
+# bayestestR::mediation(m4, )
+# mediation(m3, centrality = "mean", ci = .95)
 
-summary(m3)
-plot(conditional_effects(m3), ask = FALSE)
+summary(m2)
+mediation(m2)
 
-summary(m4)
-plot(conditional_effects(m4), ask = FALSE)
 
-bayestestR::mediation(m3, )
-mediation(m3, centrality = "mean", ci = .95)
-
-bayestestR::mediation(m4, )
-mediation(m3, centrality = "mean", ci = .95)
 
 
 ```
