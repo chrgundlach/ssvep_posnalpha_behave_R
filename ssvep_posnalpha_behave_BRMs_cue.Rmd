@@ -66,6 +66,7 @@ library(posterior)
 
 library(mediation)
 library(bayestestR)
+library(rstanarm)
 
 library(ggdist)
 
@@ -1536,10 +1537,10 @@ modeldatat2 = DATA.In_longer %>%
   pivot_wider(names_from = pos_rel_target, values_from = amplitude)
 
 
-med_model2 = brm(formula = contra_target ~ 1 + cue_validity_label + (cue_validity_label|subject),
+med_model1b = brm(formula = contra_target ~ 1 + cue_validity_label + (cue_validity_label|subject),
           data = modeldatat2, 
           family = shifted_lognormal(),
-          file = 'med_model2_slog',
+          file = 'med_model1b_slog',
           save_pars = save_pars(all = TRUE),
           file_refit = "on_change",
           cores = 4
@@ -1557,20 +1558,42 @@ m2 <- brm(f1 + f2 + set_rescor(FALSE),
           file_refit = "on_change",
           cores = 4)
 
+# get data for stanmodel
+modeldatat2b = DATA.In_longer %>%
+  filter(post_hit == "hit", signal == "visualAlpha", time == "[500 1500]ms")%>%
+  dplyr::select(-side, -Zamplitude, -attention)%>%
+  pivot_wider(names_from = pos_rel_target, values_from = amplitude)%>%
+  dplyr::select(subject, post_RT, contra_target, cue_validity_label)
+
 m3 <- stan_mvmer(
   list(
     contra_target ~ cue_validity_label + (cue_validity_label|subject),
     post_RT ~ cue_validity_label + contra_target + (cue_validity_label|subject)
   ),
-  data = modeldatat2,
-  cores = 4,
-  refresh = 0
+  data = modeldatat2b,
+  cores = 4
 )
 
-summary(m2)
-plot(conditional_effects(m2), ask = FALSE)
+m4 <- stan_mvmer(
+  list(
+    contra_target ~ cue_validity_label + (1|subject),
+    post_RT ~ cue_validity_label + contra_target + (1|subject)
+  ),
+  data = modeldatat2b,
+  cores = 4
+)
 
-bayestestR::mediation(m2, treatment = "cue_validity_label", mediator = "contra_target")
+summary(m3)
+plot(conditional_effects(m3), ask = FALSE)
+
+summary(m4)
+plot(conditional_effects(m4), ask = FALSE)
+
+bayestestR::mediation(m3, )
+mediation(m3, centrality = "mean", ci = .95)
+
+bayestestR::mediation(m4, )
+mediation(m3, centrality = "mean", ci = .95)
 
 
 ```
