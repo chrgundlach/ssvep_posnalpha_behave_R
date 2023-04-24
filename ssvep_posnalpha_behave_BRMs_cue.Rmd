@@ -1558,6 +1558,15 @@ m2 <- brm(f1 + f2 + set_rescor(FALSE),
           file_refit = "on_change",
           cores = 4)
 
+
+m2b <- brm(f2 + f1 + set_rescor(FALSE), 
+          data = modeldatat2,
+          family = shifted_lognormal(),
+          file = 'med_model2b_slog',
+          save_pars = save_pars(all = TRUE),
+          file_refit = "on_change",
+          cores = 4)
+
 # get data for stanmodel
 modeldatat2b = DATA.In_longer %>%
   filter(post_hit == "hit", signal == "visualAlpha", time == "[500 1500]ms")%>%
