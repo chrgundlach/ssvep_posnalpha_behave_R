@@ -731,7 +731,7 @@ or `pp_check(fit_validity_visalpha, ndraws=100, prefix = c("ppc"))` to plot mode
 ### Comparing models
 In order to compare models we need to add some parameters of information critera to the model fits. They are a mysterious measure of the goodness of the model takiing into account the log-likelihood matrix of the fits and the complexity of the model. They are hard to interprete by themselves but allow comparing between models. Some related questions can be found here: https://avehtari.github.io/modelselection/CV-FAQ.html#1_What_is_cross-validation
 
-There is a [glossary](https://mc-stan.org/loo/reference/loo-glossary.html), that briefly explains the different parameters such as **elpd** (expected log pointwise density) which is an estimate of the expected predictive accuracy and is based on somehow sampling the already existing draws/simulations and extracting the log-likelihood between predicted and actual data for each draw... Statistical magic...
+There is a [glossary](https://mc-stan.org/loo/reference/loo-glossary.html), that briefly explains the different parameters such as **elpd** (expected log pointwise density) which is an estimate of the expected predictive accuracy and is based on somehow sampling the already existing draws/simulations and extracting the log-likelihood for each draw... Statistical magic...
 
 #### adding information criteria for all model estimates
 this also takes some time as it is based on a cross validation procedure; but once run it is saved with the previously defined log file.
