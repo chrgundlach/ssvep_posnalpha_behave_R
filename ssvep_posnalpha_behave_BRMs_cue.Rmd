@@ -589,6 +589,17 @@ fit_validity = brm(formula = post_RT ~ cue_validity_label + (cue_validity_label|
           # file_refit = "always"
           )  # Save all that hard work.
 
+# only fixed
+fit_validity_of = brm(formula = post_RT ~ cue_validity_label + (1|subject),
+          data = modeldata, 
+          family = shifted_lognormal(),
+          file = 'fit_validity_of_slog',
+          save_pars = save_pars(all = TRUE),
+          file_refit = "on_change",
+          cores = 4
+          # file_refit = "always"
+          )  # Save all that hard work.
+
 
 
 # # validity model with specified priors
@@ -637,6 +648,28 @@ fit_validity_x_visalpha = brm(formula = post_RT ~ cue_validity_label * post_cue_
           # file_refit = "always"
           )  # Save all that hard work.
 
+# visual alpha contra target + validity only fixed
+fit_validity_visalpha_of = brm(formula = post_RT ~ cue_validity_label + post_cue_vis_alpha_contra_target + (1|subject),
+          data = modeldata2, 
+          family = shifted_lognormal(),
+          file = 'fit_validity_visalpha_of_slog',
+          save_pars = save_pars(all = TRUE),
+          file_refit = "on_change",
+          cores = 4
+          # file_refit = "always"
+          )  # Save all that hard work.
+
+# visual alpha contra target * validity only fixed
+fit_validity_x_visalpha_of = brm(formula = post_RT ~ cue_validity_label * post_cue_vis_alpha_contra_target + (1|subject),
+          data = modeldata2, 
+          family = shifted_lognormal(),
+          file = 'fit_validity_x_visalpha_of_slog',
+          save_pars = save_pars(all = TRUE),
+          file_refit = "on_change",
+          cores = 4
+          # file_refit = "always"
+          )  # Save all that hard work.
+
 # alter data to extract post-cue alpha contra to nontarget
 modeldata3 = DATA.In_longer %>%
   filter(post_hit == "hit", signal == "visualAlpha", time == "[500 1500]ms", pos_rel_target == "contra_nontarget")%>%
@@ -668,6 +701,28 @@ fit_validity_x_alpha2 = brm(formula = post_RT ~ cue_validity_label * post_cue_vi
           file = 'fit_validity_x_visalpha2_slog',
           save_pars = save_pars(all = TRUE),
           file_refit = "on_change"
+          # file_refit = "always"
+          )  # Save all that hard work.
+
+# visual alpha contra nontarget + validity only fixed
+fit_validity_alpha2_of = brm(formula = post_RT ~ cue_validity_label + post_cue_vis_alpha_contra_nontarget + (1|subject),
+          data = modeldata3, 
+          family = shifted_lognormal(),
+          file = 'fit_validity_visalpha2_of_slog',
+          save_pars = save_pars(all = TRUE),
+          file_refit = "on_change",
+          cores = 4
+          # file_refit = "always"
+          )  # Save all that hard work.
+
+# visual alpha contra nontarget + validity only fixed
+fit_validity_x_alpha2_of = brm(formula = post_RT ~ cue_validity_label * post_cue_vis_alpha_contra_nontarget + (1|subject),
+          data = modeldata3, 
+          family = shifted_lognormal(),
+          file = 'fit_validity_x_visalpha2_of_slog',
+          save_pars = save_pars(all = TRUE),
+          file_refit = "on_change",
+          cores = 4
           # file_refit = "always"
           )  # Save all that hard work.
 
@@ -708,6 +763,31 @@ fit_validity_x_alpha1_alpha2 = brm(
           file_refit = "on_change"
           # file_refit = "always"
           )  # Save all that hard work.
+
+
+# visual alpha contra target and contra non-target + validity only fixed
+fit_validity_alpha1_alpha2_of = brm(formula = post_RT ~ cue_validity_label + contra_target + contra_nontarget + (1|subject),
+          data = modeldata4, 
+          family = shifted_lognormal(),
+          file = 'fit_validity_visalpha1_visalpha2_of_slog',
+          save_pars = save_pars(all = TRUE),
+          file_refit = "on_change",
+          cores = 4
+          # file_refit = "always"
+          )  # Save all that hard work.
+
+# visual alpha contra target and contra non-target + validity only fixed
+fit_validity_x_alpha1_alpha2_of = brm(
+  formula = post_RT ~ cue_validity_label * contra_target + cue_validity_label * contra_nontarget + (1|subject),
+          data = modeldata4, 
+          family = shifted_lognormal(),
+          file = 'fit_validity_x_visalpha1_visalpha2_of_slog',
+          save_pars = save_pars(all = TRUE),
+          file_refit = "on_change",
+          cores = 4
+          # file_refit = "always"
+          )  # Save all that hard work.
+
 
 # # visual alpha contra target and contra non-target + validity with random factor validity
 # fit_validity_alpha1_alpha2_v2 = brm(formula = post_RT ~ cue_validity_label + contra_target + contra_nontarget + (cue_validity_label|subject),
@@ -754,7 +834,26 @@ fit_validity_x_SSVEP = brm(formula = post_RT ~ cue_validity_label * post_cue_SSV
           # file_refit = "always"
           )  # Save all that hard work.
 
+# SSVEP + validity model only fixed
+fit_validity_SSVEP_of = brm(formula = post_RT ~ cue_validity_label + post_cue_SSVEP_contra_target + (1|subject),
+          data = modeldata5, 
+          family = shifted_lognormal(),
+          file = 'fit_validity_ssvep_of_slog',
+          save_pars = save_pars(all = TRUE),
+          file_refit = "on_change",
+          cores = 4
+          # file_refit = "always"
+          )  # Save all that hard work.
 
+fit_validity_x_SSVEP_of = brm(formula = post_RT ~ cue_validity_label * post_cue_SSVEP_contra_target + (1|subject),
+          data = modeldata5, 
+          family = shifted_lognormal(),
+          file = 'fit_validity_x_ssvep_of_slog',
+          save_pars = save_pars(all = TRUE),
+          file_refit = "on_change",
+          cores = 4
+          # file_refit = "always"
+          )  # Save all that hard work.
 
 # combined alpha + SSVEP model (most complex)
 # alter data to extract post-cue alpha contra to target
@@ -790,6 +889,28 @@ fit_validity_x_SSVEP_alpha = brm(
           file = 'fit_validity_x_SSVEP_alpha_slog',
           save_pars = save_pars(all = TRUE),
           file_refit = "on_change"
+          # file_refit = "always"
+          )  # Save all that hard work.
+
+# visual alpha contra target and contra non-target and SSVEP  + validity only fixed
+fit_validity_SSVEP_alpha_of = brm(formula = post_RT ~ cue_validity_label + visualAlpha_contra_target + visualAlpha_contra_nontarget + SSVEP_contra_target + (1|subject),
+          data = modeldata5, 
+          family = shifted_lognormal(),
+          file = 'fit_validity_SSVEP_alpha_of_slog',
+          save_pars = save_pars(all = TRUE),
+          file_refit = "on_change",
+          cores = 4
+          # file_refit = "always"
+          )  # Save all that hard work.
+
+fit_validity_x_SSVEP_alpha_of = brm(
+  formula = post_RT ~ cue_validity_label * visualAlpha_contra_target + cue_validity_label * visualAlpha_contra_nontarget + cue_validity_label * SSVEP_contra_target + (1|subject),
+          data = modeldata5, 
+          family = shifted_lognormal(),
+          file = 'fit_validity_x_SSVEP_alpha_of_slog',
+          save_pars = save_pars(all = TRUE),
+          file_refit = "on_change",
+          cores = 4
           # file_refit = "always"
           )  # Save all that hard work.
 
@@ -834,6 +955,28 @@ fit_validity_x_motoralpha = brm(formula = post_RT ~ cue_validity_label * malpha_
           )  # Save all that hard work.
 
 
+# motor alpha contra target + validity only fixed
+fit_validity_motoralpha_of = brm(formula = post_RT ~ cue_validity_label + malpha_contra_target + (cue_validity_label|subject),
+          data = modeldata7, 
+          family = shifted_lognormal(),
+          file = 'fit_validity_motoralpha_of_slog',
+          save_pars = save_pars(all = TRUE),
+          file_refit = "on_change",
+          cores = 4
+          # file_refit = "always"
+          )  # Save all that hard work.
+
+# motor alpha contra target * validity only fixed
+fit_validity_x_motoralpha_of = brm(formula = post_RT ~ cue_validity_label * malpha_contra_target + (cue_validity_label|subject),
+          data = modeldata7, 
+          family = shifted_lognormal(),
+          file = 'fit_validity_x_motoralpha_of_slog',
+          save_pars = save_pars(all = TRUE),
+          file_refit = "on_change",
+          cores = 4
+          # file_refit = "always"
+          )  # Save all that hard work.
+
 ```
 
 ### Comparing models
@@ -870,6 +1013,25 @@ fit_validity_x_SSVEP_alpha <- add_criterion(fit_validity_x_SSVEP_alpha, c("loo",
 fit_motoralpha<- add_criterion(fit_motoralpha, c("loo", "waic", "bayes_R2"))
 fit_validity_motoralpha <- add_criterion(fit_validity_motoralpha, c("loo", "waic", "bayes_R2"))
 fit_validity_x_motoralpha <- add_criterion(fit_validity_x_motoralpha, c("loo", "waic", "bayes_R2"))
+
+# only fixed effects
+fit_validity_of <- add_criterion(fit_validity_of, c("loo", "waic", "bayes_R2"))
+
+fit_validity_visalpha_of <- add_criterion(fit_validity_visalpha_of, c("loo", "waic", "bayes_R2"))
+fit_validity_x_visalpha_of <- add_criterion(fit_validity_x_visalpha_of, c("loo", "waic", "bayes_R2"))
+fit_validity_alpha2_of <- add_criterion(fit_validity_alpha2_of, c("loo", "waic", "bayes_R2"))
+fit_validity_x_alpha2_of <- add_criterion(fit_validity_x_alpha2_of, c("loo", "waic", "bayes_R2"))
+fit_validity_alpha1_alpha2_of <- add_criterion(fit_validity_alpha1_alpha2_of, c("loo", "waic", "bayes_R2"))
+fit_validity_x_alpha1_alpha2_of <- add_criterion(fit_validity_x_alpha1_alpha2_of, c("loo", "waic", "bayes_R2"))
+
+fit_validity_SSVEP_of <- add_criterion(fit_validity_SSVEP_of, c("loo", "waic", "bayes_R2"))
+fit_validity_x_SSVEP_of <- add_criterion(fit_validity_x_SSVEP_of, c("loo", "waic", "bayes_R2"))
+fit_validity_SSVEP_alpha_of <- add_criterion(fit_validity_SSVEP_alpha_of, c("loo", "waic", "bayes_R2"))
+fit_validity_x_SSVEP_alpha_of <- add_criterion(fit_validity_x_SSVEP_alpha_of, c("loo", "waic", "bayes_R2"))
+
+fit_validity_motoralpha_of <- add_criterion(fit_validity_motoralpha_of, c("loo", "waic", "bayes_R2"))
+fit_validity_x_motoralpha_of <- add_criterion(fit_validity_x_motoralpha_of, c("loo", "waic", "bayes_R2"))
+
 
 
 # # summaries
@@ -911,24 +1073,35 @@ In addition we can compute a Byesian version of the R² value for brms regressio
 
 ```{r model comparisons, fig.height=6, fig.width=10, warning=FALSE, eval = TRUE}
 # alpha contra target
-loo_compare(fit_intercept, fit_validity, fit_visalpha, fit_validity_visalpha, fit_validity_x_visalpha, criterion = c("loo"))%>%
+loo_compare(fit_intercept, fit_validity, fit_visalpha, fit_validity_visalpha, fit_validity_x_visalpha, 
+            fit_validity_of, fit_validity_visalpha_of, fit_validity_x_visalpha_of, 
+            criterion = c("loo"))%>%
   kable(escape = F, digits = c(6,6,6,6,6,6,6,6,6), caption = c("alpha contra target models | loo comparison")) %>%
   kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
 
 # alpha contra nontarget
-loo_compare(fit_intercept, fit_validity, fit_alpha2, fit_validity_alpha2, fit_validity_x_alpha2, criterion = c("loo"))%>%
+loo_compare(fit_intercept, fit_validity, fit_alpha2, fit_validity_alpha2, fit_validity_x_alpha2, 
+            fit_validity_of, fit_validity_alpha2_of, fit_validity_x_alpha2_of, 
+            criterion = c("loo"))%>%
   kable(escape = F, digits = c(6,6,6,6,6,6,6,6,6), caption = c("alpha contra nontarget models | loo comparison")) %>%
   kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
 
 # target ssvep
-loo_compare(fit_intercept, fit_validity, fit_SSVEP, fit_validity_SSVEP, fit_validity_x_SSVEP, criterion = c("loo"))%>%
+loo_compare(fit_intercept, fit_validity, fit_SSVEP, fit_validity_SSVEP, fit_validity_x_SSVEP,
+            fit_validity_of, fit_validity_SSVEP_of, fit_validity_x_SSVEP_of, 
+            criterion = c("loo"))%>%
   kable(escape = F, digits = c(6,6,6,6,6,6,6,6,6), caption = c("target SSVEP models | loo comparison")) %>%
   kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
 
 # motor alpha contra target
-loo_compare(fit_intercept, fit_validity, fit_motoralpha, fit_validity_motoralpha, fit_validity_x_motoralpha, criterion = c("loo"))%>%
+loo_compare(fit_intercept, fit_validity, fit_motoralpha, fit_validity_motoralpha, fit_validity_x_motoralpha, 
+            fit_validity_of,  fit_validity_motoralpha_of, fit_validity_x_motoralpha_of,
+            criterion = c("loo"))%>%
   kable(escape = F, digits = c(6,6,6,6,6,6,6,6,6), caption = c("motor alpha contra target models | loo comparison")) %>%
   kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
+
+
+
 
 # all models with validity as predictor
 loo_compare(fit_intercept, fit_validity,
@@ -939,6 +1112,17 @@ loo_compare(fit_intercept, fit_validity,
             fit_validity_SSVEP_alpha, fit_validity_x_SSVEP_alpha, 
             criterion = c("loo"))%>%
   kable(escape = F, digits = c(6,6,6,6,6,6,6,6,6), caption = c("alpha, ssvep and combined models | loo comparison")) %>%
+  kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
+
+loo_compare(fit_intercept, fit_validity_of,
+            fit_validity_visalpha_of, fit_validity_x_visalpha_of,
+            fit_validity_alpha2_of, fit_validity_x_alpha2_of,
+            fit_validity_alpha1_alpha2_of, fit_validity_x_alpha1_alpha2_of, 
+            fit_validity_SSVEP_of, fit_validity_x_SSVEP_of, 
+            fit_validity_SSVEP_alpha_of, fit_validity_x_SSVEP_alpha_of, 
+            criterion = c("loo"))%>%
+  kable(escape = F, digits = c(6,6,6,6,6,6,6,6,6), 
+        caption = c("alpha, ssvep and combined models | only fixed effects | loo comparison")) %>%
   kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
 
 as.data.frame(rbind(
