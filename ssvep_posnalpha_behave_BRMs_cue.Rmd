@@ -1126,17 +1126,27 @@ loo_compare(fit_intercept, fit_validity_of,
   kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
 
 as.data.frame(rbind(
-  bayes_R2(fit_intercept), bayes_R2(fit_validity),
+  bayes_R2(fit_intercept), bayes_R2(fit_validity_of), bayes_R2(fit_validity),
+  bayes_R2(fit_validity_visalpha_of), bayes_R2(fit_validity_x_visalpha_of),
   bayes_R2(fit_validity_visalpha), bayes_R2(fit_validity_x_visalpha),
+  bayes_R2(fit_validity_alpha2_of), bayes_R2(fit_validity_x_alpha2_of),
   bayes_R2(fit_validity_alpha2), bayes_R2(fit_validity_x_alpha2),
+  bayes_R2(fit_validity_alpha1_alpha2_of), bayes_R2(fit_validity_x_alpha1_alpha2_of),
   bayes_R2(fit_validity_alpha1_alpha2), bayes_R2(fit_validity_x_alpha1_alpha2),
+  bayes_R2(fit_validity_SSVEP_of), bayes_R2(fit_validity_x_SSVEP_of),
   bayes_R2(fit_validity_SSVEP), bayes_R2(fit_validity_x_SSVEP),
+  bayes_R2(fit_validity_SSVEP_alpha_of), bayes_R2(fit_validity_x_SSVEP_alpha_of),
   bayes_R2(fit_validity_SSVEP_alpha), bayes_R2(fit_validity_x_SSVEP_alpha)),
-  row.names = c("fit_intercept","fit_validity",
+  row.names = c("fit_intercept","fit_validity_onlyfixed", "fit_validity",
+                "fit_validity_visalpha_of", "fit_validity_x_visalpha_of",
                 "fit_validity_visalpha", "fit_validity_x_visalpha",
+                "fit_validity_alpha2_of", "fit_validity_x_alpha2_of",
                 "fit_validity_alpha2", "fit_validity_x_alpha2",
+                "fit_validity_alpha1_alpha2_of", "fit_validity_x_alpha1_alpha2_of",
                 "fit_validity_alpha1_alpha2", "fit_validity_x_alpha1_alpha2",
+                "fit_validity_SSVEP_of","fit_validity_x_SSVEP_of",
                 "fit_validity_SSVEP","fit_validity_x_SSVEP",
+                "fit_validity_SSVEP_alpha_of", "fit_validity_x_SSVEP_alpha_of",
                 "fit_validity_SSVEP_alpha", "fit_validity_x_SSVEP_alpha"))%>%
   kable(escape = F, digits = c(6,6,6,6,6,6,6,6,6), caption = c("alpha, ssvep and combined models | bayes_R2")) %>%
   kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
