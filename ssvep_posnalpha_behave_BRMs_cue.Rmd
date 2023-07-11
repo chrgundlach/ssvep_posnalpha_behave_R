@@ -1986,52 +1986,6 @@ bestmodel.ef.slope_contraTarget %>% median_hdi() %>%
   kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
 ```
 
-same thing for SSVEPs
-
-* fit_SSVEP: contra target + validity: **RT ~ Cue +  z_SSVEP + ( cue | subjects)**
-
-```{r model fits control SSVEP, results = "hide",  fig.height=3.5, fig.width=5, warning = FALSE, message=FALSE}
-# alter data to extract post-cue alpha contra to target
-modeldata2 = DATA.In_longer %>%
-  filter(post_hit == "hit", signal == "SSVEP", time == "[500 1500]ms", pos_rel_target == "contra_target")%>%
-  mutate(post_cue_SSVEP_target = amplitude)%>%
-  dplyr::select(subject,trialnumber,cue_validity_label,post_cue_SSVEP_target,post_RT)%>%
-  group_by(subject)%>%
-  mutate("Zpost_cue_SSVEP_target" = scale(post_cue_SSVEP_target))%>%
-  ungroup
-
-# visual alpha contra target
-fit_z_SSVEP = brm(formula = post_RT ~ Zpost_cue_SSVEP_target + (1|subject),
-          data = modeldata2, 
-          family = shifted_lognormal(),
-          file = 'fit_z_SSVEP_slog',
-          save_pars = save_pars(all = TRUE),
-          file_refit = "on_change",
-          cores = 4
-          # file_refit = "always"
-          )  # Save all that hard work.
-
-# visual alpha contra target + validity
-fit_validity_z_SSVEP = brm(formula = post_RT ~ cue_validity_label + Zpost_cue_SSVEP_target + (cue_validity_label|subject),
-          data = modeldata2, 
-          family = shifted_lognormal(),
-          file = 'fit_validity_z_SSVEP_slog',
-          save_pars = save_pars(all = TRUE),
-          file_refit = "on_change",
-          cores = 4
-          # file_refit = "always"
-          )  # Save all that hard work.
-
-# add criterion for model comparison
-fit_z_SSVEP <- add_criterion(fit_z_SSVEP, c("loo", "waic", "bayes_R2"))
-fit_validity_z_SSVEP <- add_criterion(fit_validity_z_SSVEP, c("loo", "waic", "bayes_R2"))
-
-# actual model comparison
-# target ssvep
-loo_compare(fit_intercept, fit_validity, fit_SSVEP, fit_validity_SSVEP, fit_validity_x_SSVEP, fit_z_SSVEP, fit_validity_z_SSVEP,  criterion = c("loo"))%>%
-  kable(escape = F, digits = c(6,6,6,6,6,6,6,6,6), caption = c("target SSVEP models | loo comparison")) %>%
-  kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
-```
 
 
 
@@ -2040,7 +1994,7 @@ Similar to the point above. Maybe just amplitude offsets between left and right 
 
 * fit_z_ssvep: contra target + validity: **RT ~ Cue +  z_ssvep + ( 1 | subjects)**
 
-```{r model fits control, results = "hide",  fig.height=3.5, fig.width=5, warning = FALSE, message=FALSE}
+```{r model fits control II, results = "hide",  fig.height=3.5, fig.width=5, warning = FALSE, message=FALSE}
 # alter data to extract post-cue target SSVEP
 modeldata5 = DATA.In_longer %>%
   filter(post_hit == "hit", signal == "SSVEP", time == "[500 1500]ms", pos_rel_target == "contra_target")%>%
@@ -2079,13 +2033,17 @@ fit_z_validity_x_SSVEP = brm(formula = post_RT ~ cue_validity_label * post_cue_S
           )  # Save all that hard work.
 
 # add criterion for model comparison
-fit_z_visalpha <- add_criterion(fit_z_visalpha, c("loo", "waic", "bayes_R2"))
-fit_validity_z_visalpha <- add_criterion(fit_validity_z_visalpha, c("loo", "waic", "bayes_R2"))
+fit_z_SSVEP <- add_criterion(fit_z_SSVEP, c("loo", "waic", "bayes_R2"))
+fit_z_validity_SSVEP <- add_criterion(fit_z_validity_SSVEP, c("loo", "waic", "bayes_R2"))
+fit_z_validity_x_SSVEP <- add_criterion(fit_z_validity_x_SSVEP, c("loo", "waic", "bayes_R2"))
 
 # actual model comparison
 # alpha contra target
-loo_compare(fit_intercept, fit_validity, fit_visalpha, fit_validity_visalpha, fit_validity_x_visalpha, fit_z_visalpha, fit_validity_z_visalpha, criterion = c("loo"))%>%
-  kable(escape = F, digits = c(6,6,6,6,6,6,6,6,6), caption = c("alpha contra target models | loo comparison")) %>%
+loo_compare(fit_intercept, fit_validity,
+            fit_SSVEP, fit_validity_SSVEP, fit_validity_x_SSVEP,
+            fit_z_SSVEP, fit_z_validity_SSVEP, fit_z_validity_x_SSVEP,
+            criterion = c("loo"))%>%
+  kable(escape = F, digits = c(6,6,6,6,6,6,6,6,6), caption = c("target SSVEP models | loo comparison")) %>%
   kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
 ```
 
