@@ -1862,7 +1862,7 @@ mediation(m2)
 
 
 
-## controal analyses
+## controal analyses I
 Normans cautious note was that the effects of visual alpha-band amplitude values may relate to between subject differences and not necessarily within subject alpha-band values as this is not (maybe it is) accounted for by the models
 
 One way to test it would be to remove between subject variance in alpha-band amplitude values by zscoring them
@@ -1895,6 +1895,183 @@ fit_validity_z_visalpha = brm(formula = post_RT ~ cue_validity_label + Zpost_cue
           data = modeldata2, 
           family = shifted_lognormal(),
           file = 'fit_validity_z_visalpha_slog',
+          save_pars = save_pars(all = TRUE),
+          file_refit = "on_change",
+          cores = 4
+          # file_refit = "always"
+          )  # Save all that hard work.
+
+# add criterion for model comparison
+fit_z_visalpha <- add_criterion(fit_z_visalpha, c("loo", "waic", "bayes_R2"))
+fit_validity_z_visalpha <- add_criterion(fit_validity_z_visalpha, c("loo", "waic", "bayes_R2"))
+
+# actual model comparison
+# alpha contra target
+loo_compare(fit_intercept, fit_validity, fit_visalpha, fit_validity_visalpha, fit_validity_x_visalpha, fit_z_visalpha, fit_validity_z_visalpha, criterion = c("loo"))%>%
+  kable(escape = F, digits = c(6,6,6,6,6,6,6,6,6), caption = c("alpha contra target models | loo comparison")) %>%
+  kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
+```
+
+graphically show results
+
+```{r model fits control disp, results = "hide",  fig.height=3.5, fig.width=5, warning = FALSE, message=FALSE}
+# model zscored data
+# which model to use?
+bestmodel.ef.model <- fit_validity_z_visalpha
+# what is the data of the model?
+bestmodel.ef.data <- bestmodel.ef.model$data
+
+## alpha contra target
+# use range of data from orignal study with varying alpha contra target (in range of original data)
+bestmodel.ef.newdata4 <- expand_grid(
+  cue_validity_label = c('valid','neutral','invalid'),
+  Zpost_cue_vis_alpha_contra_target = seq(min(bestmodel.ef.data$Zpost_cue_vis_alpha_contra_target),max(bestmodel.ef.data$Zpost_cue_vis_alpha_contra_target),0.2),
+  subject = as.factor(c(120)) # for a 'new' subject
+)
+
+# use 'expected draws' ('epred_draws') as we're more intereste in the expected value of the outcome
+# which means we’re more focused on the uncertainty in the model parameters and not necessarily the individual-level residuals
+# same as fitte function (only with nicer wrapper)
+bestmodel.ef.tidy_exppred2 <- bestmodel.ef.model %>%
+  epred_draws(newdata = bestmodel.ef.newdata4, allow_new_levels = TRUE)
+head(bestmodel.ef.tidy_exppred2)%>%
+  kable(escape = F, digits = c(6,6,6,6,6,6,6,6,6), caption = c("predicted data")) %>%
+  kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
+  
+
+
+theme_set(theme_bw())
+ggplot(bestmodel.ef.tidy_exppred2, aes(x = Zpost_cue_vis_alpha_contra_target, y = .epred)) +
+  stat_lineribbon(.width = c(0.5, 0.8, 0.95, 1)) + 
+  scale_fill_brewer(palette = "Reds") +
+  # scale_fill_manual(values=c("red3")) +
+  labs(x = "z-scored alpha amplitude contra target", y = "predicted RT",
+       fill = "Credible interval") +
+  theme(legend.position = "bottom")
+
+# now lets get the slop of the modulation by alpha
+bestmodel.ef.slope_contraTarget <- bestmodel.ef.model %>% 
+  emtrends(~ 1, # 1 means, we want the average slop
+           var = "Zpost_cue_vis_alpha_contra_target",
+           epred = TRUE) %>% 
+  gather_emmeans_draws()
+
+
+
+theme_set(theme_bw())
+ggplot(bestmodel.ef.slope_contraTarget, aes( x = .value)) +
+  stat_halfeye(
+    aes( fill = after_stat(level)),
+    .width = c(.95, 1),
+  ) +
+  # stat_dots(aes(fill = alpha_signal,color = alpha_signal, fill_ramp = after_stat(level), colour_ramp = after_stat(level)),
+  #           .width = c(.95, 1))+
+  geom_vline(xintercept = 0)+
+  # scale_fill_manual(values=c("red3")) +
+  # scale_color_manual(values=c("red3"))+
+  scale_color_brewer(palette = "Reds") +
+  scale_fill_brewer(palette = "Reds") +
+  labs(
+    # title = "Average marginal effect: alpha slopes", 
+    subtitle = "for all draws of the model",
+    fill_ramp = "interval",
+    colour_ramp = "interval",
+    x = "slope",
+    y = "density",
+  )+
+  theme(axis.text.y=element_blank(),axis.ticks.y=element_blank())
+
+bestmodel.ef.slope_contraTarget %>% median_hdi() %>%
+  kable(escape = F, digits = c(6,6,6,6,6,6,6,6,6), caption = c("alpha slope: mean and CI")) %>%
+  kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
+```
+
+same thing for SSVEPs
+
+* fit_SSVEP: contra target + validity: **RT ~ Cue +  z_SSVEP + ( cue | subjects)**
+
+```{r model fits control SSVEP, results = "hide",  fig.height=3.5, fig.width=5, warning = FALSE, message=FALSE}
+# alter data to extract post-cue alpha contra to target
+modeldata2 = DATA.In_longer %>%
+  filter(post_hit == "hit", signal == "SSVEP", time == "[500 1500]ms", pos_rel_target == "contra_target")%>%
+  mutate(post_cue_SSVEP_target = amplitude)%>%
+  dplyr::select(subject,trialnumber,cue_validity_label,post_cue_SSVEP_target,post_RT)%>%
+  group_by(subject)%>%
+  mutate("Zpost_cue_SSVEP_target" = scale(post_cue_SSVEP_target))%>%
+  ungroup
+
+# visual alpha contra target
+fit_z_SSVEP = brm(formula = post_RT ~ Zpost_cue_SSVEP_target + (1|subject),
+          data = modeldata2, 
+          family = shifted_lognormal(),
+          file = 'fit_z_SSVEP_slog',
+          save_pars = save_pars(all = TRUE),
+          file_refit = "on_change",
+          cores = 4
+          # file_refit = "always"
+          )  # Save all that hard work.
+
+# visual alpha contra target + validity
+fit_validity_z_SSVEP = brm(formula = post_RT ~ cue_validity_label + Zpost_cue_SSVEP_target + (cue_validity_label|subject),
+          data = modeldata2, 
+          family = shifted_lognormal(),
+          file = 'fit_validity_z_SSVEP_slog',
+          save_pars = save_pars(all = TRUE),
+          file_refit = "on_change",
+          cores = 4
+          # file_refit = "always"
+          )  # Save all that hard work.
+
+# add criterion for model comparison
+fit_z_SSVEP <- add_criterion(fit_z_SSVEP, c("loo", "waic", "bayes_R2"))
+fit_validity_z_SSVEP <- add_criterion(fit_validity_z_SSVEP, c("loo", "waic", "bayes_R2"))
+
+# actual model comparison
+# target ssvep
+loo_compare(fit_intercept, fit_validity, fit_SSVEP, fit_validity_SSVEP, fit_validity_x_SSVEP, fit_z_SSVEP, fit_validity_z_SSVEP,  criterion = c("loo"))%>%
+  kable(escape = F, digits = c(6,6,6,6,6,6,6,6,6), caption = c("target SSVEP models | loo comparison")) %>%
+  kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
+```
+
+
+
+## controal analyses II
+Similar to the point above. Maybe just amplitude offsets between left and right SSVEPs (due to different frequencies) may eat up the SSVEP effect
+
+* fit_z_ssvep: contra target + validity: **RT ~ Cue +  z_ssvep + ( 1 | subjects)**
+
+```{r model fits control, results = "hide",  fig.height=3.5, fig.width=5, warning = FALSE, message=FALSE}
+# alter data to extract post-cue target SSVEP
+modeldata5 = DATA.In_longer %>%
+  filter(post_hit == "hit", signal == "SSVEP", time == "[500 1500]ms", pos_rel_target == "contra_target")%>%
+  mutate(post_cue_SSVEP_contra_target = Zamplitude)
+
+# SSVEP model
+fit_z_SSVEP = brm(formula = post_RT ~ post_cue_SSVEP_contra_target + (1|subject),
+          data = modeldata5, 
+          family = shifted_lognormal(),
+          file = 'fit_z_ssvep_slog',
+          save_pars = save_pars(all = TRUE),
+          file_refit = "on_change",
+          cores = 4
+          # file_refit = "always"
+          )  # Save all that hard work.
+
+# SSVEP + validity model
+fit_z_validity_SSVEP = brm(formula = post_RT ~ cue_validity_label + post_cue_SSVEP_contra_target + (cue_validity_label|subject),
+          data = modeldata5, 
+          family = shifted_lognormal(),
+          file = 'fit_z_validity_ssvep_slog',
+          save_pars = save_pars(all = TRUE),
+          file_refit = "on_change",
+          cores = 4
+          # file_refit = "always"
+          )  # Save all that hard work.
+
+fit_z_validity_x_SSVEP = brm(formula = post_RT ~ cue_validity_label * post_cue_SSVEP_contra_target + (cue_validity_label|subject),
+          data = modeldata5, 
+          family = shifted_lognormal(),
+          file = 'fit_z_validity_x_ssvep_slog',
           save_pars = save_pars(all = TRUE),
           file_refit = "on_change",
           cores = 4

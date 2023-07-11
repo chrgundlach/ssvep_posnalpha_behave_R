@@ -653,7 +653,7 @@ StatsOut%>%
 <br>
 
 
-```{r post-hoc t_tests RT, echo=FALSE}
+```{r post-hoc t_tests RT, message=FALSE, warning=FALSE, include=TRUE}
 # aggregate data
 
 post_hocs.valXside <- emmeans(StatsOut$aov, c("validity","side"), contr = "pairwise",adjust = "holm") # adjust = holm
@@ -758,7 +758,7 @@ StatsData %>%
 ### ANOVA RR
 <br>  
 
-ANOVA_RM for reaction time: VALIDTIY(invalid, neutral, valid) X SIDE (left, right)
+ANOVA_RM for hit rate: VALIDTIY(invalid, neutral, valid) X SIDE (left, right)
 
 ```{r ANOVA_RR_ValXSei, message=FALSE, warning=FALSE, include=TRUE}
 #ANOVAe
@@ -784,7 +784,7 @@ StatsOut%>%
                         align = "center")
   ) %>%
   dplyr::select(factor, `num Df`, `den Df`, MSE, `F`, ges, `Pr(>F)`) %>%
-  kable(escape = F, digits = c(3,3,3,3,3,3,3,3,3), caption = c("repeated measures ANOVA | dv = response rate")) %>%
+  kable(escape = F, digits = c(3,3,3,3,3,3,3,3,3), caption = c("repeated measures ANOVA | dv = hit rate")) %>%
   kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
 
 ```
@@ -804,7 +804,7 @@ post_hocs.side <- emmeans(StatsOut$aov, c("side"), contr = "pairwise",adjust = "
 
 # report data
 post_hocs.validity$emmeans %>%
-  kable(escape = F, digits = c(3,3,3,3,3,3,3,3,3), caption = c("estimated marginal means | by validity | dv = reponse rate")) %>%
+  kable(escape = F, digits = c(3,3,3,3,3,3,3,3,3), caption = c("estimated marginal means | by validity | dv = HR")) %>%
   kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
 
 summary(post_hocs.validity$contrasts) %>%
@@ -816,7 +816,7 @@ summary(post_hocs.validity$contrasts) %>%
   ) %>%
   mutate(CohensD = `t.ratio`/sqrt(df+1))%>%
   kable(escape = F, digits = c(3,3,3,3,3,3,3,3,3), 
-        caption = c("contrasts for estimated marginal means | by validity | dv = RT | corrected: Holm")) %>%
+        caption = c("contrasts for estimated marginal means | by validity | dv = HR | corrected: Holm")) %>%
   kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
 
 post_hocs.side$emmeans %>%
@@ -832,7 +832,7 @@ summary(post_hocs.side$contrasts) %>%
   ) %>%
   mutate(CohensD = `t.ratio`/sqrt(df+1))%>%
   kable(escape = F, digits = c(3,3,3,3,3,3,3,3,3), 
-        caption = c("contrasts for estimated marginal means | by side | dv = RT | corrected: Holm")) %>%
+        caption = c("contrasts for estimated marginal means | by side | dv = HR | corrected: Holm")) %>%
   kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
 
 post_hocs.valXside$emmeans %>%
@@ -848,7 +848,7 @@ summary(post_hocs.valXside$contrasts) %>%
   ) %>%
   mutate(CohensD = `t.ratio`/sqrt(df+1))%>%
   kable(escape = F, digits = c(3,3,3,3,3,3,3,3,3), 
-        caption = c("contrasts for estimated marginal means | by validity and side | dv = RT | corrected: Holm")) %>%
+        caption = c("contrasts for estimated marginal means | by validity and side | dv = HR | corrected: Holm")) %>%
   kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
 
 
