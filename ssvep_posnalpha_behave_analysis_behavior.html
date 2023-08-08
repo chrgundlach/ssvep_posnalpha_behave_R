@@ -11,7 +11,7 @@
 
 <meta name="author" content="Christopher Gundlach" />
 
-<meta name="date" content="2023-07-10" />
+<meta name="date" content="2023-08-08" />
 
 <title>Behavioral Analysis Posner+SSVEP paradigm</title>
 
@@ -1813,7 +1813,7 @@ border-radius: 0px;
 paradigm</h1>
 <h4 class="author"><a href="https://www.researchgate.net/profile/Christopher_Gundlach">Christopher
 Gundlach</a></h4>
-<h4 class="date">2023-07-10</h4>
+<h4 class="date">2023-08-08</h4>
 
 </div>
 
@@ -2723,8 +2723,16 @@ validity:side
 <div id="post-hoc-t-tests-rt" class="section level3">
 <h3>Post-hoc t-Tests RT</h3>
 <p><br></p>
-<pre><code>## NOTE: Results may be misleading due to involvement in interactions
-## NOTE: Results may be misleading due to involvement in interactions</code></pre>
+<pre class="r"><code># aggregate data
+
+post_hocs.valXside &lt;- emmeans(StatsOut$aov, c(&quot;validity&quot;,&quot;side&quot;), contr = &quot;pairwise&quot;,adjust = &quot;holm&quot;) # adjust = holm
+post_hocs.validity &lt;- emmeans(StatsOut$aov, c(&quot;validity&quot;), contr = &quot;pairwise&quot;,adjust = &quot;holm&quot;) # adjust = holm
+post_hocs.side &lt;- emmeans(StatsOut$aov, c(&quot;side&quot;), contr = &quot;pairwise&quot;,adjust = &quot;holm&quot;) # adjust = holm
+
+# report data
+post_hocs.validity$emmeans %&gt;%
+  kable(escape = F, digits = c(3,3,3,3,3,3,3,3,3), caption = c(&quot;estimated marginal means | by validity | dv = RT&quot;)) %&gt;%
+  kable_styling(&quot;striped&quot;, full_width = T, bootstrap_options = c(&quot;striped&quot;, &quot;hover&quot;, &quot;condensed&quot;, &quot;responsive&quot;,font_size = 8))</code></pre>
 <table class="table table-striped table-hover table-condensed table-responsive" style="margin-left: auto; margin-right: auto;">
 <caption>
 estimated marginal means | by validity | dv = RT
@@ -2814,6 +2822,17 @@ valid
 </tr>
 </tbody>
 </table>
+<pre class="r"><code>summary(post_hocs.validity$contrasts) %&gt;%
+  mutate(
+    p.value = cell_spec(ifelse(round(p.value,4)&lt;.001,&quot;&lt; .001&quot;,round(p.value,4)), 
+                        color = ifelse(is.nan(p.value),&quot;blue&quot;, ifelse(p.value &lt; .05, &quot;green&quot;, &quot;red&quot;)),
+                        bold = ifelse(is.nan(p.value),F, ifelse(p.value &lt; .05, T,F)),
+                        align = &quot;left&quot;)
+  ) %&gt;%
+  mutate(CohensD = `t.ratio`/sqrt(df+1))%&gt;%
+  kable(escape = F, digits = c(3,3,3,3,3,3,3,3,3), 
+        caption = c(&quot;contrasts for estimated marginal means | by validity | dv = RT | corrected: Holm&quot;)) %&gt;%
+  kable_styling(&quot;striped&quot;, full_width = T, bootstrap_options = c(&quot;striped&quot;, &quot;hover&quot;, &quot;condensed&quot;, &quot;responsive&quot;,font_size = 8))</code></pre>
 <table class="table table-striped table-hover table-condensed table-responsive" style="margin-left: auto; margin-right: auto;">
 <caption>
 contrasts for estimated marginal means | by validity | dv = RT |
@@ -2918,6 +2937,9 @@ neutral - valid
 </tr>
 </tbody>
 </table>
+<pre class="r"><code>post_hocs.side$emmeans %&gt;%
+  kable(escape = F, digits = c(3,3,3,3,3,3,3,3,3), caption = c(&quot;estimated marginal means | by side | dv = RT&quot;)) %&gt;%
+  kable_styling(&quot;striped&quot;, full_width = T, bootstrap_options = c(&quot;striped&quot;, &quot;hover&quot;, &quot;condensed&quot;, &quot;responsive&quot;,font_size = 8))</code></pre>
 <table class="table table-striped table-hover table-condensed table-responsive" style="margin-left: auto; margin-right: auto;">
 <caption>
 estimated marginal means | by side | dv = RT
@@ -2987,6 +3009,17 @@ right
 </tr>
 </tbody>
 </table>
+<pre class="r"><code>summary(post_hocs.side$contrasts) %&gt;%
+  mutate(
+    p.value = cell_spec(ifelse(round(p.value,4)&lt;.001,&quot;&lt; .001&quot;,round(p.value,4)), 
+                        color = ifelse(is.nan(p.value),&quot;blue&quot;, ifelse(p.value &lt; .05, &quot;green&quot;, &quot;red&quot;)),
+                        bold = ifelse(is.nan(p.value),F, ifelse(p.value &lt; .05, T,F)),
+                        align = &quot;left&quot;)
+  ) %&gt;%
+  mutate(CohensD = `t.ratio`/sqrt(df+1))%&gt;%
+  kable(escape = F, digits = c(3,3,3,3,3,3,3,3,3), 
+        caption = c(&quot;contrasts for estimated marginal means | by side | dv = RT | corrected: Holm&quot;)) %&gt;%
+  kable_styling(&quot;striped&quot;, full_width = T, bootstrap_options = c(&quot;striped&quot;, &quot;hover&quot;, &quot;condensed&quot;, &quot;responsive&quot;,font_size = 8))</code></pre>
 <table class="table table-striped table-hover table-condensed table-responsive" style="margin-left: auto; margin-right: auto;">
 <caption>
 contrasts for estimated marginal means | by side | dv = RT | corrected:
@@ -3043,6 +3076,9 @@ left - right
 </tr>
 </tbody>
 </table>
+<pre class="r"><code>post_hocs.valXside$emmeans %&gt;%
+  kable(escape = F, digits = c(3,3,3,3,3,3,3,3,3), caption = c(&quot;estimated marginal means | by validity and side | dv = RT&quot;)) %&gt;%
+  kable_styling(&quot;striped&quot;, full_width = T, bootstrap_options = c(&quot;striped&quot;, &quot;hover&quot;, &quot;condensed&quot;, &quot;responsive&quot;,font_size = 8))</code></pre>
 <table class="table table-striped table-hover table-condensed table-responsive" style="margin-left: auto; margin-right: auto;">
 <caption>
 estimated marginal means | by validity and side | dv = RT
@@ -3213,6 +3249,17 @@ right
 </tr>
 </tbody>
 </table>
+<pre class="r"><code>summary(post_hocs.valXside$contrasts) %&gt;%
+  mutate(
+    p.value = cell_spec(ifelse(round(p.value,4)&lt;.001,&quot;&lt; .001&quot;,round(p.value,4)), 
+                        color = ifelse(is.nan(p.value),&quot;blue&quot;, ifelse(p.value &lt; .05, &quot;green&quot;, &quot;red&quot;)),
+                        bold = ifelse(is.nan(p.value),F, ifelse(p.value &lt; .05, T,F)),
+                        align = &quot;left&quot;)
+  ) %&gt;%
+  mutate(CohensD = `t.ratio`/sqrt(df+1))%&gt;%
+  kable(escape = F, digits = c(3,3,3,3,3,3,3,3,3), 
+        caption = c(&quot;contrasts for estimated marginal means | by validity and side | dv = RT | corrected: Holm&quot;)) %&gt;%
+  kable_styling(&quot;striped&quot;, full_width = T, bootstrap_options = c(&quot;striped&quot;, &quot;hover&quot;, &quot;condensed&quot;, &quot;responsive&quot;,font_size = 8))</code></pre>
 <table class="table table-striped table-hover table-condensed table-responsive" style="margin-left: auto; margin-right: auto;">
 <caption>
 contrasts for estimated marginal means | by validity and side | dv = RT
@@ -3593,9 +3640,48 @@ neutral right - valid right
 </tr>
 </tbody>
 </table>
-<pre><code>## `summarise()` has grouped output by &#39;subject&#39;, &#39;cue_validity_label&#39;, &#39;post_event_pos_label&#39;. You can override using the
-## `.groups` argument.</code></pre>
-<pre><code>## `summarise()` has grouped output by &#39;subject&#39;. You can override using the `.groups` argument.</code></pre>
+<pre class="r"><code>StatsData &lt;- DATA.In_long %&gt;%
+  filter(trial_timing_type == 1) %&gt;%
+  dplyr::select(subject, trialnumber, cue_validity_label, post_event_pos_label, post_hit, post_RT) %&gt;%
+  group_by(subject, cue_validity_label, post_event_pos_label, post_hit) %&gt;% 
+  summarise(n_resp= n(), mean_RT = mean(post_RT)) %&gt;%
+  ungroup()%&gt;%
+  group_by(subject, cue_validity_label, post_event_pos_label) %&gt;%
+  mutate(n_cons = sum(n_resp), rate_perc = (n_resp/n_cons)*100) %&gt;%
+  mutate(post_hit = ifelse(post_hit==&quot;NaN&quot;,&quot;miss&quot;,ifelse(post_hit==&quot;0&quot;,&quot;error&quot;,&quot;hit&quot;)))%&gt;%
+  filter(post_hit == &quot;hit&quot;)%&gt;%
+  ungroup()%&gt;%
+  group_by(subject, cue_validity_label)%&gt;%
+  summarise(n_resp = sum(n_resp), mean_RT = mean(mean_RT), n_cons = sum(n_cons), rate_perc = mean(rate_perc))%&gt;%
+  dplyr::select(-n_resp, -n_cons, -rate_perc)%&gt;%
+  pivot_wider(names_from = cue_validity_label, values_from = mean_RT)%&gt;%
+  mutate(valid_MINUS_neutral = valid - neutral, valid_MINUS_invalid = valid - invalid, neutral_MINUS_invalid = neutral - invalid)%&gt;%
+  dplyr::select(-invalid, -neutral, -valid)%&gt;%
+  pivot_longer(cols = valid_MINUS_neutral:neutral_MINUS_invalid, names_to = &quot;contrast&quot;, values_to = &quot;RT_diff&quot;)
+
+StatsData %&gt;%
+  ungroup()%&gt;%
+  group_by(contrast)%&gt;%
+  nest()%&gt;%
+  mutate(stats = map(data, ~broom::tidy(
+    t.test(RT_diff ~ 1, .)
+  ))) %&gt;%
+  mutate(meanval = map(data, ~ mean(.x$RT_diff))) %&gt;%
+  mutate(std = map(data, ~ sd(.x$RT_diff))) %&gt;%
+  dplyr::select(-data) %&gt;%
+  unnest(cols = c(stats, meanval, std))%&gt;%
+  ungroup()%&gt;%
+  dplyr::select(contrast, meanval, std, statistic, parameter, p.value)%&gt;%
+  mutate(p.value = p.adjust(p.value, method=&quot;bonferroni&quot;)) %&gt;%
+  mutate(CohensD = `statistic`/sqrt(parameter))%&gt;%
+  mutate(
+    p.value = cell_spec(ifelse(round(p.value,4)&lt;.001,&quot;&lt; .001&quot;,round(p.value,4)), 
+                        color = ifelse(is.nan(p.value),&quot;blue&quot;, ifelse(p.value &lt; .05, &quot;green&quot;, &quot;red&quot;)),
+                        bold = ifelse(is.nan(p.value),F, ifelse(p.value &lt; .05, T,F)),
+                        align = &quot;center&quot;)
+  ) %&gt;%
+  kable(escape = F, digits = c(3,3,3,3,3,3,3,3,3), caption = c(&quot;t-tests against 0 | dv = RT difference &quot;)) %&gt;%
+  kable_styling(&quot;striped&quot;, full_width = T, bootstrap_options = c(&quot;striped&quot;, &quot;hover&quot;, &quot;condensed&quot;, &quot;responsive&quot;,font_size = 8))</code></pre>
 <table class="table table-striped table-hover table-condensed table-responsive" style="margin-left: auto; margin-right: auto;">
 <caption>
 t-tests against 0 | dv = RT difference
