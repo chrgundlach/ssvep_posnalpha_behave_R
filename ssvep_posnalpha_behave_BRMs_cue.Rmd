@@ -2049,7 +2049,7 @@ loo_compare(fit_intercept, fit_validity,
 
 graphically show results
 
-```{r model fits control disp, results = "hide",  fig.height=3.5, fig.width=5, warning = FALSE, message=FALSE}
+```{r model fits control II disp, results = "hide",  fig.height=3.5, fig.width=5, warning = FALSE, message=FALSE}
 # model zscored data
 # which model to use?
 bestmodel.ef.model <- fit_validity_z_visalpha
