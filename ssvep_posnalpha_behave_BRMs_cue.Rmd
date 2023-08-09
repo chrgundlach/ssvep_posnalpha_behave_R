@@ -1074,30 +1074,66 @@ In addition we can compute a Byesian version of the R² value for brms regressio
 ```{r model comparisons, fig.height=6, fig.width=10, warning=FALSE, eval = TRUE}
 # alpha contra target
 loo_compare(fit_intercept, fit_validity, fit_visalpha, fit_validity_visalpha, fit_validity_x_visalpha, 
-            fit_validity_of, fit_validity_visalpha_of, fit_validity_x_visalpha_of, 
             criterion = c("loo"))%>%
   kable(escape = F, digits = c(6,6,6,6,6,6,6,6,6), caption = c("alpha contra target models | loo comparison")) %>%
   kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
 
+# alpha contra target only fixed
+loo_compare(fit_intercept,  fit_validity_of, fit_visalpha, fit_validity_visalpha_of, fit_validity_x_visalpha_of, 
+            criterion = c("loo"))%>%
+  kable(escape = F, digits = c(6,6,6,6,6,6,6,6,6), caption = c("alpha contra target models only fixed | loo comparison")) %>%
+  kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
+
 # alpha contra nontarget
 loo_compare(fit_intercept, fit_validity, fit_alpha2, fit_validity_alpha2, fit_validity_x_alpha2, 
-            fit_validity_of, fit_validity_alpha2_of, fit_validity_x_alpha2_of, 
             criterion = c("loo"))%>%
   kable(escape = F, digits = c(6,6,6,6,6,6,6,6,6), caption = c("alpha contra nontarget models | loo comparison")) %>%
   kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
 
+# alpha contra nontarget only fixed
+loo_compare(fit_intercept, fit_validity_of, fit_alpha2, fit_validity_alpha2_of, fit_validity_x_alpha2_of, 
+            criterion = c("loo"))%>%
+  kable(escape = F, digits = c(6,6,6,6,6,6,6,6,6), caption = c("alpha contra nontarget models only fixed | loo comparison")) %>%
+  kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
+
+# all visual alpha
+loo_compare(fit_intercept, fit_validity, fit_visalpha, fit_validity_visalpha, fit_validity_x_visalpha,
+            fit_alpha2, fit_validity_alpha2, fit_validity_x_alpha2,
+            fit_validity_alpha1_alpha2, fit_validity_x_alpha1_alpha2,
+            criterion = c("loo"))%>%
+  kable(escape = F, digits = c(6,6,6,6,6,6,6,6,6), caption = c("alpha contra target models | loo comparison")) %>%
+  kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
+
+# all visual alpha | only fixed
+loo_compare(fit_intercept, fit_validity_of, fit_visalpha, fit_validity_visalpha_of, fit_validity_x_visalpha_of,
+            fit_alpha2, fit_validity_alpha2_of, fit_validity_x_alpha2_of,
+            fit_validity_alpha1_alpha2_of, fit_validity_x_alpha1_alpha2_of,
+            criterion = c("loo"))%>%
+  kable(escape = F, digits = c(6,6,6,6,6,6,6,6,6), caption = c("alpha contra target models only fixed | loo comparison")) %>%
+  kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
+
 # target ssvep
 loo_compare(fit_intercept, fit_validity, fit_SSVEP, fit_validity_SSVEP, fit_validity_x_SSVEP,
-            fit_validity_of, fit_validity_SSVEP_of, fit_validity_x_SSVEP_of, 
             criterion = c("loo"))%>%
   kable(escape = F, digits = c(6,6,6,6,6,6,6,6,6), caption = c("target SSVEP models | loo comparison")) %>%
   kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
 
+# target ssvep only fixed
+loo_compare(fit_intercept, fit_validity_of, fit_SSVEP, fit_validity_SSVEP_of, fit_validity_x_SSVEP_of, 
+            criterion = c("loo"))%>%
+  kable(escape = F, digits = c(6,6,6,6,6,6,6,6,6), caption = c("target SSVEP models only fixed | loo comparison")) %>%
+  kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
+
 # motor alpha contra target
 loo_compare(fit_intercept, fit_validity, fit_motoralpha, fit_validity_motoralpha, fit_validity_x_motoralpha, 
-            fit_validity_of,  fit_validity_motoralpha_of, fit_validity_x_motoralpha_of,
             criterion = c("loo"))%>%
   kable(escape = F, digits = c(6,6,6,6,6,6,6,6,6), caption = c("motor alpha contra target models | loo comparison")) %>%
+  kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
+
+# motor alpha contra target only fixed
+loo_compare(fit_intercept, fit_validity_of,  fit_motoralpha, fit_validity_motoralpha_of, fit_validity_x_motoralpha_of,
+            criterion = c("loo"))%>%
+  kable(escape = F, digits = c(6,6,6,6,6,6,6,6,6), caption = c("motor alpha contra target models only fixed | loo comparison")) %>%
   kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
 
 
@@ -1150,6 +1186,8 @@ as.data.frame(rbind(
                 "fit_validity_SSVEP_alpha", "fit_validity_x_SSVEP_alpha"))%>%
   kable(escape = F, digits = c(6,6,6,6,6,6,6,6,6), caption = c("alpha, ssvep and combined models | bayes_R2")) %>%
   kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
+
+
 
 # extract model weights
 # via stacking: Each model in a set is fitted to the training data: a subset of p * N observations in data. From these models a prediction is produced on the remaining part of data (the test or hold-out data). These hold-out predictions are fitted to the hold-out observations, by optimising the weights by which the models are combined. This process is repeated R times, yielding a distribution of weights for each model (which Smyth & Wolpert (1998) referred to as an ‘empirical Bayesian estimate of posterior model probability’). A mean or median of model weights for each model is taken and re-scaled to sum to one.
@@ -2121,25 +2159,25 @@ bestmodel.ef.slope_contraTarget %>% median_hdi() %>%
   kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
 ```
 
-same thing for SSVEPs
+## controal analyses III
+Maybe it is the alpha lateralization all the way that is relevant?
 
-* fit_SSVEP: contra target + validity: **RT ~ Cue +  z_SSVEP + ( cue | subjects)**
+* fit_visalpha: (contra target - contra nontarget) + validity: **RT ~ Cue +  visual_alpha_lateral + ( cue | subjects)**
 
-```{r model fits control SSVEP, results = "hide",  fig.height=3.5, fig.width=5, warning = FALSE, message=FALSE}
+```{r model fits control, results = "hide",  fig.height=3.5, fig.width=5, warning = FALSE, message=FALSE}
 # alter data to extract post-cue alpha contra to target
 modeldata2 = DATA.In_longer %>%
-  filter(post_hit == "hit", signal == "SSVEP", time == "[500 1500]ms", pos_rel_target == "contra_target")%>%
-  mutate(post_cue_SSVEP_target = amplitude)%>%
-  dplyr::select(subject,trialnumber,cue_validity_label,post_cue_SSVEP_target,post_RT)%>%
-  group_by(subject)%>%
-  mutate("Zpost_cue_SSVEP_target" = scale(post_cue_SSVEP_target))%>%
-  ungroup
+  filter(post_hit == "hit", signal == "visualAlpha", time == "[500 1500]ms")%>%
+  dplyr::select(subject,trialnumber,cue_validity_label,pos_rel_target,amplitude,post_RT)%>%
+  pivot_wider(names_from = pos_rel_target, values_from = amplitude)%>%
+  mutate("post_cue_vis_alpha_contra_target_MINUS_nontarget" = contra_target - contra_nontarget)
+  
 
 # visual alpha contra target
-fit_z_SSVEP = brm(formula = post_RT ~ Zpost_cue_SSVEP_target + (1|subject),
+fit_visalphalat = brm(formula = post_RT ~ post_cue_vis_alpha_contra_target_MINUS_nontarget + (1|subject),
           data = modeldata2, 
           family = shifted_lognormal(),
-          file = 'fit_z_SSVEP_slog',
+          file = 'fit_visalphalat_slog',
           save_pars = save_pars(all = TRUE),
           file_refit = "on_change",
           cores = 4
@@ -2147,10 +2185,10 @@ fit_z_SSVEP = brm(formula = post_RT ~ Zpost_cue_SSVEP_target + (1|subject),
           )  # Save all that hard work.
 
 # visual alpha contra target + validity
-fit_validity_z_SSVEP = brm(formula = post_RT ~ cue_validity_label + Zpost_cue_SSVEP_target + (cue_validity_label|subject),
+fit_validity_visalphalat = brm(formula = post_RT ~ cue_validity_label + post_cue_vis_alpha_contra_target_MINUS_nontarget + (cue_validity_label|subject),
           data = modeldata2, 
           family = shifted_lognormal(),
-          file = 'fit_validity_z_SSVEP_slog',
+          file = 'fit_val_visalphalat_slog',
           save_pars = save_pars(all = TRUE),
           file_refit = "on_change",
           cores = 4
@@ -2158,14 +2196,18 @@ fit_validity_z_SSVEP = brm(formula = post_RT ~ cue_validity_label + Zpost_cue_SS
           )  # Save all that hard work.
 
 # add criterion for model comparison
-fit_z_SSVEP <- add_criterion(fit_z_SSVEP, c("loo", "waic", "bayes_R2"))
-fit_validity_z_SSVEP <- add_criterion(fit_validity_z_SSVEP, c("loo", "waic", "bayes_R2"))
+fit_visalphalat <- add_criterion(fit_visalphalat, c("loo", "waic", "bayes_R2"))
+fit_validity_visalphalat <- add_criterion(fit_validity_visalphalat, c("loo", "waic", "bayes_R2"))
 
 # actual model comparison
-# target ssvep
-loo_compare(fit_intercept, fit_validity, fit_SSVEP, fit_validity_SSVEP, fit_validity_x_SSVEP, fit_z_SSVEP, fit_validity_z_SSVEP,  criterion = c("loo"))%>%
-  kable(escape = F, digits = c(6,6,6,6,6,6,6,6,6), caption = c("target SSVEP models | loo comparison")) %>%
+# alpha contra target
+loo_compare(fit_intercept, fit_visalpha, fit_alpha2, fit_alpha1_alpha2, fit_visalphalat,
+            fit_validity, fit_validity_visalpha, fit_validity_alpha2, fit_validity_alpha1_alpha2, fit_validity_visalphalat,
+            criterion = c("loo"))%>%
+  kable(escape = F, digits = c(6,6,6,6,6,6,6,6,6), caption = c("alpha contra target models | loo comparison")) %>%
   kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
 ```
+
+
 
 
