@@ -2289,10 +2289,10 @@ modeldata2 = DATA.In_longer %>%
 fit_z_visalpha = brm(formula = post_RT ~ post_cue_vis_alpha_contra_target + (1|subject),
           data = modeldata2, 
           family = shifted_lognormal(),
-          file = 'fit_z_visalpha_slog',
+          file = 'fit_z_visalpha_II_slog',
           save_pars = save_pars(all = TRUE),
           file_refit = "on_change",
-          cores = 4
+          cores = 1
           # file_refit = "always"
           )  # Save all that hard work.
 
