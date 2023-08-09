@@ -2164,7 +2164,7 @@ Maybe it is the alpha lateralization all the way that is relevant?
 
 * fit_visalpha: (contra target - contra nontarget) + validity: **RT ~ Cue +  visual_alpha_lateral + ( cue | subjects)**
 
-```{r model fits control, results = "hide",  fig.height=3.5, fig.width=5, warning = FALSE, message=FALSE}
+```{r model fits control III, results = "hide",  fig.height=3.5, fig.width=5, warning = FALSE, message=FALSE}
 # alter data to extract post-cue alpha contra to target
 modeldata2 = DATA.In_longer %>%
   filter(post_hit == "hit", signal == "visualAlpha", time == "[500 1500]ms")%>%
@@ -2205,6 +2205,82 @@ loo_compare(fit_intercept, fit_visalpha, fit_alpha2, fit_alpha1_alpha2, fit_visa
             fit_validity, fit_validity_visalpha, fit_validity_alpha2, fit_validity_alpha1_alpha2, fit_validity_visalphalat,
             criterion = c("loo"))%>%
   kable(escape = F, digits = c(6,6,6,6,6,6,6,6,6), caption = c("alpha contra target models | loo comparison")) %>%
+  kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
+```
+
+
+graphically show results
+
+```{r model fits control III disp, results = "hide",  fig.height=3.5, fig.width=5, warning = FALSE, message=FALSE}
+# model zscored data
+# which model to use?
+bestmodel.ef.model <- fit_validity_visalphalat
+# what is the data of the model?
+bestmodel.ef.data <- bestmodel.ef.model$data
+
+## alpha contra target
+# use range of data from orignal study with varying alpha contra target (in range of original data)
+bestmodel.ef.newdata4 <- expand_grid(
+  cue_validity_label = c('valid','neutral','invalid'),
+  post_cue_vis_alpha_contra_target_MINUS_nontarget = seq(min(bestmodel.ef.data$post_cue_vis_alpha_contra_target_MINUS_nontarget),
+                                                         max(bestmodel.ef.data$post_cue_vis_alpha_contra_target_MINUS_nontarget),0.2),
+  subject = as.factor(c(120)) # for a 'new' subject
+)
+
+# use 'expected draws' ('epred_draws') as we're more intereste in the expected value of the outcome
+# which means we’re more focused on the uncertainty in the model parameters and not necessarily the individual-level residuals
+# same as fitte function (only with nicer wrapper)
+bestmodel.ef.tidy_exppred2 <- bestmodel.ef.model %>%
+  epred_draws(newdata = bestmodel.ef.newdata4, allow_new_levels = TRUE)
+head(bestmodel.ef.tidy_exppred2)%>%
+  kable(escape = F, digits = c(6,6,6,6,6,6,6,6,6), caption = c("predicted data")) %>%
+  kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
+  
+
+
+theme_set(theme_bw())
+ggplot(bestmodel.ef.tidy_exppred2, aes(x = post_cue_vis_alpha_contra_target_MINUS_nontarget, y = .epred)) +
+  stat_lineribbon(.width = c(0.5, 0.8, 0.95, 1)) + 
+  scale_fill_brewer(palette = "Reds") +
+  # scale_fill_manual(values=c("red3")) +
+  labs(x = "alpha lateralization contra targ - nontarg", y = "predicted RT",
+       fill = "Credible interval") +
+  theme(legend.position = "bottom")
+
+# now lets get the slop of the modulation by alpha
+bestmodel.ef.slope_contraTarget <- bestmodel.ef.model %>% 
+  emtrends(~ 1, # 1 means, we want the average slop
+           var = "post_cue_vis_alpha_contra_target_MINUS_nontarget",
+           epred = TRUE) %>% 
+  gather_emmeans_draws()
+
+
+
+theme_set(theme_bw())
+ggplot(bestmodel.ef.slope_contraTarget, aes( x = .value)) +
+  stat_halfeye(
+    aes( fill = after_stat(level)),
+    .width = c(.95, 1),
+  ) +
+  # stat_dots(aes(fill = alpha_signal,color = alpha_signal, fill_ramp = after_stat(level), colour_ramp = after_stat(level)),
+  #           .width = c(.95, 1))+
+  geom_vline(xintercept = 0)+
+  # scale_fill_manual(values=c("red3")) +
+  # scale_color_manual(values=c("red3"))+
+  scale_color_brewer(palette = "Reds") +
+  scale_fill_brewer(palette = "Reds") +
+  labs(
+    # title = "Average marginal effect: alpha slopes", 
+    subtitle = "for all draws of the model",
+    fill_ramp = "interval",
+    colour_ramp = "interval",
+    x = "slope",
+    y = "density",
+  )+
+  theme(axis.text.y=element_blank(),axis.ticks.y=element_blank())
+
+bestmodel.ef.slope_contraTarget %>% median_hdi() %>%
+  kable(escape = F, digits = c(6,6,6,6,6,6,6,6,6), caption = c("alpha slope: mean and CI")) %>%
   kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
 ```
 
