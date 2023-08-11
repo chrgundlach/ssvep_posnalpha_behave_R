@@ -18,7 +18,7 @@ output:
 
 ```{r set up libraries,echo=FALSE,warning=FALSE,message=FALSE,results="hide"}
 # Setup the work environment
-options(width=120,scipen=0,digits=6) # change output width (for better printing), scientific notation (to disable it: scipen=999), constrain output to 3 decimals
+options(width=120,scipen=0,digits=8) # change output width (for better printing), scientific notation (to disable it: scipen=999), constrain output to 3 decimals
 cat("\014") # clear console
 # dev.off() # clear plots (if no plots are present, comment it out or it will throw an error)
 rm(list=ls()) # clear environment
@@ -1043,6 +1043,13 @@ loo_compare(fit_intercept, fit_validity, fit_alpha2, fit_validity_alpha2, fit_va
   kable(escape = F, digits = c(6,6,6,6,6,6,6,6,6), caption = c("alpha contra nontarget models | loo comparison")) %>%
   kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
 
+loo_compare(fit_intercept, fit_validity, fit_visalpha, fit_validity_visalpha, fit_validity_x_visalpha,
+            fit_alpha2, fit_validity_alpha2, fit_validity_x_alpha2,
+            fit_validity_alpha1_alpha2, fit_validity_x_alpha1_alpha2,
+            criterion = c("loo"))%>%
+  kable(escape = F, digits = c(6,6,6,6,6,6,6,6,6), caption = c("all alpha models | loo comparison")) %>%
+  kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
+
 # pre-target alpha target ssvep
 loo_compare(fit_intercept, fit_validity, fit_SSVEP, fit_validity_SSVEP, fit_validity_x_SSVEP, criterion = c("loo"))%>%
   kable(escape = F, digits = c(6,6,6,6,6,6,6,6,6), caption = c("target SSVEP models | loo comparison")) %>%
@@ -1066,15 +1073,19 @@ loo_compare(fit_intercept, fit_validity,
 
 as.data.frame(rbind(
   bayes_R2(fit_intercept), bayes_R2(fit_validity),
+  bayes_R2(fit_visalpha), bayes_R2(fit_alpha2), bayes_R2(fit_motoralpha), bayes_R2(fit_SSVEP),
   bayes_R2(fit_validity_visalpha), bayes_R2(fit_validity_x_visalpha),
   bayes_R2(fit_validity_alpha2), bayes_R2(fit_validity_x_alpha2),
   bayes_R2(fit_validity_alpha1_alpha2), bayes_R2(fit_validity_x_alpha1_alpha2),
+  bayes_R2(fit_validity_motoralpha), bayes_R2(fit_validity_x_motoralpha),
   bayes_R2(fit_validity_SSVEP), bayes_R2(fit_validity_x_SSVEP),
   bayes_R2(fit_validity_SSVEP_alpha), bayes_R2(fit_validity_x_SSVEP_alpha)),
   row.names = c("fit_intercept","fit_validity",
+                "fit_visalpha","fit_alpha2","fit_motoralpha","fit_SSVEP",
                 "fit_validity_visalpha", "fit_validity_x_visalpha",
                 "fit_validity_alpha2", "fit_validity_x_alpha2",
                 "fit_validity_alpha1_alpha2", "fit_validity_x_alpha1_alpha2",
+                "fit_validity_motalpha", "fit_validity_x_motalpha",
                 "fit_validity_SSVEP","fit_validity_x_SSVEP",
                 "fit_validity_SSVEP_alpha", "fit_validity_x_SSVEP_alpha"))%>%
   kable(escape = F, digits = c(6,6,6,6,6,6,6,6,6), caption = c("alpha, ssvep and combined models | bayes_R2")) %>%
@@ -1364,7 +1375,7 @@ head(bestmodel.ef.tidy_exppred2)%>%
 
 
 theme_set(theme_bw())
-ggplot(bestmodel.ef.tidy_exppred2, aes(x = post_cue_vis_alpha_contra_target, y = .epred)) +
+g <- ggplot(bestmodel.ef.tidy_exppred2, aes(x = post_cue_vis_alpha_contra_target, y = .epred)) +
   stat_lineribbon(.width = c(0.5, 0.8, 0.95, 1)) + 
   scale_fill_brewer(palette = "Reds") +
   labs(x = "alpha amplitude contra target", y = "predicted RT",
@@ -1378,10 +1389,13 @@ bestmodel.ef.slope_contraTarget <- bestmodel.ef.model %>%
            epred = TRUE) %>% 
   gather_emmeans_draws()
 
+# print(g)
+ggsave(filename = "figures/MarginEffects_VisAlphaTarg_PredSlopes_ModelValVisAlpha_PreTarget.eps", width = 5, height = 3.5,
+       plot = print(g))
 
 
 theme_set(theme_bw())
-ggplot(bestmodel.ef.slope_contraTarget, aes( x = .value)) +
+g <- ggplot(bestmodel.ef.slope_contraTarget, aes( x = .value)) +
   stat_halfeye(
     aes( fill = after_stat(level)),
     .width = c(.95, 1),
@@ -1401,6 +1415,10 @@ ggplot(bestmodel.ef.slope_contraTarget, aes( x = .value)) +
     y = "density",
   )+
   theme(axis.text.y=element_blank(),axis.ticks.y=element_blank())
+
+# print(g)
+ggsave(filename = "figures/MarginEffects_VisAlphaTarg_SlopeDistr_ModelValVisAlpha_PreTarget.eps", width = 5, height = 3.5,
+       plot = print(g))
 
 bestmodel.ef.slope_contraTarget %>% median_hdi() %>%
   kable(escape = F, digits = c(6,6,6,6,6,6,6,6,6), caption = c("alpha slope: mean and CI")) %>%
@@ -1900,9 +1918,9 @@ head(bestmodel.ef.tidy_exppred2)%>%
 
 
 theme_set(theme_bw())
-ggplot(bestmodel.ef.tidy_exppred2, aes(x = pre_target_malpha_contra_target, y = .epred)) +
+g <- ggplot(bestmodel.ef.tidy_exppred2, aes(x = pre_target_malpha_contra_target, y = .epred)) +
   stat_lineribbon(.width = c(0.5, 0.8, 0.95, 1)) + 
-  scale_fill_brewer(palette = "Reds") +
+  scale_fill_brewer(palette = "Purples") +
   facet_grid(cue_validity_label~.)+
   labs(x = "alpha amplitude contra target", y = "predicted RT",
        fill = "Credible interval") +
@@ -1915,10 +1933,14 @@ bestmodel.ef.slope_contraTarget <- bestmodel.ef.model %>%
            epred = TRUE) %>% 
   gather_emmeans_draws()
 
+# print(g)
+ggsave(filename = "figures/MarginEffects_MotAlphaTarg_PredSlopes_ModelValMotAlpha_PreTarget.eps", width = 5, height = 3.5,
+       plot = print(g))
+
 
 
 theme_set(theme_bw())
-ggplot(bestmodel.ef.slope_contraTarget, aes( x = .value, y=cue_validity_label)) +
+g <- ggplot(bestmodel.ef.slope_contraTarget, aes( x = .value, y=cue_validity_label)) +
   stat_halfeye(
     aes( fill = cue_validity_label, fill_ramp = after_stat(level)),
     .width = c(.95, 1),
@@ -1927,8 +1949,8 @@ ggplot(bestmodel.ef.slope_contraTarget, aes( x = .value, y=cue_validity_label)) 
   #           .width = c(.95, 1))+
   geom_vline(xintercept = 0)+
   # scale_fill_manual(values=c("red3")) +
-  scale_color_brewer(palette = "Reds") +
-  scale_fill_brewer(palette = "Reds") +
+  scale_color_brewer(palette = "Purples") +
+  scale_fill_brewer(palette = "Purples") +
   labs(
     title = "Average marginal effect: alpha slopes", 
     subtitle = "for all draws of the model",
@@ -1938,6 +1960,9 @@ ggplot(bestmodel.ef.slope_contraTarget, aes( x = .value, y=cue_validity_label)) 
     y = "cue"
   )
 
+# print(g)
+ggsave(filename = "figures/MarginEffects_MotAlphaTarg_SlopeDistr_ModelValMotAlpha_PreTarget.eps", width = 5, height = 3.5,
+       plot = print(g))
 
 
 bestmodel.ef.slope_contraTarget %>% median_hdi() %>%
@@ -2154,7 +2179,7 @@ head(bestmodel.ef.tidy_exppred2)%>%
 
 
 theme_set(theme_bw())
-ggplot(bestmodel.ef.tidy_exppred2, aes(x = post_target_malpha_contra_target, y = .epred)) +
+g <- ggplot(bestmodel.ef.tidy_exppred2, aes(x = post_target_malpha_contra_target, y = .epred)) +
   stat_lineribbon(.width = c(0.5, 0.8, 0.95, 1)) + 
   scale_fill_brewer(palette = "Reds") +
   labs(x = "alpha amplitude contra target", y = "predicted RT",
@@ -2168,10 +2193,15 @@ bestmodel.ef.slope_contraTarget <- bestmodel.ef.model %>%
            epred = TRUE) %>% 
   gather_emmeans_draws()
 
+# print(g)
+ggsave(filename = "figures/MarginEffects_MotAlphaTarg_PredSlopes_ModelValMotAlpha_PostTarget.eps", width = 5, height = 3.5,
+       plot = print(g))
+
+
 
 
 theme_set(theme_bw())
-ggplot(bestmodel.ef.slope_contraTarget, aes( x = .value)) +
+g <- ggplot(bestmodel.ef.slope_contraTarget, aes( x = .value)) +
   stat_halfeye(
     aes( fill = after_stat(level)),
     .width = c(.95, 1),
@@ -2191,6 +2221,11 @@ ggplot(bestmodel.ef.slope_contraTarget, aes( x = .value)) +
     y = "density",
   )+
   theme(axis.text.y=element_blank(),axis.ticks.y=element_blank())
+
+# print(g)
+ggsave(filename = "figures/MarginEffects_MotAlphaTarg_SlopeDistr_ModelValMotAlpha_PostTarget.eps", width = 5, height = 3.5,
+       plot = print(g))
+
 
 bestmodel.ef.slope_contraTarget %>% median_hdi() %>%
   kable(escape = F, digits = c(6,6,6,6,6,6,6,6,6), caption = c("alpha slope: mean and CI")) %>%
