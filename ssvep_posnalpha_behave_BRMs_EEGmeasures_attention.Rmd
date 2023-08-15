@@ -18,7 +18,7 @@ output:
 
 ```{r set up libraries,echo=FALSE,warning=FALSE,message=FALSE,results="hide"}
 # Setup the work environment
-options(width=120,scipen=0,digits=6) # change output width (for better printing), scientific notation (to disable it: scipen=999), constrain output to 3 decimals
+options(width=120,scipen=0,digits=8) # change output width (for better printing), scientific notation (to disable it: scipen=999), constrain output to 3 decimals
 cat("\014") # clear console
 # dev.off() # clear plots (if no plots are present, comment it out or it will throw an error)
 rm(list=ls()) # clear environment
@@ -425,6 +425,8 @@ modeldata = DATA.In_longer %>%
   filter(post_hit == "hit", signal == "SSVEP", time == "[500 1500]ms")%>%
   mutate(target_SSVEP = amplitude)
 
+
+
 fit_EEG_SSVEP_intercept = brm(formula = target_SSVEP ~ 1 + (1|subject),
           data = modeldata, 
           family = shifted_lognormal(),
@@ -785,7 +787,7 @@ bestmodel.ef.ef_draws_validity <- bestmodel.ef.model %>%
   gather_emmeans_draws()
 
 theme_set(theme_bw())
-ggplot(bestmodel.ef.ef_draws_validity, aes(y = attention, x = .value)) +
+g <- ggplot(bestmodel.ef.ef_draws_validity, aes(y = attention, x = .value)) +
   stat_halfeye(
     aes(fill = attention, fill_ramp = after_stat(level)),
     .width = c(.95, 1),
@@ -801,6 +803,10 @@ ggplot(bestmodel.ef.ef_draws_validity, aes(y = attention, x = .value)) +
     y = "validity"
   )
 
+# print(g)
+ggsave(filename = "figures/MarginEffects_SSVEPpredicted_by_validity_predictvals.eps", width = 5, height = 3.5,
+       plot = print(g))
+
 
 
 # now gather all the single draws to be able to plot the variance of the contrast
@@ -811,7 +817,7 @@ bestmodel.ef.ef_draws_validity_contr <- bestmodel.ef.model %>%
   gather_emmeans_draws()
 
 theme_set(theme_bw())
-ggplot(bestmodel.ef.ef_draws_validity_contr, aes(y = contrast, x = .value)) +
+g <- ggplot(bestmodel.ef.ef_draws_validity_contr, aes(y = contrast, x = .value)) +
   stat_halfeye(
     aes(fill = contrast, fill_ramp = after_stat(level)),
     .width = c(.95, 1),
@@ -826,6 +832,10 @@ ggplot(bestmodel.ef.ef_draws_validity_contr, aes(y = contrast, x = .value)) +
     x = expression(paste("difference in ", mu, "V")),
     y = "validity"
   )
+
+# print(g)
+ggsave(filename = "figures/MarginEffects_SSVEPpredicted_by_validity_contrasts.eps", width = 5, height = 3.5,
+       plot = print(g))
 ```
 
 ##  Extract marginal effects from visual alpha model
@@ -960,7 +970,7 @@ bestmodel.ef.ef_draws_validity <- bestmodel.ef.model %>%
   gather_emmeans_draws()
 
 theme_set(theme_bw())
-ggplot(bestmodel.ef.ef_draws_validity, aes(y = attention, x = .value)) +
+g <- ggplot(bestmodel.ef.ef_draws_validity, aes(y = attention, x = .value)) +
   stat_halfeye(
     aes(fill = attention, fill_ramp = after_stat(level)),
     .width = c(.95, 1),
@@ -976,6 +986,10 @@ ggplot(bestmodel.ef.ef_draws_validity, aes(y = attention, x = .value)) +
     y = "validity"
   )
 
+# print(g)
+ggsave(filename = "figures/MarginEffects_visAlphapredicted_by_validity_predictvals.eps", width = 5, height = 3.5,
+       plot = print(g))
+
 
 
 # now gather all the single draws to be able to plot the variance of the contrast
@@ -986,7 +1000,7 @@ bestmodel.ef.ef_draws_validity_contr <- bestmodel.ef.model %>%
   gather_emmeans_draws()
 
 theme_set(theme_bw())
-ggplot(bestmodel.ef.ef_draws_validity_contr, aes(y = contrast, x = .value)) +
+g <- ggplot(bestmodel.ef.ef_draws_validity_contr, aes(y = contrast, x = .value)) +
   stat_halfeye(
     aes(fill = contrast, fill_ramp = after_stat(level)),
     .width = c(.95, 1),
@@ -1001,6 +1015,10 @@ ggplot(bestmodel.ef.ef_draws_validity_contr, aes(y = contrast, x = .value)) +
     x = expression(paste("difference in ", mu, "V")),
     y = "validity"
   )
+
+# print(g)
+ggsave(filename = "figures/MarginEffects_visAlphapredicted_by_validity_contrasts.eps", width = 5, height = 3.5,
+       plot = print(g))
 ```
 
 
@@ -1136,7 +1154,7 @@ bestmodel.ef.ef_draws_validity <- bestmodel.ef.model %>%
   gather_emmeans_draws()
 
 theme_set(theme_bw())
-ggplot(bestmodel.ef.ef_draws_validity, aes(y = attention, x = .value)) +
+g <- ggplot(bestmodel.ef.ef_draws_validity, aes(y = attention, x = .value)) +
   stat_halfeye(
     aes(fill = attention, fill_ramp = after_stat(level)),
     .width = c(.95, 1),
@@ -1152,6 +1170,9 @@ ggplot(bestmodel.ef.ef_draws_validity, aes(y = attention, x = .value)) +
     y = "validity"
   )
 
+ggsave(filename = "figures/MarginEffects_motAlphapredicted_by_validity_predictvals.eps", width = 5, height = 3.5,
+       plot = print(g))
+
 
 
 # now gather all the single draws to be able to plot the variance of the contrast
@@ -1162,7 +1183,7 @@ bestmodel.ef.ef_draws_validity_contr <- bestmodel.ef.model %>%
   gather_emmeans_draws()
 
 theme_set(theme_bw())
-ggplot(bestmodel.ef.ef_draws_validity_contr, aes(y = contrast, x = .value)) +
+g <- ggplot(bestmodel.ef.ef_draws_validity_contr, aes(y = contrast, x = .value)) +
   stat_halfeye(
     aes(fill = contrast, fill_ramp = after_stat(level)),
     .width = c(.95, 1),
@@ -1177,6 +1198,9 @@ ggplot(bestmodel.ef.ef_draws_validity_contr, aes(y = contrast, x = .value)) +
     x = expression(paste("difference in ", mu, "V")),
     y = "validity"
   )
+
+ggsave(filename = "figures/MarginEffects_motAlphapredicted_by_validity_contrats.eps", width = 5, height = 3.5,
+       plot = print(g))
 ```
 
 ##  Extract marginal effects from SSVEP complex model alpha model

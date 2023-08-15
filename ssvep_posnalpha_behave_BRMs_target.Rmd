@@ -2139,6 +2139,7 @@ theme_set(theme_bw())
 ggplot(bestmodel.ef.ef_draws_validity_contr, aes(y = contrast, x = .value)) +
   stat_halfeye(
     aes(fill = contrast, fill_ramp = after_stat(level)),
+    
     .width = c(.95, 1),
     position = "dodgejust",
   ) +
