@@ -543,6 +543,162 @@ fit_EEG_SSVEP_validity_x_alpha = brm(formula = SSVEP ~ attention * visualAlpha +
 
 ```
 
+## Fitting the models II
+The models specified so far:
+really only for signals contralateral to target
+
+*SSVEP models*
+
+* intercept model: **SSVEP ~ 1 + ( 1 | subjects)**
+* validity model: **SSVEP ~ Cue + ( cue | subjects)**
+
+*visual alpha models*
+
+* contra target, intercept model: **vis_alpha ~ 1 + ( 1 | subjects)**
+* contra target, validity model: **vis_alpha ~ cue + ( cue | subjects)**
+
+*motor alpha models*
+
+* contra target hand, intercept model: **mot_alpha ~ 1 + ( 1 | subjects)**
+* contra target hand, validity model: **mot_alpha ~ cue + ( cue | subjects)**
+
+*ssvep predicted by alpha models*
+
+* by visual alpha: **SSVEP ~ vis_alpha + ( 1 | subjects)**
+* by visual alpha + validtiy: **SSVEP ~ vis_alpha + cue ( cue | subjects)**
+* by visual alpha * validtiy: **SSVEP ~ vis_alpha * cue ( cue | subjects)**
+
+
+
+```{r model fits contra target, results = "hide",  fig.height=3.5, fig.width=5, warning = FALSE, message=FALSE}
+# alter data to extract post-cue target SSVEPs
+modeldata = DATA.In_longer %>%
+  filter(post_hit == "hit", signal == "SSVEP", time == "[500 1500]ms", pos_rel_target == "contra_target")%>%
+  mutate(target_SSVEP = amplitude)
+
+
+
+fit_EEG_ct_SSVEP_intercept = brm(formula = target_SSVEP ~ 1 + (1|subject),
+          data = modeldata, 
+          family = shifted_lognormal(),
+          file = 'fit_EEGv2_SSVEP_intercept_ct_slog',
+          save_pars = save_pars(all = TRUE),
+          file_refit = "on_change",
+          cores = 4
+          # file_refit = "always"
+          )  # Save all that hard work.
+
+fit_EEG_ct_SSVEP_validity = brm(formula = target_SSVEP ~ attention + (attention|subject),
+          data = modeldata, 
+          family = shifted_lognormal(),
+          file = 'fit_EEGv2_SSVEP_validity_ct_slog',
+          save_pars = save_pars(all = TRUE),
+          file_refit = "on_change",
+          cores = 4
+          # file_refit = "always"
+          )  # Save all that hard work.
+
+
+
+# alter data to extract post-cue visual alpha
+modeldata2 = DATA.In_longer %>%
+  filter(post_hit == "hit", signal == "visualAlpha", time == "[500 1500]ms", pos_rel_target == "contra_target")%>%
+  mutate(visalpha = amplitude)
+
+fit_EEG_ct_vis_alpha_intercept = brm(formula = visalpha ~ 1 + (1|subject),
+          data = modeldata2, 
+          family = shifted_lognormal(),
+          file = 'fit_EEGv2_vis_alpha_intercept_ct_slog',
+          save_pars = save_pars(all = TRUE),
+          file_refit = "on_change",
+          cores = 4
+          # file_refit = "always"
+          )  # Save all that hard work.
+
+fit_EEG_ct_vis_alpha_validity = brm(formula = visalpha ~ 1 + attention + (attention|subject),
+          data = modeldata2, 
+          family = shifted_lognormal(),
+          file = 'fit_EEGv2_vis_alpha_targ_validity_ct_slog',
+          save_pars = save_pars(all = TRUE),
+          file_refit = "on_change",
+          cores = 4
+          # file_refit = "always"
+          )  # Save all that hard work.
+
+# alter data to extract post-cue motor alpha
+modeldata3 = DATA.In_longer %>%
+  filter(post_hit == "hit", signal == "motorAlpha", time == "[500 1500]ms", pos_rel_target == "contra_target")%>%
+  mutate(motalpha = amplitude)
+
+fit_EEG_ct_mot_alpha_intercept = brm(formula = motalpha ~ 1 + (1|subject),
+          data = modeldata3, 
+          family = shifted_lognormal(),
+          file = 'fit_EEGv2_mot_alpha_intercept_ct_slog',
+          save_pars = save_pars(all = TRUE),
+          file_refit = "on_change",
+          cores = 4
+          # file_refit = "always"
+          )  # Save all that hard work.
+
+fit_EEG_ct_mot_alpha_validity = brm(formula = motalpha ~ 1 + attention + (attention|subject),
+          data = modeldata3, 
+          family = shifted_lognormal(),
+          file = 'fit_EEGv2_mot_alpha_validity_ct_slog',
+          save_pars = save_pars(all = TRUE),
+          file_refit = "on_change",
+          cores = 4
+          # file_refit = "always"
+          )  # Save all that hard work.
+
+
+
+modeldata3 = DATA.In_longer %>%
+  filter(post_hit == "hit", signal != "motorAlpha", time == "[500 1500]ms", pos_rel_target == "contra_target")%>%
+  dplyr::select(-Zamplitude)%>%
+  pivot_wider(names_from = c(signal), values_from = amplitude)
+
+# * by visual alpha: **target_SSVEP ~ vis_alpha + ( 1 | subjects)**
+# * by visual alpha + validtiy: **target_SSVEP ~ vis_alpha + cue ( cue | subjects)**
+# * by visual alpha * validtiy: **target_SSVEP ~ vis_alpha * cue ( cue | subjects)**
+  
+fit_EEG_ct_SSVEP_alpha = brm(formula = SSVEP ~ visualAlpha + (1|subject),
+          data = modeldata3, 
+          family = shifted_lognormal(),
+          file = 'fit_EEGv2_SSVEP_alpha_ct_slog',
+          save_pars = save_pars(all = TRUE),
+          file_refit = "on_change",
+          cores = 4
+          # file_refit = "always"
+          )  # Save all that hard work.
+
+
+fit_EEG_ct_SSVEP_validity_alpha = brm(formula = SSVEP ~ attention + visualAlpha + (attention|subject),
+          data = modeldata3, 
+          family = shifted_lognormal(),
+          file = 'fit_EEGv2_SSVEP_validity_alpha_ct_slog',
+          save_pars = save_pars(all = TRUE),
+          file_refit = "on_change",
+          cores = 4
+          # file_refit = "always"
+          )  # Save all that hard work.
+
+fit_EEG_ct_SSVEP_validity_x_alpha = brm(formula = SSVEP ~ attention * visualAlpha + (attention|subject),
+          data = modeldata3, 
+          family = shifted_lognormal(),
+          file = 'fit_EEGv2_SSVEP_validity_x_alpha_ct_slog',
+          save_pars = save_pars(all = TRUE),
+          file_refit = "on_change",
+          cores = 4
+          # file_refit = "always"
+          )  # Save all that hard work.
+
+
+
+```
+
+
+
+
 ## Comparing models
 In order to compare models we need to add some parameters of information critera to the model fits. They are a mysterious measure of the goodness of the model takiing into account the log-likelihood matrix of the fits and the complexity of the model. They are hard to interprete by themselves but allow comparing between models. Some related questions can be found here: https://avehtari.github.io/modelselection/CV-FAQ.html#1_What_is_cross-validation
 
@@ -566,6 +722,21 @@ fit_EEG_mot_alpha_validity <- add_criterion(fit_EEG_mot_alpha_validity, c("loo",
 fit_EEG_SSVEP_alpha <- add_criterion(fit_EEG_SSVEP_alpha, c("loo", "waic", "bayes_R2"))
 fit_EEG_SSVEP_validity_alpha <- add_criterion(fit_EEG_SSVEP_validity_alpha, c("loo", "waic", "bayes_R2"))
 fit_EEG_SSVEP_validity_x_alpha <- add_criterion(fit_EEG_SSVEP_validity_x_alpha, c("loo", "waic", "bayes_R2"))
+
+
+fit_EEG_ct_SSVEP_intercept <- add_criterion(fit_EEG_ct_SSVEP_intercept, c("loo", "waic", "bayes_R2"))
+fit_EEG_ct_SSVEP_validity <- add_criterion(fit_EEG_ct_SSVEP_validity, c("loo", "waic", "bayes_R2"))
+
+fit_EEG_ct_vis_alpha_intercept <- add_criterion(fit_EEG_ct_vis_alpha_intercept, c("loo", "waic", "bayes_R2"))
+fit_EEG_ct_vis_alpha_validity <- add_criterion(fit_EEG_ct_vis_alpha_validity, c("loo", "waic", "bayes_R2"))
+
+fit_EEG_ct_mot_alpha_intercept <- add_criterion(fit_EEG_ct_mot_alpha_intercept, c("loo", "waic", "bayes_R2"))
+fit_EEG_ct_mot_alpha_validity <- add_criterion(fit_EEG_ct_mot_alpha_validity, c("loo", "waic", "bayes_R2"))
+
+fit_EEG_ct_SSVEP_alpha <- add_criterion(fit_EEG_ct_SSVEP_alpha, c("loo", "waic", "bayes_R2"))
+fit_EEG_ct_SSVEP_validity_alpha <- add_criterion(fit_EEG_ct_SSVEP_validity_alpha, c("loo", "waic", "bayes_R2"))
+fit_EEG_ct_SSVEP_validity_x_alpha <- add_criterion(fit_EEG_ct_SSVEP_validity_x_alpha, c("loo", "waic", "bayes_R2"))
+
 
 ```
 
@@ -616,6 +787,44 @@ as.data.frame(rbind(
                 "fit_EEG_mot_alpha_intercept","fit_EEG_mot_alpha_validity", 
                 "fit_EEG_SSVEP_alpha", "fit_EEG_SSVEP_validity_alpha","fit_EEG_SSVEP_validity_x_alpha"))%>%
   kable(escape = F, digits = c(6,6,6,6,6,6,6,6,6), caption = c("alpha, ssvep and combined models | bayes_R2")) %>%
+  kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
+
+
+
+
+# SSVEP models
+loo_compare(fit_EEG_ct_SSVEP_intercept, fit_EEG_ct_SSVEP_validity, criterion = c("loo"))%>%
+  kable(escape = F, digits = c(6,6,6,6,6,6,6,6,6), caption = c("SSVEP models | loo comparison")) %>%
+  kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
+
+# visual alpha model
+loo_compare(fit_EEG_ct_vis_alpha_intercept, fit_EEG_ct_vis_alpha_validity, criterion = c("loo"))%>%
+  kable(escape = F, digits = c(6,6,6,6,6,6,6,6,6), caption = c("vis alpha models | loo comparison")) %>%
+  kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
+
+# motor alpha model
+loo_compare(fit_EEG_ct_mot_alpha_intercept, fit_EEG_ct_mot_alpha_validity, criterion = c("loo"))%>%
+  kable(escape = F, digits = c(6,6,6,6,6,6,6,6,6), caption = c("mot alpha models | loo comparison")) %>%
+  kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
+
+# combined
+loo_compare(fit_EEG_ct_SSVEP_intercept, fit_EEG_ct_SSVEP_validity,
+            fit_EEG_ct_SSVEP_alpha, fit_EEG_ct_SSVEP_validity_alpha, fit_EEG_ct_SSVEP_validity_x_alpha,
+            criterion = c("loo"))%>%
+  kable(escape = F, digits = c(6,6,6,6,6,6,6,6,6), caption = c("SSVEP models | loo comparison")) %>%
+  kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
+
+
+as.data.frame(rbind(
+  bayes_R2(fit_EEG_ct_SSVEP_intercept), bayes_R2(fit_EEG_ct_SSVEP_validity),
+  bayes_R2(fit_EEG_ct_vis_alpha_intercept), bayes_R2(fit_EEG_ct_vis_alpha_validity),
+  bayes_R2(fit_EEG_ct_mot_alpha_intercept), bayes_R2(fit_EEG_ct_mot_alpha_validity),
+  bayes_R2(fit_EEG_ct_SSVEP_alpha), bayes_R2(fit_EEG_ct_SSVEP_validity_alpha), bayes_R2(fit_EEG_ct_SSVEP_validity_x_alpha)),
+  row.names = c("fit_EEG_ct_SSVEP_intercept","fit_EEG_ct_SSVEP_validity",
+                "fit_EEG_ct_vis_alpha_intercept", "fit_EEG_ct_vis_alpha_validity", 
+                "fit_EEG_ct_mot_alpha_intercept","fit_EEG_ct_mot_alpha_validity", 
+                "fit_EEG_ct_SSVEP_alpha", "fit_EEG_ct_SSVEP_validity_alpha","fit_EEG_ct_SSVEP_validity_x_alpha"))%>%
+  kable(escape = F, digits = c(6,6,6,6,6,6,6,6,6), caption = c("alpha, ssvep and combined models | only contra target | bayes_R2")) %>%
   kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
 
 
