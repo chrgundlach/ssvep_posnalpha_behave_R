@@ -119,7 +119,65 @@ DATA.In_long$post_event_pos <- as.factor(DATA.In_long$post_event_pos)
 DATA.In_long$post_event_direction_c <- as.factor(DATA.In_long$post_event_direction_c)
 ```
 
-# Illustration of Data  
+# Illustration of Data of pre-cue task
+<br> 
+
+1a  Illustrate Data as is
+
+
+<br>  
+
+```{r plot_data_pre, results = "hide",  fig.height=3, fig.width=4, warning = FALSE}
+
+# unique(DATA.In_long$pre_hit)
+
+DATA.In_long %>%
+  #filter(trial_timing_type == 1) %>%
+  dplyr::select(subject, trialnumber, pre_event_type, pre_hit, pre_RT) %>%
+  filter(pre_event_type!="NaN")%>%
+  mutate(pre_hit = case_when(pre_hit == "NaN" ~ 'miss',
+                             pre_hit == 1 ~ 'hit',
+                             pre_hit == 0 ~ 'error'
+                             )) %>%
+  group_by(subject, pre_hit) %>% 
+  summarise(n_resp= n(), mean_RT = mean(pre_RT, na.rm=TRUE)) %>%
+  ungroup()%>%
+  complete(subject, pre_hit, fill= list(n_resp = 0, mean_RT = NaN))
+  
+  
+  
+  
+  mutate(pre_hit = ifelse(pre_hit=="NaN"))
+  group_by(subject, cue_validity_label, post_event_pos_label, post_hit)
+  
+  
+  
+  
+  
+  DATA.In_long %>%
+  filter(trial_timing_type == 1) %>%
+  dplyr::select(subject, trialnumber, cue_validity_label, post_event_pos_label, post_hit, post_RT) %>%
+  group_by(subject, cue_validity_label, post_event_pos_label, post_hit) %>% 
+  summarise(n_resp= n(), mean_RT = mean(post_RT)) %>%
+  ungroup()%>%
+  group_by(subject, cue_validity_label, post_event_pos_label) %>%
+  mutate(n_cons = sum(n_resp), rate_perc = (n_resp/n_cons)*100) %>%
+  mutate(post_hit = ifelse(post_hit=="NaN","miss",ifelse(post_hit=="0","error","hit")))%>%
+  filter(post_hit == "hit")%>%
+  group_by(cue_validity_label, post_event_pos_label) %>%
+  summarise(M_reaction_time = mean(mean_RT), SD_reaction_time = sd(mean_RT),  
+            M_response_rate = mean(rate_perc), SD_response_rate = sd(rate_perc))%>%
+  ungroup()%>%
+  mutate(cue_validity_label = factor(cue_validity_label, levels=c('invalid','neutral','valid'), ordered = T))%>%
+  select(validity=cue_validity_label,side=post_event_pos_label, M_reaction_time, SD_reaction_time, M_response_rate,SD_response_rate)%>%
+  kable(escape = F, digits = c(3,3,3,6,3,3,3,3,3), caption = c("average response measures")) %>%
+  kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
+
+```
+
+
+
+# Illustration of Data of Main experiment/post-cue task 
 <br> 
 
 1a  Illustrate Data as is
@@ -397,7 +455,7 @@ plot2 <-
     fill = cue_validity_label
   )) +
   stat_pointinterval(position = position_dodge(width = .4, preserve = "single"), 
-                     aes(color=cue_validity_label)) +
+                     aes(color=cue_validity_label), .width= c(.68, .95)) +
   theme(axis.text.y=element_blank(),axis.ticks.y=element_blank(), axis.title.y = element_blank())+
   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())+
   scale_x_continuous(name="RT in ms", breaks=c(200,400,600,800,1000,1200), labels=waiver(), limits=c(200,1200))+
@@ -409,9 +467,11 @@ plot2 <-
 # cowplot::plot_grid(plot1, plot2, plot3, ncol = 3,labels = "AUTO")
 plotttitle <- ggdraw() + draw_label("RT in ms", fontface='bold')
 plotplots <- ggarrange(plot1, plot2, nrow = 2, align = "v", heights =c(4,2), common.legend = TRUE)
-ggarrange(plotttitle, plotplots, nrow = 2, heights=c(0.1, 1))
+g<-ggarrange(plotttitle, plotplots, nrow = 2, heights=c(0.1, 1))
 
-
+# print(g)
+ggsave(filename = "figures/RT_distribution_validityeffects.eps", width = 5, height = 3.5,
+       plot = print(g))
 ```
 
 
@@ -422,7 +482,7 @@ ggarrange(plotttitle, plotplots, nrow = 2, heights=c(0.1, 1))
 
 <br>  
 
-```{r plot_data_st_avg, results = "hide",  fig.height=4, fig.width=3, warning = FALSE}
+```{r plot_data_st_avg, results = "hide",  fig.height=3.5, fig.width=2.5, warning = FALSE}
 dat_plot <- DATA.In_long %>%
   filter(trial_timing_type == 1) %>%
   dplyr::select(subject, trialnumber, cue_validity_label, post_event_pos_label, post_hit, post_RT) %>%
@@ -449,7 +509,7 @@ temp_ylims <- dat_plot%>%
 
 theme_set(theme_bw())
 plot1 <- ggplot(dat_plot, aes(x=validity, y=mean_RT, fill=validity, color = validity)) +
-  geom_line(aes(group = subject),alpha = 0.3, colour = "grey60") +
+  geom_line(aes(group = subject),alpha = 1, colour = "grey60") +
   geom_beeswarm(cex=1.5, size = 4, shape=21,alpha=1,fill="grey40",shape=21)+
   stat_summary(fun=mean, aes(ymin=..y.., ymax=..y.., color =validity), geom='errorbar', width=0.9, size=1.5) +
   # stat_summary(fun.data=mean_se, geom="errorbar", width=0.5,lwd=1)+
@@ -484,7 +544,11 @@ plot2 <- ggplot(dat_plot, aes(y = mean_RT, fill = validity, x = 1)) +
 # cowplot::plot_grid(plot1, plot2, plot3, ncol = 3,labels = "AUTO")
 plotttitle <- ggdraw() + draw_label("RT in ms", fontface='bold')
 plotplots <- ggarrange(plot1, plot2, ncol = 2,common.legend = TRUE,align = "h", widths=c(4,1))
-ggarrange(plotttitle, plotplots, nrow = 2, heights=c(0.2, 1))
+g<-ggarrange(plotttitle, plotplots, nrow = 2, heights=c(0.2, 1))
+
+# print(g)
+ggsave(filename = "figures/RT_validityeffects.eps", width = 2.5, height = 3.5,
+       plot = print(g))
 
 
 ## correct response in %
@@ -497,7 +561,7 @@ temp_ylims <- dat_plot%>%
 
 theme_set(theme_bw())
 plot1 <- ggplot(dat_plot, aes(x=validity, y=rate_perc, fill=validity, color = validity)) +
-  geom_line(aes(group = subject),alpha = 0.3, colour = "grey60") +
+  geom_line(aes(group = subject),alpha = 1, colour = "grey60") +
   geom_beeswarm(cex=1.5, size = 4, shape=21,alpha=1,fill="grey40",shape=21)+
   stat_summary(fun=mean, aes(ymin=..y.., ymax=..y.., color =validity), geom='errorbar', width=0.9, size=1.5) +
   # stat_summary(fun.data=mean_se, geom="errorbar", width=0.5,lwd=1)+
@@ -532,7 +596,11 @@ plot2 <- ggplot(dat_plot, aes(y = rate_perc, fill = validity, x = 1)) +
 # cowplot::plot_grid(plot1, plot2, plot3, ncol = 3,labels = "AUTO")
 plotttitle <- ggdraw() + draw_label("Correct responses in %", fontface='bold')
 plotplots <- ggarrange(plot1, plot2, ncol = 2,common.legend = TRUE,align = "h", widths=c(4,1))
-ggarrange(plotttitle, plotplots, nrow = 2, heights=c(0.2, 1))
+g<-ggarrange(plotttitle, plotplots, nrow = 2, heights=c(0.2, 1))
+
+# print(g)
+ggsave(filename = "figures/CR_validityeffects.eps", width = 2.5, height = 3.5,
+       plot = print(g))
 
 ```
 
