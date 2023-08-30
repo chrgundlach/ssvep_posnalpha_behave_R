@@ -1562,7 +1562,7 @@ modeldatat2 = DATA.In_longer %>%
   pivot_wider(names_from = pos_rel_target, values_from = amplitude)
 
 
-med_model1b = brm(formula = contra_target ~ 1 + cue_validity_label + (cue_validity_label|subject),
+med_model1b = brm(formula = contra_target ~ 1 + cue_validity + (cue_validity|subject),
           data = modeldatat2, 
           family = shifted_lognormal(),
           file = 'med_model1b_slog',
@@ -1573,8 +1573,8 @@ med_model1b = brm(formula = contra_target ~ 1 + cue_validity_label + (cue_validi
           )  # Save all that hard work.
 
 
-f1 <- bf(contra_target ~ cue_validity_label + (cue_validity_label|subject))
-f2 <- bf(post_RT ~ cue_validity_label + contra_target + (cue_validity_label|subject))
+f1 <- bf(contra_target ~ cue_validity + (cue_validity|subject))
+f2 <- bf(post_RT ~ cue_validity + contra_target + (cue_validity|subject))
 m2 <- brm(f1 + f2 + set_rescor(FALSE), 
           data = modeldatat2,
           family = shifted_lognormal(),
@@ -1599,41 +1599,33 @@ modeldatat2b = DATA.In_longer %>%
   pivot_wider(names_from = pos_rel_target, values_from = amplitude)%>%
   dplyr::select(subject, post_RT, contra_target, cue_validity_label)
 
-# m3 <- stan_mvmer(
-#   list(
-#     contra_target ~ cue_validity_label + (cue_validity_label|subject),
-#     post_RT ~ cue_validity_label + contra_target + (cue_validity_label|subject)
-#   ),
-#   data = modeldatat2b,
-#   cores = 4
-# )
-# 
-# m4 <- stan_mvmer(
-#   list(
-#     contra_target ~ cue_validity_label + (1|subject),
-#     post_RT ~ cue_validity_label + contra_target + (1|subject)
-#   ),
-#   data = modeldatat2b,
-#   cores = 4
-# )
 
-# summary(m3)
-# plot(conditional_effects(m3), ask = FALSE)
-# 
-# summary(m4)
-# plot(conditional_effects(m4), ask = FALSE)
-# 
-# bayestestR::mediation(m3, )
-# mediation(m3, centrality = "mean", ci = .95)
-# 
-# bayestestR::mediation(m4, )
-# mediation(m3, centrality = "mean", ci = .95)
 
 summary(m2)
 mediation(m2)
+mediation(m2b)
 
 
 
+```
+
+
+try the stupid mediationa analysis
+
+```{r winning model mediation test,  fig.height=3.5, fig.width=5,  warning = FALSE, message=FALSE, eval = FALSE}
+data(jobs)
+
+f1 <- bf(job_seek ~ treat + econ_hard + sex + age)
+f2 <- bf(depress2 ~ treat + job_seek + econ_hard + sex + age)
+med2 <- brm(f1 + f2 + set_rescor(FALSE),
+          data = jobs, 
+          file = 'med_testmodel_slog',
+          save_pars = save_pars(all = TRUE),
+          file_refit = "on_change",
+          cores = 4)
+
+summary(med2)
+mediation(med2)
 
 ```
 
