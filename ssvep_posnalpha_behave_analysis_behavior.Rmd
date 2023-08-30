@@ -142,36 +142,20 @@ DATA.In_long %>%
   group_by(subject, pre_hit) %>% 
   summarise(n_resp= n(), mean_RT = mean(pre_RT, na.rm=TRUE)) %>%
   ungroup()%>%
-  complete(subject, pre_hit, fill= list(n_resp = 0, mean_RT = NaN))
-  
-  
-  
-  
-  mutate(pre_hit = ifelse(pre_hit=="NaN"))
-  group_by(subject, cue_validity_label, post_event_pos_label, post_hit)
-  
-  
-  
-  
-  
-  DATA.In_long %>%
-  filter(trial_timing_type == 1) %>%
-  dplyr::select(subject, trialnumber, cue_validity_label, post_event_pos_label, post_hit, post_RT) %>%
-  group_by(subject, cue_validity_label, post_event_pos_label, post_hit) %>% 
-  summarise(n_resp= n(), mean_RT = mean(post_RT)) %>%
+  complete(subject, pre_hit, fill= list(n_resp = 0, mean_RT = NaN))%>%
+  group_by(subject)%>%
+  mutate(n_targs = sum(n_resp), rate_perc = (n_resp/n_targs)*100)%>%
   ungroup()%>%
-  group_by(subject, cue_validity_label, post_event_pos_label) %>%
-  mutate(n_cons = sum(n_resp), rate_perc = (n_resp/n_cons)*100) %>%
-  mutate(post_hit = ifelse(post_hit=="NaN","miss",ifelse(post_hit=="0","error","hit")))%>%
-  filter(post_hit == "hit")%>%
-  group_by(cue_validity_label, post_event_pos_label) %>%
+  group_by(pre_hit)%>%
   summarise(M_reaction_time = mean(mean_RT), SD_reaction_time = sd(mean_RT),  
             M_response_rate = mean(rate_perc), SD_response_rate = sd(rate_perc))%>%
-  ungroup()%>%
-  mutate(cue_validity_label = factor(cue_validity_label, levels=c('invalid','neutral','valid'), ordered = T))%>%
-  select(validity=cue_validity_label,side=post_event_pos_label, M_reaction_time, SD_reaction_time, M_response_rate,SD_response_rate)%>%
-  kable(escape = F, digits = c(3,3,3,6,3,3,3,3,3), caption = c("average response measures")) %>%
+  kable(escape = F, digits = c(3,3,3,6,3,3,3,3,3), caption = c("average pre_cue response measures")) %>%
   kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
+  
+  
+  
+  
+
 
 ```
 
