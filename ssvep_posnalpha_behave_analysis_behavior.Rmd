@@ -638,6 +638,62 @@ DATA.In_long %>%
   select(validity=cue_validity_label, M_reaction_time, SD_reaction_time, M_response_rate,SD_response_rate)%>%
   kable(escape = F, digits = c(3,3,3,6,3,3,3,3,3), caption = c("average response measures")) %>%
   kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
+
+
+# grand mean reaction times
+
+DATA.In_long %>%
+  filter(trial_timing_type == 1) %>%
+  dplyr::select(subject, trialnumber, cue_validity_label, post_event_pos_label, post_hit, post_RT) %>%
+  group_by(subject, cue_validity_label, post_event_pos_label, post_hit) %>% 
+  summarise(n_resp= n(), mean_RT = mean(post_RT)) %>%
+  ungroup()%>%
+  group_by(subject, cue_validity_label, post_event_pos_label) %>%
+  mutate(n_cons = sum(n_resp), rate_perc = (n_resp/n_cons)*100) %>%
+  mutate(post_hit = ifelse(post_hit=="NaN","miss",ifelse(post_hit=="0","error","hit")))%>%
+  filter(post_hit == "hit")%>%
+  group_by(cue_validity_label, subject) %>%
+  summarise(M_reaction_time = mean(mean_RT), SD_reaction_time = sd(mean_RT),  
+            M_response_rate = mean(rate_perc), SD_response_rate = sd(rate_perc))%>%
+  ungroup()%>%
+  group_by(subject)%>%
+  summarise(M_reaction_time = mean(M_reaction_time),  
+            M_response_rate = mean(M_response_rate))%>%
+  ungroup()%>%
+  summarize(M_RT_gm = mean(M_reaction_time), SD_RT_gm = sd(M_reaction_time),  
+            M_RR_gm = mean(M_response_rate), SD_RR_gm = sd(M_response_rate))%>%
+  kable(escape = F, digits = c(3,3,3,6,3,3,3,3,3), caption = c("grand mean average response measures")) %>%
+  kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
+
+
+# average sds across subjects
+# Average S.D. = √ ((n1-1)s12 +  (n2-1)s22 + … +  (nk-1)sk2) /  (n1+n2 + … + nk – k)
+
+DATA.In_long %>%
+  filter(trial_timing_type == 1) %>%
+  dplyr::select(subject, trialnumber, cue_validity_label, post_event_pos_label, post_hit, post_RT) %>%
+  filter(post_hit == 1)%>%
+  group_by(subject)%>%
+  summarize(mean_RT = mean(post_RT), sd_RT = sd(post_RT), trialnum = n())%>%
+  ungroup()%>%
+  mutate(weight_sd = (sd_RT**2)*(trialnum-1))%>%
+  summarize(avg_sd = sqrt(sum(weight_sd)/sum(trialnum)))%>%
+  kable(escape = F, digits = c(3,3,3,6,3,3,3,3,3), caption = c("averaged sd according to proper formula")) %>%
+  kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
+
+
+DATA.In_long %>%
+  filter(trial_timing_type == 1) %>%
+  dplyr::select(subject, trialnumber, cue_validity_label, post_event_pos_label, post_hit, post_RT) %>%
+  filter(post_hit == 1)%>%
+  group_by(subject)%>%
+  summarize(mean_RT = mean(post_RT), sd_RT = sd(post_RT), trialnum = n())%>%
+  ungroup()%>%
+  summarize(mean_mean_RT = mean(mean_RT), mean_sd_RT = mean(sd_RT))%>%
+  kable(escape = F, digits = c(3,3,3,6,3,3,3,3,3), caption = c("grand mean average response measures")) %>%
+  kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
+
+  
 ```
 
 side
