@@ -574,8 +574,10 @@ fit_intercept = brm(formula = post_RT ~ 1 + (1|subject),
           family = shifted_lognormal(),
           file = 'fit_intercept_slog',
           save_pars = save_pars(all = TRUE),
-          file_refit = "on_change"
-          # file_refit = "always"
+          # file_refit = "on_change",
+          # file_refit = "always",
+          file_refit = "never",
+          cores = 4
           )  # Save all that hard work.
 
 
@@ -585,8 +587,10 @@ fit_validity = brm(formula = post_RT ~ cue_validity_label + (cue_validity_label|
           family = shifted_lognormal(),
           file = 'fit_validity_slog',
           save_pars = save_pars(all = TRUE),
-          file_refit = "on_change"
-          # file_refit = "always"
+          # file_refit = "on_change",
+          # file_refit = "always",
+          file_refit = "never",
+          cores = 4
           )  # Save all that hard work.
 
 # only fixed
@@ -595,9 +599,10 @@ fit_validity_of = brm(formula = post_RT ~ cue_validity_label + (1|subject),
           family = shifted_lognormal(),
           file = 'fit_validity_of_slog',
           save_pars = save_pars(all = TRUE),
-          file_refit = "on_change",
+          # file_refit = "on_change",
+          # file_refit = "always",
+          file_refit = "never",
           cores = 4
-          # file_refit = "always"
           )  # Save all that hard work.
 
 
@@ -624,8 +629,10 @@ fit_visalpha = brm(formula = post_RT ~ post_cue_vis_alpha_contra_target + (1|sub
           family = shifted_lognormal(),
           file = 'fit_visalpha_slog',
           save_pars = save_pars(all = TRUE),
-          file_refit = "on_change"
-          # file_refit = "always"
+          # file_refit = "on_change",
+          # file_refit = "always",
+          file_refit = "never",
+          cores = 4
           )  # Save all that hard work.
 
 # visual alpha contra target + validity
@@ -634,8 +641,10 @@ fit_validity_visalpha = brm(formula = post_RT ~ cue_validity_label + post_cue_vi
           family = shifted_lognormal(),
           file = 'fit_validity_visalpha_slog',
           save_pars = save_pars(all = TRUE),
-          file_refit = "on_change"
-          # file_refit = "always"
+          # file_refit = "on_change",
+          # file_refit = "always",
+          file_refit = "never",
+          cores = 4
           )  # Save all that hard work.
 
 # visual alpha contra target * validity
@@ -644,8 +653,10 @@ fit_validity_x_visalpha = brm(formula = post_RT ~ cue_validity_label * post_cue_
           family = shifted_lognormal(),
           file = 'fit_validity_x_visalpha_slog',
           save_pars = save_pars(all = TRUE),
-          file_refit = "on_change"
-          # file_refit = "always"
+          # file_refit = "on_change",
+          # file_refit = "always",
+          file_refit = "never",
+          cores = 4
           )  # Save all that hard work.
 
 # visual alpha contra target + validity only fixed
@@ -654,9 +665,10 @@ fit_validity_visalpha_of = brm(formula = post_RT ~ cue_validity_label + post_cue
           family = shifted_lognormal(),
           file = 'fit_validity_visalpha_of_slog',
           save_pars = save_pars(all = TRUE),
-          file_refit = "on_change",
+          # file_refit = "on_change",
+          # file_refit = "always",
+          file_refit = "never",
           cores = 4
-          # file_refit = "always"
           )  # Save all that hard work.
 
 # visual alpha contra target * validity only fixed
@@ -665,9 +677,10 @@ fit_validity_x_visalpha_of = brm(formula = post_RT ~ cue_validity_label * post_c
           family = shifted_lognormal(),
           file = 'fit_validity_x_visalpha_of_slog',
           save_pars = save_pars(all = TRUE),
-          file_refit = "on_change",
+          # file_refit = "on_change",
+          # file_refit = "always",
+          file_refit = "never",
           cores = 4
-          # file_refit = "always"
           )  # Save all that hard work.
 
 # alter data to extract post-cue alpha contra to nontarget
@@ -681,7 +694,10 @@ fit_alpha2 = brm(formula = post_RT ~ post_cue_vis_alpha_contra_nontarget + (1|su
           family = shifted_lognormal(),
           file = 'fit_visalpha2_slog',
           save_pars = save_pars(all = TRUE),
-          file_refit = "on_change"# file_refit = "always"
+          # file_refit = "on_change",
+          # file_refit = "always",
+          file_refit = "never",
+          cores = 4
           )  # Save all that hard work.
 
 # visual alpha contra nontarget + validity
@@ -690,8 +706,10 @@ fit_validity_alpha2 = brm(formula = post_RT ~ cue_validity_label + post_cue_vis_
           family = shifted_lognormal(),
           file = 'fit_validity_visalpha2_slog',
           save_pars = save_pars(all = TRUE),
-          file_refit = "on_change"
-          # file_refit = "always"
+          # file_refit = "on_change",
+          # file_refit = "always",
+          file_refit = "never",
+          cores = 4
           )  # Save all that hard work.
 
 # visual alpha contra nontarget + validity
@@ -700,8 +718,10 @@ fit_validity_x_alpha2 = brm(formula = post_RT ~ cue_validity_label * post_cue_vi
           family = shifted_lognormal(),
           file = 'fit_validity_x_visalpha2_slog',
           save_pars = save_pars(all = TRUE),
-          file_refit = "on_change"
-          # file_refit = "always"
+          # file_refit = "on_change",
+          # file_refit = "always",
+          file_refit = "never",
+          cores = 4
           )  # Save all that hard work.
 
 # visual alpha contra nontarget + validity only fixed
@@ -710,9 +730,10 @@ fit_validity_alpha2_of = brm(formula = post_RT ~ cue_validity_label + post_cue_v
           family = shifted_lognormal(),
           file = 'fit_validity_visalpha2_of_slog',
           save_pars = save_pars(all = TRUE),
-          file_refit = "on_change",
+          # file_refit = "on_change",
+          # file_refit = "always",
+          file_refit = "never",
           cores = 4
-          # file_refit = "always"
           )  # Save all that hard work.
 
 # visual alpha contra nontarget + validity only fixed
@@ -721,9 +742,10 @@ fit_validity_x_alpha2_of = brm(formula = post_RT ~ cue_validity_label * post_cue
           family = shifted_lognormal(),
           file = 'fit_validity_x_visalpha2_of_slog',
           save_pars = save_pars(all = TRUE),
-          file_refit = "on_change",
+          # file_refit = "on_change",
+          # file_refit = "always",
+          file_refit = "never",
           cores = 4
-          # file_refit = "always"
           )  # Save all that hard work.
 
 # combined alpha model
@@ -739,8 +761,10 @@ fit_alpha1_alpha2 = brm(formula = post_RT ~ contra_target + contra_nontarget + (
           family = shifted_lognormal(),
           file = 'fit_visalpha1_visalpha2_slog',
           save_pars = save_pars(all = TRUE),
-          file_refit = "on_change"
-          # file_refit = "always"
+          # file_refit = "on_change",
+          # file_refit = "always",
+          file_refit = "never",
+          cores = 4
           )  # Save all that hard work.
 
 # visual alpha contra target and contra non-target + validity
@@ -749,8 +773,10 @@ fit_validity_alpha1_alpha2 = brm(formula = post_RT ~ cue_validity_label + contra
           family = shifted_lognormal(),
           file = 'fit_validity_visalpha1_visalpha2_slog',
           save_pars = save_pars(all = TRUE),
-          file_refit = "on_change"
-          # file_refit = "always"
+          # file_refit = "on_change",
+          # file_refit = "always",
+          file_refit = "never",
+          cores = 4
           )  # Save all that hard work.
 
 # visual alpha contra target and contra non-target + validity
@@ -760,8 +786,10 @@ fit_validity_x_alpha1_alpha2 = brm(
           family = shifted_lognormal(),
           file = 'fit_validity_x_visalpha1_visalpha2_slog',
           save_pars = save_pars(all = TRUE),
-          file_refit = "on_change"
-          # file_refit = "always"
+          # file_refit = "on_change",
+          # file_refit = "always",
+          file_refit = "never",
+          cores = 4
           )  # Save all that hard work.
 
 
@@ -771,9 +799,10 @@ fit_validity_alpha1_alpha2_of = brm(formula = post_RT ~ cue_validity_label + con
           family = shifted_lognormal(),
           file = 'fit_validity_visalpha1_visalpha2_of_slog',
           save_pars = save_pars(all = TRUE),
-          file_refit = "on_change",
+          # file_refit = "on_change",
+          # file_refit = "always",
+          file_refit = "never",
           cores = 4
-          # file_refit = "always"
           )  # Save all that hard work.
 
 # visual alpha contra target and contra non-target + validity only fixed
@@ -783,9 +812,10 @@ fit_validity_x_alpha1_alpha2_of = brm(
           family = shifted_lognormal(),
           file = 'fit_validity_x_visalpha1_visalpha2_of_slog',
           save_pars = save_pars(all = TRUE),
-          file_refit = "on_change",
+          # file_refit = "on_change",
+          # file_refit = "always",
+          file_refit = "never",
           cores = 4
-          # file_refit = "always"
           )  # Save all that hard work.
 
 
@@ -811,8 +841,10 @@ fit_SSVEP = brm(formula = post_RT ~ post_cue_SSVEP_contra_target + (1|subject),
           family = shifted_lognormal(),
           file = 'fit_ssvep_slog',
           save_pars = save_pars(all = TRUE),
-          file_refit = "on_change"
-          # file_refit = "always"
+          # file_refit = "on_change",
+          # file_refit = "always",
+          file_refit = "never",
+          cores = 4
           )  # Save all that hard work.
 
 # SSVEP + validity model
@@ -821,8 +853,10 @@ fit_validity_SSVEP = brm(formula = post_RT ~ cue_validity_label + post_cue_SSVEP
           family = shifted_lognormal(),
           file = 'fit_validity_ssvep_slog',
           save_pars = save_pars(all = TRUE),
-          file_refit = "on_change"
-          # file_refit = "always"
+          # file_refit = "on_change",
+          # file_refit = "always",
+          file_refit = "never",
+          cores = 4
           )  # Save all that hard work.
 
 fit_validity_x_SSVEP = brm(formula = post_RT ~ cue_validity_label * post_cue_SSVEP_contra_target + (cue_validity_label|subject),
@@ -830,8 +864,10 @@ fit_validity_x_SSVEP = brm(formula = post_RT ~ cue_validity_label * post_cue_SSV
           family = shifted_lognormal(),
           file = 'fit_validity_x_ssvep_slog',
           save_pars = save_pars(all = TRUE),
-          file_refit = "on_change"
-          # file_refit = "always"
+          # file_refit = "on_change",
+          # file_refit = "always",
+          file_refit = "never",
+          cores = 4
           )  # Save all that hard work.
 
 # SSVEP + validity model only fixed
@@ -840,9 +876,10 @@ fit_validity_SSVEP_of = brm(formula = post_RT ~ cue_validity_label + post_cue_SS
           family = shifted_lognormal(),
           file = 'fit_validity_ssvep_of_slog',
           save_pars = save_pars(all = TRUE),
-          file_refit = "on_change",
+          # file_refit = "on_change",
+          # file_refit = "always",
+          file_refit = "never",
           cores = 4
-          # file_refit = "always"
           )  # Save all that hard work.
 
 fit_validity_x_SSVEP_of = brm(formula = post_RT ~ cue_validity_label * post_cue_SSVEP_contra_target + (1|subject),
@@ -850,9 +887,10 @@ fit_validity_x_SSVEP_of = brm(formula = post_RT ~ cue_validity_label * post_cue_
           family = shifted_lognormal(),
           file = 'fit_validity_x_ssvep_of_slog',
           save_pars = save_pars(all = TRUE),
-          file_refit = "on_change",
+          # file_refit = "on_change",
+          # file_refit = "always",
+          file_refit = "never",
           cores = 4
-          # file_refit = "always"
           )  # Save all that hard work.
 
 # combined alpha + SSVEP model (most complex)
@@ -868,8 +906,10 @@ fit_SSVEP_alpha = brm(formula = post_RT ~ visualAlpha_contra_target + visualAlph
           family = shifted_lognormal(),
           file = 'fit_SSVEP_alpha_slog',
           save_pars = save_pars(all = TRUE),
-          file_refit = "on_change"
-          # file_refit = "always"
+          # file_refit = "on_change",
+          # file_refit = "always",
+          file_refit = "never",
+          cores = 4
           )  # Save all that hard work.
 
 # visual alpha contra target and contra non-target and SSVEP  + validity
@@ -878,8 +918,10 @@ fit_validity_SSVEP_alpha = brm(formula = post_RT ~ cue_validity_label + visualAl
           family = shifted_lognormal(),
           file = 'fit_validity_SSVEP_alpha_slog',
           save_pars = save_pars(all = TRUE),
-          file_refit = "on_change"
-          # file_refit = "always"
+          # file_refit = "on_change",
+          # file_refit = "always",
+          file_refit = "never",
+          cores = 4
           )  # Save all that hard work.
 
 fit_validity_x_SSVEP_alpha = brm(
@@ -888,8 +930,10 @@ fit_validity_x_SSVEP_alpha = brm(
           family = shifted_lognormal(),
           file = 'fit_validity_x_SSVEP_alpha_slog',
           save_pars = save_pars(all = TRUE),
-          file_refit = "on_change"
-          # file_refit = "always"
+          # file_refit = "on_change",
+          # file_refit = "always",
+          file_refit = "never",
+          cores = 4
           )  # Save all that hard work.
 
 # visual alpha contra target and contra non-target and SSVEP  + validity only fixed
@@ -898,9 +942,10 @@ fit_validity_SSVEP_alpha_of = brm(formula = post_RT ~ cue_validity_label + visua
           family = shifted_lognormal(),
           file = 'fit_validity_SSVEP_alpha_of_slog',
           save_pars = save_pars(all = TRUE),
-          file_refit = "on_change",
+          # file_refit = "on_change",
+          # file_refit = "always",
+          file_refit = "never",
           cores = 4
-          # file_refit = "always"
           )  # Save all that hard work.
 
 fit_validity_x_SSVEP_alpha_of = brm(
@@ -909,9 +954,10 @@ fit_validity_x_SSVEP_alpha_of = brm(
           family = shifted_lognormal(),
           file = 'fit_validity_x_SSVEP_alpha_of_slog',
           save_pars = save_pars(all = TRUE),
-          file_refit = "on_change",
+          # file_refit = "on_change",
+          # file_refit = "always",
+          file_refit = "never",
           cores = 4
-          # file_refit = "always"
           )  # Save all that hard work.
 
 
@@ -927,9 +973,10 @@ fit_motoralpha = brm(formula = post_RT ~ malpha_contra_target + (1|subject),
           family = shifted_lognormal(),
           file = 'fit_motoralpha_slog',
           save_pars = save_pars(all = TRUE),
-          file_refit = "on_change",
+          # file_refit = "on_change",
+          # file_refit = "always",
+          file_refit = "never",
           cores = 4
-          # file_refit = "always"
           )  # Save all that hard work.
 
 # motor alpha contra target + validity
@@ -938,9 +985,10 @@ fit_validity_motoralpha = brm(formula = post_RT ~ cue_validity_label + malpha_co
           family = shifted_lognormal(),
           file = 'fit_validity_motoralpha_slog',
           save_pars = save_pars(all = TRUE),
-          file_refit = "on_change",
+          # file_refit = "on_change",
+          # file_refit = "always",
+          file_refit = "never",
           cores = 4
-          # file_refit = "always"
           )  # Save all that hard work.
 
 # motor alpha contra target * validity
@@ -949,9 +997,10 @@ fit_validity_x_motoralpha = brm(formula = post_RT ~ cue_validity_label * malpha_
           family = shifted_lognormal(),
           file = 'fit_validity_x_motoralpha_slog',
           save_pars = save_pars(all = TRUE),
-          file_refit = "on_change",
+          # file_refit = "on_change",
+          # file_refit = "always",
+          file_refit = "never",
           cores = 4
-          # file_refit = "always"
           )  # Save all that hard work.
 
 
@@ -961,9 +1010,10 @@ fit_validity_motoralpha_of = brm(formula = post_RT ~ cue_validity_label + malpha
           family = shifted_lognormal(),
           file = 'fit_validity_motoralpha_of_slog',
           save_pars = save_pars(all = TRUE),
-          file_refit = "on_change",
+          # file_refit = "on_change",
+          # file_refit = "always",
+          file_refit = "never",
           cores = 4
-          # file_refit = "always"
           )  # Save all that hard work.
 
 # motor alpha contra target * validity only fixed
@@ -972,9 +1022,10 @@ fit_validity_x_motoralpha_of = brm(formula = post_RT ~ cue_validity_label * malp
           family = shifted_lognormal(),
           file = 'fit_validity_x_motoralpha_of_slog',
           save_pars = save_pars(all = TRUE),
-          file_refit = "on_change",
+          # file_refit = "on_change",
+          # file_refit = "always",
+          file_refit = "never",
           cores = 4
-          # file_refit = "always"
           )  # Save all that hard work.
 
 ```

@@ -432,9 +432,10 @@ fit_EEG_SSVEP_intercept = brm(formula = target_SSVEP ~ 1 + (1|subject),
           family = shifted_lognormal(),
           file = 'fit_EEGv2_SSVEP_intercept_slog',
           save_pars = save_pars(all = TRUE),
-          file_refit = "on_change",
+          # file_refit = "on_change",
+          # file_refit = "always",
+          file_refit = "never",
           cores = 4
-          # file_refit = "always"
           )  # Save all that hard work.
 
 fit_EEG_SSVEP_validity = brm(formula = target_SSVEP ~ attention + (attention|subject),
@@ -442,9 +443,10 @@ fit_EEG_SSVEP_validity = brm(formula = target_SSVEP ~ attention + (attention|sub
           family = shifted_lognormal(),
           file = 'fit_EEGv2_SSVEP_validity_slog',
           save_pars = save_pars(all = TRUE),
-          file_refit = "on_change",
+          # file_refit = "on_change",
+          # file_refit = "always",
+          file_refit = "never",
           cores = 4
-          # file_refit = "always"
           )  # Save all that hard work.
 
 # alter data to extract post-cue visual alpha
@@ -457,9 +459,10 @@ fit_EEG_vis_alpha_intercept = brm(formula = visalpha ~ 1 + (1|subject),
           family = shifted_lognormal(),
           file = 'fit_EEGv2_vis_alpha_intercept_slog',
           save_pars = save_pars(all = TRUE),
-          file_refit = "on_change",
+          # file_refit = "on_change",
+          # file_refit = "always",
+          file_refit = "never",
           cores = 4
-          # file_refit = "always"
           )  # Save all that hard work.
 
 fit_EEG_vis_alpha_validity = brm(formula = visalpha ~ 1 + attention + (attention|subject),
@@ -467,9 +470,10 @@ fit_EEG_vis_alpha_validity = brm(formula = visalpha ~ 1 + attention + (attention
           family = shifted_lognormal(),
           file = 'fit_EEGv2_vis_alpha_targ_validity_slog',
           save_pars = save_pars(all = TRUE),
-          file_refit = "on_change",
+          # file_refit = "on_change",
+          # file_refit = "always",
+          file_refit = "never",
           cores = 4
-          # file_refit = "always"
           )  # Save all that hard work.
 
 # alter data to extract post-cue motor alpha
@@ -482,9 +486,10 @@ fit_EEG_mot_alpha_intercept = brm(formula = motalpha ~ 1 + (1|subject),
           family = shifted_lognormal(),
           file = 'fit_EEGv2_mot_alpha_intercept_slog',
           save_pars = save_pars(all = TRUE),
-          file_refit = "on_change",
+          # file_refit = "on_change",
+          # file_refit = "always",
+          file_refit = "never",
           cores = 4
-          # file_refit = "always"
           )  # Save all that hard work.
 
 fit_EEG_mot_alpha_validity = brm(formula = motalpha ~ 1 + attention + (attention|subject),
@@ -492,9 +497,10 @@ fit_EEG_mot_alpha_validity = brm(formula = motalpha ~ 1 + attention + (attention
           family = shifted_lognormal(),
           file = 'fit_EEGv2_mot_alpha_validity_slog',
           save_pars = save_pars(all = TRUE),
-          file_refit = "on_change",
+          # file_refit = "on_change",
+          # file_refit = "always",
+          file_refit = "never",
           cores = 4
-          # file_refit = "always"
           )  # Save all that hard work.
 
 
@@ -513,9 +519,10 @@ fit_EEG_SSVEP_alpha = brm(formula = SSVEP ~ visualAlpha + (1|subject),
           family = shifted_lognormal(),
           file = 'fit_EEGv2_SSVEP_alpha_slog',
           save_pars = save_pars(all = TRUE),
-          file_refit = "on_change",
+          # file_refit = "on_change",
+          # file_refit = "always",
+          file_refit = "never",
           cores = 4
-          # file_refit = "always"
           )  # Save all that hard work.
 
 
@@ -524,9 +531,10 @@ fit_EEG_SSVEP_validity_alpha = brm(formula = SSVEP ~ attention + visualAlpha + (
           family = shifted_lognormal(),
           file = 'fit_EEGv2_SSVEP_validity_alpha_slog',
           save_pars = save_pars(all = TRUE),
-          file_refit = "on_change",
+          # file_refit = "on_change",
+          # file_refit = "always",
+          file_refit = "never",
           cores = 4
-          # file_refit = "always"
           )  # Save all that hard work.
 
 fit_EEG_SSVEP_validity_x_alpha = brm(formula = SSVEP ~ attention * visualAlpha + (attention|subject),
@@ -534,9 +542,10 @@ fit_EEG_SSVEP_validity_x_alpha = brm(formula = SSVEP ~ attention * visualAlpha +
           family = shifted_lognormal(),
           file = 'fit_EEGv2_SSVEP_validity_x_alpha_slog',
           save_pars = save_pars(all = TRUE),
-          file_refit = "on_change",
+          # file_refit = "on_change",
+          # file_refit = "always",
+          file_refit = "never",
           cores = 4
-          # file_refit = "always"
           )  # Save all that hard work.
 
 
@@ -583,9 +592,10 @@ fit_EEG_ct_SSVEP_intercept = brm(formula = target_SSVEP ~ 1 + (1|subject),
           family = shifted_lognormal(),
           file = 'fit_EEGv2_SSVEP_intercept_ct_slog',
           save_pars = save_pars(all = TRUE),
-          file_refit = "on_change",
+          # file_refit = "on_change",
+          # file_refit = "always",
+          file_refit = "never",
           cores = 4
-          # file_refit = "always"
           )  # Save all that hard work.
 
 fit_EEG_ct_SSVEP_validity = brm(formula = target_SSVEP ~ attention + (attention|subject),
@@ -593,9 +603,10 @@ fit_EEG_ct_SSVEP_validity = brm(formula = target_SSVEP ~ attention + (attention|
           family = shifted_lognormal(),
           file = 'fit_EEGv2_SSVEP_validity_ct_slog',
           save_pars = save_pars(all = TRUE),
-          file_refit = "on_change",
+          # file_refit = "on_change",
+          # file_refit = "always",
+          file_refit = "never",
           cores = 4
-          # file_refit = "always"
           )  # Save all that hard work.
 
 
@@ -610,9 +621,10 @@ fit_EEG_ct_vis_alpha_intercept = brm(formula = visalpha ~ 1 + (1|subject),
           family = shifted_lognormal(),
           file = 'fit_EEGv2_vis_alpha_intercept_ct_slog',
           save_pars = save_pars(all = TRUE),
-          file_refit = "on_change",
+          # file_refit = "on_change",
+          # file_refit = "always",
+          file_refit = "never",
           cores = 4
-          # file_refit = "always"
           )  # Save all that hard work.
 
 fit_EEG_ct_vis_alpha_validity = brm(formula = visalpha ~ 1 + attention + (attention|subject),
@@ -620,9 +632,10 @@ fit_EEG_ct_vis_alpha_validity = brm(formula = visalpha ~ 1 + attention + (attent
           family = shifted_lognormal(),
           file = 'fit_EEGv2_vis_alpha_targ_validity_ct_slog',
           save_pars = save_pars(all = TRUE),
-          file_refit = "on_change",
+          # file_refit = "on_change",
+          # file_refit = "always",
+          file_refit = "never",
           cores = 4
-          # file_refit = "always"
           )  # Save all that hard work.
 
 # alter data to extract post-cue motor alpha
@@ -635,9 +648,10 @@ fit_EEG_ct_mot_alpha_intercept = brm(formula = motalpha ~ 1 + (1|subject),
           family = shifted_lognormal(),
           file = 'fit_EEGv2_mot_alpha_intercept_ct_slog',
           save_pars = save_pars(all = TRUE),
-          file_refit = "on_change",
+          # file_refit = "on_change",
+          # file_refit = "always",
+          file_refit = "never",
           cores = 4
-          # file_refit = "always"
           )  # Save all that hard work.
 
 fit_EEG_ct_mot_alpha_validity = brm(formula = motalpha ~ 1 + attention + (attention|subject),
@@ -645,9 +659,10 @@ fit_EEG_ct_mot_alpha_validity = brm(formula = motalpha ~ 1 + attention + (attent
           family = shifted_lognormal(),
           file = 'fit_EEGv2_mot_alpha_validity_ct_slog',
           save_pars = save_pars(all = TRUE),
-          file_refit = "on_change",
+          # file_refit = "on_change",
+          # file_refit = "always",
+          file_refit = "never",
           cores = 4
-          # file_refit = "always"
           )  # Save all that hard work.
 
 
@@ -666,9 +681,10 @@ fit_EEG_ct_SSVEP_alpha = brm(formula = SSVEP ~ visualAlpha + (1|subject),
           family = shifted_lognormal(),
           file = 'fit_EEGv2_SSVEP_alpha_ct_slog',
           save_pars = save_pars(all = TRUE),
-          file_refit = "on_change",
+          # file_refit = "on_change",
+          # file_refit = "always",
+          file_refit = "never",
           cores = 4
-          # file_refit = "always"
           )  # Save all that hard work.
 
 
@@ -677,9 +693,10 @@ fit_EEG_ct_SSVEP_validity_alpha = brm(formula = SSVEP ~ attention + visualAlpha 
           family = shifted_lognormal(),
           file = 'fit_EEGv2_SSVEP_validity_alpha_ct_slog',
           save_pars = save_pars(all = TRUE),
-          file_refit = "on_change",
+          # file_refit = "on_change",
+          # file_refit = "always",
+          file_refit = "never",
           cores = 4
-          # file_refit = "always"
           )  # Save all that hard work.
 
 fit_EEG_ct_SSVEP_validity_x_alpha = brm(formula = SSVEP ~ attention * visualAlpha + (attention|subject),
@@ -687,9 +704,10 @@ fit_EEG_ct_SSVEP_validity_x_alpha = brm(formula = SSVEP ~ attention * visualAlph
           family = shifted_lognormal(),
           file = 'fit_EEGv2_SSVEP_validity_x_alpha_ct_slog',
           save_pars = save_pars(all = TRUE),
-          file_refit = "on_change",
+          # file_refit = "on_change",
+          # file_refit = "always",
+          file_refit = "never",
           cores = 4
-          # file_refit = "always"
           )  # Save all that hard work.
 
 
