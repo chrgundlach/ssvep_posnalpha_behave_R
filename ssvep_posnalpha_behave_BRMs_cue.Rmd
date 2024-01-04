@@ -1030,6 +1030,303 @@ fit_validity_x_motoralpha_of = brm(formula = post_RT ~ cue_validity_label * malp
 
 ```
 
+### Fitting and comparing the models pt 2 
+additional fits and comparisons with shift of reaction times (maybe better fit?)
+
+
+```{r model fits test, results = "hide",  fig.height=3.5, fig.width=5, warning = FALSE, message=FALSE}
+modeldata = DATA.In_long %>%
+  filter(post_hit == "hit")
+
+
+priors1 = c(
+  set_prior('normal(6.2, 0.5)', class = 'Intercept'),  # around exp(6) = 600ms
+  set_prior('normal(0.26, 0.5)', class = 'sigma'),  # SD of individual rts in log-units exp 5.298 = 200
+  set_prior('normal(0.1, 0.5)', class = 'sd'),  # some variability between participants
+  set_prior('normal(150, 50)', class = 'sd', dpar = 'ndt')  # some variability between participants
+)
+
+
+priors2 = c(
+  set_prior('normal(6.2, 0.5)', class = 'Intercept'),  # around exp(6) = 600ms
+  set_prior('normal(0.26, 0.5)', class = 'sigma'),  # SD of individual rts in log-units exp 5.298 = 200
+  set_prior('normal(0, 0.1)', class = 'b'), 
+  set_prior('normal(0.1, 0.5)', class = 'sd'),  # some variability between participants
+  set_prior('normal(150, 50)', class = 'sd', dpar = 'ndt')  # some variability between participants
+)
+
+
+# intercept model with priors
+# get_prior(formula = bf(
+#     post_RT ~ 1 + (1|subject),
+#     ndt ~ 1 + (1|subject)), family = shifted_lognormal(), data = modeldata)
+fit_intercept_withndt_priors = brm(
+  formula = bf(
+    post_RT ~ 1 + (1|subject),
+    ndt ~ 1 + (1|subject)),
+  data = modeldata,
+  prior = priors1,
+  family = shifted_lognormal(),
+  file = 'fit_intercept_withndt_priors_slog',
+  save_pars = save_pars(all = TRUE),
+  file_refit = "on_change",
+  # file_refit = "always",
+  # file_refit = "never",
+  cores = 4
+)  # Save all that hard work.
+
+# 
+
+
+# validity model with priors
+# get_prior(formula = bf(
+#     post_RT ~ cue_validity_label + (cue_validity_label|subject),
+#     ndt ~ 1 + (1|subject)), family = shifted_lognormal(), data = modeldata)
+fit_validity_withndt_priors = brm(
+  formula = bf(
+    post_RT ~ cue_validity_label + (cue_validity_label|subject),
+    ndt ~ 1 + (1|subject)),
+  data = modeldata,
+  prior = priors2,
+  family = shifted_lognormal(),
+  file = 'fit_validity_withndt_priors_slog',
+  save_pars = save_pars(all = TRUE),
+  # file_refit = "on_change",
+  file_refit = "always",
+  # file_refit = "never",
+  cores = 4
+)  # Save all that hard work.
+# summary(fit_validity_withndt_priors)
+# pp_check(fit_validity_withndt_priors)
+
+
+# validity model with priors but reduced nested parameters
+# get_prior(formula = bf(
+#     post_RT ~ cue_validity_label + (1|subject),
+#     ndt ~ 1 + (1|subject)), family = shifted_lognormal(), data = modeldata)
+fit_validity_withndt_priors2 = brm(
+  formula = bf(
+    post_RT ~ cue_validity_label + (1|subject),
+    ndt ~ 1 + (1|subject)),
+  data = modeldata,
+  prior = priors2,
+  family = shifted_lognormal(),
+  file = 'fit_validity_withndt_priors2_slog',
+  save_pars = save_pars(all = TRUE),
+  file_refit = "on_change",
+  # file_refit = "always",
+  # file_refit = "never",
+  cores = 4
+)  # Save all that hard work.
+
+modeldata2 = DATA.In_longer %>%
+  filter(post_hit == "hit", signal == "visualAlpha", time == "[500 1500]ms", pos_rel_target == "contra_target")%>%
+  mutate(post_cue_vis_alpha_contra_target = amplitude)
+
+
+# validity model with priors but reduced nested parameters
+fit_validity_visalphaContra_withndt_priors2 = brm(
+  formula = bf(
+    post_RT ~ cue_validity_label + post_cue_vis_alpha_contra_target + (1|subject),
+    ndt ~ 1 + (1|subject)),
+  data = modeldata2,
+  prior = priors2,
+  family = shifted_lognormal(),
+  file = 'fit_validity_visalphaContra_withndt_priors2_slog',
+  save_pars = save_pars(all = TRUE),
+  file_refit = "on_change",
+  # file_refit = "always",
+  # file_refit = "never",
+  cores = 4
+)  # Save all that hard work.
+
+# summary(fit_intercept_withndt_priors)
+# pp_check(fit_intercept_withndt_priors)
+# summary(fit_validity_withndt_priors2)
+# pp_check(fit_validity_withndt_priors2)
+# summary(fit_validity_visalphaContra_withndt_priors2)
+# pp_check(fit_validity_visalphaContra_withndt_priors2)
+
+# adding information criteria
+fit_intercept_withndt_priors <- add_criterion(fit_intercept_withndt_priors, c("loo", "waic", "bayes_R2"))
+fit_validity_withndt_priors2 <- add_criterion(fit_validity_withndt_priors2, c("loo", "waic", "bayes_R2"))
+fit_validity_visalphaContra_withndt_priors2 <- add_criterion(fit_validity_visalphaContra_withndt_priors2, c("loo", "waic", "bayes_R2"))
+
+# alpha contra target only fixed with ndt estimated and prior fit
+loo_compare(fit_intercept_withndt_priors,  fit_validity_withndt_priors2, fit_validity_visalphaContra_withndt_priors2, 
+            criterion = c("loo"))%>%
+  kable(escape = F, digits = c(9,9,9,9,9,9,9,9,9), 
+        caption = c("alpha contra target models only fixed | ndt modelled across subjects | priors defined | loo comparison")) %>%
+  kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
+```
+
+
+```{r model fits 2, results = "hide",  fig.height=3.5, fig.width=5, warning = FALSE, message=FALSE}
+modeldata = DATA.In_long %>%
+  filter(post_hit == "hit")
+
+
+priors1 = c(
+  set_prior('normal(6.2, 0.5)', class = 'Intercept'),  # around exp(6) = 600ms
+  set_prior('normal(0.26, 0.5)', class = 'sigma'),  # SD of individual rts in log-units exp 5.298 = 200
+  set_prior('normal(0.1, 0.5)', class = 'sd'),  # some variability between participants
+  set_prior('normal(150, 50)', class = 'sd', dpar = 'ndt')  # some variability between participants
+)
+
+priors2 = c(
+  set_prior('normal(6.2, 0.5)', class = 'Intercept'),  # around exp(6) = 600ms
+  set_prior('normal(0.26, 0.5)', class = 'sigma'),  # SD of individual rts in log-units exp 5.298 = 200
+  set_prior('normal(0.0.4)', class = 'b'), 
+  set_prior('normal(0.1, 0.5)', class = 'sd'),  # some variability between participants
+  set_prior('normal(150, 50)', class = 'sd', dpar = 'ndt')  # some variability between participants
+)
+
+# intercept model
+fit_intercept_withndt = brm(
+  formula = bf(
+    post_RT ~ 1 + (1|subject),
+    ndt ~ 1 + (1|subject)),
+  data = modeldata, 
+  family = shifted_lognormal(),
+  file = 'fit_intercept_withndt_slog',
+  save_pars = save_pars(all = TRUE),
+  # file_refit = "on_change",
+  # file_refit = "always",
+  file_refit = "never",
+  cores = 4
+)  # Save all that hard work.
+
+
+# validity model
+fit_validity_withndt = brm(
+  formula = bf(
+    post_RT ~ cue_validity_label + (cue_validity_label|subject),
+    ndt ~ subject),
+  data = modeldata, 
+  family = shifted_lognormal(),
+  file = 'fit_validity_withndt_slog',
+  save_pars = save_pars(all = TRUE),
+  # file_refit = "on_change",
+  # file_refit = "always",
+  file_refit = "never",
+  cores = 4
+)  # Save all that hard work.
+
+# visual alpha contra target
+fit_visalpha_withndt = brm(
+  formula = bf(
+    post_RT ~ post_cue_vis_alpha_contra_target + (1|subject),
+    ndt ~ subject),
+  data = modeldata2, 
+  family = shifted_lognormal(),
+  file = 'fit_visalpha_withndt_slog',
+  save_pars = save_pars(all = TRUE),
+  # file_refit = "on_change",
+  # file_refit = "always",
+  file_refit = "never",
+  cores = 4
+)  # Save all that hard work.
+
+# visual alpha contra target + validity
+fit_validity_visalpha_withndt = brm(
+  formula = bf(
+    post_RT ~ cue_validity_label + post_cue_vis_alpha_contra_target + (cue_validity_label|subject),
+    ndt ~ subject),
+  data = modeldata2, 
+  family = shifted_lognormal(),
+  file = 'fit_validity_withndt_visalpha_slog',
+  save_pars = save_pars(all = TRUE),
+  # file_refit = "on_change",
+  # file_refit = "always",
+  file_refit = "never",
+  cores = 4
+)  # Save all that hard work.
+
+# visual alpha contra target * validity
+fit_validity_x_visalpha_withndt = brm(
+  formula = bf(
+    post_RT ~ cue_validity_label * post_cue_vis_alpha_contra_target + (cue_validity_label|subject),
+    ndt ~ subject),
+  data = modeldata2, 
+  family = shifted_lognormal(),
+  file = 'fit_validity_x_visalpha_withndt_slog',
+  save_pars = save_pars(all = TRUE),
+  # file_refit = "on_change",
+  # file_refit = "always",
+  file_refit = "never",
+  cores = 4
+)  # Save all that hard work.
+
+
+# intercept model with priors
+# get_prior(formula = bf(
+#     post_RT ~ 1 + (1|subject),
+#     ndt ~ 1 + (1|subject)), family = shifted_lognormal(), data = modeldata)
+fit_intercept_withndt_priors = brm(
+  formula = bf(
+    post_RT ~ 1 + (1|subject),
+    ndt ~ 1 + (1|subject)),
+  data = modeldata,
+  prior = priors1,
+  family = shifted_lognormal(),
+  file = 'fit_intercept_withndt_priors_slog',
+  save_pars = save_pars(all = TRUE),
+  file_refit = "on_change",
+  # file_refit = "always",
+  # file_refit = "never",
+  cores = 4
+)  # Save all that hard work.
+# summary(fit_intercept_withndt_priors)
+# pp_check(fit_intercept_withndt_priors)
+
+
+# validity model with priors
+# get_prior(formula = bf(
+#     post_RT ~ cue_validity_label + (cue_validity_label|subject),
+#     ndt ~ 1 + (1|subject)), family = shifted_lognormal(), data = modeldata)
+fit_validity_withndt_priors = brm(
+  formula = bf(
+    post_RT ~ cue_validity_label + (cue_validity_label|subject),
+    ndt ~ 1 + (1|subject)),
+  data = modeldata,
+  prior = priors2,
+  family = shifted_lognormal(),
+  file = 'fit_validity_withndt_priors_slog',
+  save_pars = save_pars(all = TRUE),
+  # file_refit = "on_change",
+  file_refit = "always",
+  # file_refit = "never",
+  cores = 4
+)  # Save all that hard work.
+# summary(fit_validity_withndt_priors)
+# pp_check(fit_validity_withndt_priors)
+
+
+
+
+
+
+
+
+# check for convergence
+summary(fit_intercept_withndt)
+summary(fit_intercept)
+summary(fit_validity_withndt)
+summary(fit_visalpha_withndt)
+summary(fit_validity_visalpha_withndt)
+summary(fit_validity_x_visalpha_withndt)
+
+# adding information criteria
+fit_intercept_withndt <- add_criterion(fit_intercept_withndt, c("loo", "waic", "bayes_R2"))
+fit_validity_withndt <- add_criterion(fit_validity_withndt, c("loo", "waic", "bayes_R2"))
+
+fit_visalpha_withndt <- add_criterion(fit_visalpha_withndt, c("loo", "waic", "bayes_R2"))
+fit_validity_visalpha_withndt <- add_criterion(fit_validity_visalpha_withndt, c("loo", "waic", "bayes_R2"))
+fit_validity_x_visalpha_withndt <- add_criterion(fit_validity_x_visalpha_withndt, c("loo", "waic", "bayes_R2"))
+
+
+```
+
 ### Comparing models
 In order to compare models we need to add some parameters of information critera to the model fits. They are a mysterious measure of the goodness of the model takiing into account the log-likelihood matrix of the fits and the complexity of the model. They are hard to interprete by themselves but allow comparing between models. Some related questions can be found here: https://avehtari.github.io/modelselection/CV-FAQ.html#1_What_is_cross-validation
 
