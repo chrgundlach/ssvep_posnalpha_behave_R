@@ -2133,7 +2133,7 @@ bestmodel.ef.ef_draws_validity <- bestmodel.ef.model %>%
   gather_emmeans_draws()
 
 theme_set(theme_bw())
-ggplot(bestmodel.ef.ef_draws_validity, aes(y = cue_validity_label, x = .value)) +
+g <- ggplot(bestmodel.ef.ef_draws_validity, aes(y = cue_validity_label, x = .value)) +
   stat_halfeye(
     aes(fill = cue_validity_label, fill_ramp = after_stat(level)),
     .width = c(.95, 1),
@@ -2149,7 +2149,10 @@ ggplot(bestmodel.ef.ef_draws_validity, aes(y = cue_validity_label, x = .value)) 
     y = "validity"
   )
 
-
+# print(g)
+ggsave(filename = "figures/MarginEffects_PostCue_FullModelVisAlpha_ValidityEffects.eps",
+       width = 5, height = 3.5,
+       plot = print(g))
 
 # now gather all the single draws to be able to plot the variance of the contrast
 bestmodel.ef.ef_draws_validity_contr <- bestmodel.ef.model %>% 
@@ -2159,7 +2162,7 @@ bestmodel.ef.ef_draws_validity_contr <- bestmodel.ef.model %>%
   gather_emmeans_draws()
 
 theme_set(theme_bw())
-ggplot(bestmodel.ef.ef_draws_validity_contr, aes(y = contrast, x = .value)) +
+g <- ggplot(bestmodel.ef.ef_draws_validity_contr, aes(y = contrast, x = .value)) +
   stat_halfeye(
     aes(fill = contrast, fill_ramp = after_stat(level)),
     .width = c(.95, 1),
@@ -2174,11 +2177,18 @@ ggplot(bestmodel.ef.ef_draws_validity_contr, aes(y = contrast, x = .value)) +
     x = "difference in ms",
     y = "validity"
   )
+
+
+# print(g)
+ggsave(filename = "figures/MarginEffects_PostCue_FullModelVisAlpha_ValidityEffectContrasts.eps",
+       width = 5, height = 3.5,
+       plot = print(g))
+
 ```
 
 We now can similarly extract the slopes of the **alpha** and **RT** relationship
 
-```{r visalphainter model marginal effects disp effects visual alpha inter -marginal means,  fig.height=5.5, fig.width=5,  warning = FALSE, message=FALSE, eval = TRUE}
+```{r visalphainter model marginal effects disp effects visual alpha inter -marginal means,  fig.height=4, fig.width=4,  warning = FALSE, message=FALSE, eval = TRUE}
 # now trying to get the regression line right for the alpha predictors
 
 
@@ -2212,11 +2222,11 @@ g <- ggplot(bestmodel.ef.tidy_exppred2, aes(x = contra_target, y = .epred)) +
   labs(x = "alpha amplitude contra target", y = "predicted RT",
        fill = "Credible interval") +
   theme(legend.position = "bottom")
-
-print(g)
-# ggsave(filename = "figures/MarginEffects_VisAlphaTarg_SlopeDistr_ModelValVisAlphaContrIpsi_target.eps",
-#        width = 5, height = 3.5,
-#        plot = print(g))
+# 
+# print(g)
+ggsave(filename = "figures/MarginEffects_PostCue_FullModelVisAlpha_AlphaContraTarget_Slopes.eps",
+       width = 4, height = 4,
+       plot = print(g))
 
 
 ## alpha contra nontarget
@@ -2249,10 +2259,10 @@ g <- ggplot(bestmodel.ef.tidy_exppred3, aes(x = contra_nontarget, y = .epred)) +
        fill = "Credible interval") +
   theme(legend.position = "bottom")
   
-print(g)
-# ggsave(filename = "figures/MarginEffects_VisAlphaTarg_SlopeDistr_ModelValVisAlphaContrIpsi_Nontarget.eps",
-#        width = 5, height = 3.5,
-#        plot = print(g))
+# print(g)
+ggsave(filename = "figures/MarginEffects_PostCue_FullModelVisAlpha_AlphaContraNonTarget_Slopes.eps",
+       width = 4, height = 4,
+       plot = print(g))
 
 
 
@@ -2277,8 +2287,9 @@ bestmodel.ef.slopes_alpha <- bind_rows(
   .id = "alpha_signal") %>% 
   mutate(alpha_signal = fct_inorder(alpha_signal))
 
+
 theme_set(theme_bw())
-g<-ggplot(bestmodel.ef.slopes_alpha, aes( x = .value)) +
+g<-ggplot(bestmodel.ef.slopes_alpha, aes( x = .value, y=cue_validity_label)) +
   stat_halfeye(
     aes(fill = alpha_signal, fill_ramp = after_stat(level)),
     .width = c(.95, 1),
@@ -2286,7 +2297,7 @@ g<-ggplot(bestmodel.ef.slopes_alpha, aes( x = .value)) +
   # stat_dots(aes(fill = alpha_signal,color = alpha_signal, fill_ramp = after_stat(level), colour_ramp = after_stat(level)),
   #           .width = c(.95, 1))+
   geom_vline(xintercept = 0)+
-  facet_grid(cue_validity_label~.)+
+  # facet_grid(cue_validity_label~.)+
   scale_fill_manual(values=c("red3","steelblue")) +
   scale_color_manual(values=c("red3", "steelblue"))+
   labs(
@@ -2297,10 +2308,11 @@ g<-ggplot(bestmodel.ef.slopes_alpha, aes( x = .value)) +
     x = "slope"
   )
 
-print(g)
-# ggsave(filename = "figures/MarginEffects_VisAlphaTarg_PredSlopes_ModelValVisAlphaContrIpsi.eps",
-#        width = 5, height = 3.5,
-#        plot = print(g))
+
+# print(g)
+ggsave(filename = "figures/MarginEffects_PostCue_FullModelVisAlpha_Alpha_SlopeDistr.eps",
+       width = 4, height = 4,
+       plot = print(g))
 
 
 bestmodel.ef.slope_contraTarget %>% median_hdi() %>%
@@ -2502,7 +2514,7 @@ ggsave(filename = "figures/MarginEffects_Validity_Contrasts_ModelValVisAlphaCont
 
 We now can similarly extract the slopes of the **alpha** and **RT** relationship
 
-```{r winning model marginal effects disp effects visual alpha -marginal means,  fig.height=3.5, fig.width=5,  warning = FALSE, message=FALSE, eval = TRUE}
+```{r winning model marginal effects disp effects visual alpha -marginal means,  fig.height=3.5, fig.width=4,  warning = FALSE, message=FALSE, eval = TRUE}
 # now trying to get the regression line right for the alpha predictors
 
 
@@ -2537,7 +2549,7 @@ g <- ggplot(bestmodel.ef.tidy_exppred2, aes(x = contra_target, y = .epred)) +
 
 print(g)
 # ggsave(filename = "figures/MarginEffects_VisAlphaTarg_SlopeDistr_ModelValVisAlphaContrIpsi_target.eps",
-#        width = 5, height = 3.5,
+#        width = 4, height = 3.5,
 #        plot = print(g))
 
 
@@ -2572,7 +2584,7 @@ g <- ggplot(bestmodel.ef.tidy_exppred3, aes(x = contra_nontarget, y = .epred)) +
   
 print(g)
 # ggsave(filename = "figures/MarginEffects_VisAlphaTarg_SlopeDistr_ModelValVisAlphaContrIpsi_Nontarget.eps",
-#        width = 5, height = 3.5,
+#        width = 4, height = 3.5,
 #        plot = print(g))
 
 
@@ -2613,13 +2625,18 @@ g<-ggplot(bestmodel.ef.slopes_alpha, aes( x = .value)) +
     subtitle = "for all draws of the model",
     fill_ramp = "interval",
     colour_ramp = "interval",
-    x = "slope"
-  )
+    x = "slope",
+    y = "density"
+  )+ 
+  theme(axis.text.y=element_blank(),axis.ticks.y=element_blank())
 
-# print(g)
-ggsave(filename = "figures/MarginEffects_VisAlphaTarg_PredSlopes_ModelValVisAlphaContrIpsi.eps",
-       width = 5, height = 3.5,
+print(g)
+# ggsave(filename = "figures/MarginEffects_VisAlpha_PredSlopes_ModelValVisAlphaContrIpsi.eps",
+#        width = 4, height = 3.5,
+#        plot = print(g))
+ggsave(filename = "figures/MarginEffects_Validity_PredRTs_ModelValVisAlphaContrIpsi.eps", width = 5, height = 3.5,
        plot = print(g))
+
 
 
 bestmodel.ef.slope_contraTarget %>% median_hdi() %>%
@@ -2636,7 +2653,7 @@ bestmodel.ef.slope_contraNontarget %>% median_hdi() %>%
 
 Now for illustrating the whole picture, lets plot the SSVEP full model
 
-**'RT ~ Cue +  target_SSVEP + ( cue | subjects)'**
+**'RT ~ Cue + target_SSVEP + ( cue | subjects)'**
 
 ```{r winning model marginal effects disp SSVEP effects,  fig.height=3.5, fig.width=5,  warning = FALSE, message=FALSE, eval = TRUE}
 # based on https://www.andrewheiss.com/blog/2021/11/10/ame-bayes-re-guide/
@@ -2908,7 +2925,7 @@ bestmodel.ef.slope_contraTarget %>% median_hdi() %>%
 
 Now for illustrating the whole picture, lets plot the SSVEP full model
 
-**'RT ~ Cue *+* target_SSVEP + ( cue | subjects)'**
+**'RT ~ Cue * target_SSVEP + ( cue | subjects)'**
 
 ```{r winning model marginal effects disp SSVEP interaction effects,  fig.height=3.5, fig.width=5,  warning = FALSE, message=FALSE, eval = TRUE}
 # based on https://www.andrewheiss.com/blog/2021/11/10/ame-bayes-re-guide/
@@ -3060,10 +3077,10 @@ g <- ggplot(bestmodel.ef.ef_draws_validity, aes(y = cue_validity_label, x = .val
   )
 
 
-print(g)
-# ggsave(filename = "figures/MarginEffects_Validity_PredRTs_ModelValVisAlphaContrIpsi.eps", width = 5, height = 3.5,
-#        plot = print(g))
-# 
+# print(g)
+ggsave(filename = "figures/MarginEffects_PostCue_FullModelSSVEP_ValidityEffects.eps",
+       width = 5, height = 3.5,
+       plot = print(g))
 
 
 # now gather all the single draws to be able to plot the variance of the contrast
@@ -3090,14 +3107,15 @@ g<-ggplot(bestmodel.ef.ef_draws_validity_contr, aes(y = contrast, x = .value)) +
     y = "validity"
   )
 
-print(g)
-# ggsave(filename = "figures/MarginEffects_Validity_Contrasts_ModelValVisAlphaContrIpsi.eps", width = 5, height = 3.5,
-#        plot = print(g))
+# print(g)
+ggsave(filename = "figures/MarginEffects_PostCue_FullModelSSVEP_ValidityEffectContrasts.eps",
+       width = 5, height = 3.5,
+       plot = print(g))
 ```
 
 We now can similarly extract the slopes of the **alpha** and **RT** relationship
 
-```{r winning model marginal effects disp effects SSVEP -marginal means,  fig.height=3.5, fig.width=5,  warning = FALSE, message=FALSE, eval = TRUE}
+```{r winning model marginal effects disp effects SSVEP -marginal means,  fig.height=4, fig.width=4,  warning = FALSE, message=FALSE, eval = TRUE}
 # now trying to get the regression line right for the alpha predictors
 
 
@@ -3130,9 +3148,11 @@ g <- ggplot(bestmodel.ef.tidy_exppred2, aes(x = post_cue_SSVEP_contra_target, y 
        fill = "Credible interval") +
   theme(legend.position = "bottom")
 
-print(g)
-# ggsave(filename = "figures/MarginEffects_VisAlphaTarg_PredSlopes_ModelValVisAlpha.eps", width = 5, height = 3.5,
-#        plot = print(g))
+
+# print(g)
+ggsave(filename = "figures/MarginEffects_PostCue_FullModelSSVEP_SSVEP_Slopes.eps",
+       width = 4, height = 4,
+       plot = print(g))
 
 # now lets get the slop of the modulation by alpha
 bestmodel.ef.slope_contraTarget <- bestmodel.ef.model %>% 
@@ -3144,32 +3164,30 @@ bestmodel.ef.slope_contraTarget <- bestmodel.ef.model %>%
 
 
 theme_set(theme_bw())
-g <- ggplot(bestmodel.ef.slope_contraTarget, aes( x = .value)) +
+g <- ggplot(bestmodel.ef.slope_contraTarget, aes( x = .value, y=cue_validity_label)) +
   stat_halfeye(
-    aes( fill = after_stat(level)),
+    aes( fill = cue_validity_label, fill_ramp = after_stat(level)),
     .width = c(.95, 1),
   ) +
   # stat_dots(aes(fill = alpha_signal,color = alpha_signal, fill_ramp = after_stat(level), colour_ramp = after_stat(level)),
   #           .width = c(.95, 1))+
   geom_vline(xintercept = 0)+
   # scale_fill_manual(values=c("red3")) +
-  # scale_color_manual(values=c("red3"))+
   scale_color_brewer(palette = "Reds") +
   scale_fill_brewer(palette = "Reds") +
-  facet_grid(cue_validity_label~.)+
   labs(
-    # title = "Average marginal effect: alpha slopes", 
+    title = "Average marginal effect: SSVEP slopes", 
     subtitle = "for all draws of the model",
     fill_ramp = "interval",
     colour_ramp = "interval",
     x = "slope",
-    y = "density",
-  )+
-  theme(axis.text.y=element_blank(),axis.ticks.y=element_blank())
+    y = "cue"
+  )
 
-print(g)
-# ggsave(filename = "figures/MarginEffects_VisAlphaTarg_SlopeDistr_ModelValVisAlpha.eps", width = 5, height = 3.5,
-#        plot = print(g))
+# print(g)
+ggsave(filename = "figures/MarginEffects_PostCue_FullModelSSVEP_SSVEP_SlopeDistr.eps",
+       width = 4, height = 4,
+       plot = print(g))
 
 bestmodel.ef.slope_contraTarget %>% median_hdi() %>%
   kable(escape = F, digits = c(6,6,6,6,6,6,6,6,6), caption = c("SSVEP slope: mean and CI")) %>%
@@ -3584,7 +3602,7 @@ bestmodel.ef.ef_draws_validity <- bestmodel.ef.model %>%
   gather_emmeans_draws()
 
 theme_set(theme_bw())
-ggplot(bestmodel.ef.ef_draws_validity, aes(y = cue_validity_label, x = .value)) +
+g <- ggplot(bestmodel.ef.ef_draws_validity, aes(y = cue_validity_label, x = .value)) +
   stat_halfeye(
     aes(fill = cue_validity_label, fill_ramp = after_stat(level)),
     .width = c(.95, 1),
@@ -3600,6 +3618,11 @@ ggplot(bestmodel.ef.ef_draws_validity, aes(y = cue_validity_label, x = .value)) 
     y = "validity"
   )
 
+# print(g)
+ggsave(filename = "figures/MarginEffects_PostCue_FullModelMotAlpha_ValidityEffects.eps",
+       width = 5, height = 3.5,
+       plot = print(g))
+
 
 
 # now gather all the single draws to be able to plot the variance of the contrast
@@ -3610,7 +3633,7 @@ bestmodel.ef.ef_draws_validity_contr <- bestmodel.ef.model %>%
   gather_emmeans_draws()
 
 theme_set(theme_bw())
-ggplot(bestmodel.ef.ef_draws_validity_contr, aes(y = contrast, x = .value)) +
+g <- ggplot(bestmodel.ef.ef_draws_validity_contr, aes(y = contrast, x = .value)) +
   stat_halfeye(
     aes(fill = contrast, fill_ramp = after_stat(level)),
     .width = c(.95, 1),
@@ -3625,11 +3648,16 @@ ggplot(bestmodel.ef.ef_draws_validity_contr, aes(y = contrast, x = .value)) +
     x = "difference in ms",
     y = "validity"
   )
+
+# print(g)
+ggsave(filename = "figures/MarginEffects_PostCue_FullModelMotAlpha_ValidityEffectContrasts.eps",
+       width = 5, height = 3.5,
+       plot = print(g))
 ```
 
 We now can similarly extract the slopes of the **alpha** and **RT** relationship
 
-```{r motor alpha model marginal effects disp effects visual alpha -marginal means,  fig.height=5.5, fig.width=5,  warning = FALSE, message=FALSE, eval = TRUE}
+```{r motor alpha model marginal effects disp effects visual alpha -marginal means,  fig.height=4, fig.width=4,  warning = FALSE, message=FALSE, eval = TRUE}
 # now trying to get the regression line right for the alpha predictors
 
 
@@ -3668,9 +3696,10 @@ bestmodel.ef.slope_contraTarget <- bestmodel.ef.model %>%
            epred = TRUE) %>% 
   gather_emmeans_draws()
 
-print(g)
-# ggsave(filename = "figures/MarginEffects_MotAlphaTarg_PredSlopes_ModelValMotAlpha_PreTarget.eps", width = 5, height = 3.5,
-#        plot = print(g))
+# print(g)
+ggsave(filename = "figures/MarginEffects_PostCue_FullModelMotAlpha_MotAlpha_Slopes.eps",
+       width = 4, height = 4,
+       plot = print(g))
 
 
 
@@ -3695,9 +3724,10 @@ g <- ggplot(bestmodel.ef.slope_contraTarget, aes( x = .value, y=cue_validity_lab
     y = "cue"
   )
 
-print(g)
-# ggsave(filename = "figures/MarginEffects_MotAlphaTarg_SlopeDistr_ModelValMotAlpha_PreTarget.eps", width = 5, height = 3.5,
-#        plot = print(g))
+# print(g)
+ggsave(filename = "figures/MarginEffects_PostCue_FullModelMotAlpha_MotAlpha_SlopeDistr.eps",
+       width = 4, height = 4,
+       plot = print(g))
 
 
 bestmodel.ef.slope_contraTarget %>% median_hdi() %>%
