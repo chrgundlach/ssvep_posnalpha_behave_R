@@ -1,0 +1,503 @@
+---
+title: "Analysis of general SSVEP effects"
+author: '[Christopher Gundlach](https://www.researchgate.net/profile/Christopher_Gundlach)'
+date: '`r Sys.Date()`'
+output:
+  html_document:
+    code_folding: hide
+    toc: true
+    toc_float: true
+    toc_depth: 4
+    theme: flatly
+---
+# Initialisierung  
+**Setting up R libraries**
+
+```{r set up libraries,echo=FALSE,warning=FALSE,message=FALSE,results="hide"}
+# Setup the work environment
+options(width=120,scipen=0,digits=6) # change output width (for better printing), scientific notation (to disable it: scipen=999), constrain output to 3 decimals
+cat("\014") # clear console
+# dev.off() # clear plots (if no plots are present, comment it out or it will throw an error)
+rm(list=ls()) # clear environment
+wd="C:/Users/psy05cvd/Dropbox/work/R-statistics/experiments/ssvep_posnalpha_behave/" # work directory
+# setwd(wd) # set work directory
+
+# Load relevant libraries:
+
+
+
+library(plyr)
+library(psych)
+library(ggplot2)
+library(schoRsch)
+library(lsr)
+library(kableExtra)
+library(ggbeeswarm)
+library(afex)
+library(lmerTest)
+library(emmeans)
+library(lsmeans)
+library(sjPlot)
+library(viridis)
+library(multcomp)
+
+library(cowplot)
+library(dplyr)
+library(readr)
+
+library(ggpol)
+library(ggpubr)
+library(tidyverse)
+library(effectsize)
+
+library(broom)
+
+library(brms)
+library(tidybayes)
+library(bayesplot)
+library(modelr)
+library(broom.mixed)
+library(magrittr)
+library(rstan)
+library(posterior)
+
+library(ggdist)
+
+library(multipanelfigure)
+
+# source('C:/Users/psy05cvd/Dropbox/work/R-statistics/general_functions/RainCloudPlots/tutorial_R/R_rainclouds.R')
+# source('C:/Users/psy05cvd/Dropbox/work/R-statistics/general_functions/RainCloudPlots/tutorial_R/summarySE.R')
+# source('C:/Users/psy05cvd/Dropbox/work/R-statistics/general_functions/RainCloudPlots/tutorial_R/simulateData.R')
+
+source('C:/Users/psy05cvd/Dropbox/work/R-statistics/general_functions/RainCloudPlots/tutorial_R/R_rainclouds.R')
+source('C:/Users/psy05cvd/Dropbox/work/R-statistics/general_functions/RainCloudPlots/tutorial_R/R_rainclouds.R')
+
+datafile1 <- "data_in/FFT_SSVEP_Amp_data_sepRDK_RESS_11-09-2023_13-13.csv"
+timewindows = c("[-1000 0]ms", "[0 1000]ms", "[500 1500]ms", "[1000 2000]ms", "[1500 2500]ms")
+
+```
+<style type="text/css">
+.main-container {
+  max-width: 1800px !important;
+  margin-left: auto;
+  margin-right: auto;
+}
+</style>
+
+# Analysis of electrophysiological data (Posner Paradigma)  
+<br>  
+
+## subaveraged Daten werden geladen
+Loading data `r toString(datafile1)`
+
+The data has the following structure
+
+* amplitude_induced
+* amplitude_evoked
+* modulation_induced
+* modulation_evoked
+* subjects
+* stim_id
+* stim_pos
+* stim_freq
+* stim_elec
+* stim_time
+* stim_attended
+* con_validity
+* con_pos_attention
+* con_pos_targ
+* con_val_pos_att
+
+
+
+```{r load data,echo=FALSE,warning=FALSE,message=FALSE,results="hide"}
+# Load the data
+DATA.In <- read.csv(datafile1, header=TRUE,check.names=FALSE, sep =";", dec = ".")
+#str(DATA.In_long)
+DATA.In$subjects <- as.factor(DATA.In$subjects)
+DATA.In$stim_id <- as.factor(DATA.In$stim_id)
+DATA.In$stim_pos <- as.factor(DATA.In$stim_pos)
+DATA.In$stim_freq <- as.factor(DATA.In$stim_freq)
+DATA.In$stim_elec <- as.factor(DATA.In$stim_elec)
+DATA.In$stim_attended <- as.factor(DATA.In$stim_attended)
+DATA.In$stim_time <- as.factor(DATA.In$stim_time)
+DATA.In$con_validity <- as.factor(DATA.In$con_validity)
+DATA.In$con_pos_attention <- as.factor(DATA.In$con_pos_attention)
+DATA.In$con_pos_targ <- as.factor(DATA.In$con_pos_targ)
+DATA.In$con_val_pos_att <- as.factor(DATA.In$con_val_pos_att)
+
+DATA.In_long <- DATA.In %>%
+  mutate(pos_rel_target = case_when(
+    con_pos_targ == "left" & stim_pos == "left" ~ "contra_ring_w_target",
+    con_pos_targ == "right" & stim_pos == "right" ~ "contra_ring_w_target",
+    con_pos_targ == "left" & stim_pos == "right" ~ "contra_ring_w_notarget",
+    con_pos_targ == "right" & stim_pos == "left" ~ "contra_ring_w_notarget"
+  ))%>%
+  mutate(attention = case_when(
+    pos_rel_target == "contra_ring_w_target" & con_validity == "valid" ~ "cued",
+    pos_rel_target == "contra_ring_w_target" & con_validity == "invalid" ~ "uncued",
+    pos_rel_target == "contra_ring_w_notarget" & con_validity == "valid" ~ "uncued",
+    pos_rel_target == "contra_ring_w_notarget" & con_validity == "invalid" ~ "cued",
+    con_validity == "neutral" ~ "neutral"
+  )) %>%
+  dplyr::rename(time = stim_time)%>%
+  mutate(time = factor(time, 
+                       levels = c('[-1000 0] ', '[0 1000] ', '[500 1500] ', '[1000 2000] ', '[1500 2500] '),
+                       ordered = T)) %>%
+  mutate(attention = factor(attention, levels = c('uncued','neutral', 'cued')), ordered = T)
+  
+
+```
+
+
+
+# Illustration of Data  
+<br> 
+
+## Plots
+<br> 
+1a  Illustrate Data as is
+
+* side relative to target x cue validity
+* pooled across left and right side
+
+<br>  
+
+```{r plot_data_st_v1, results = "hide",  fig.height=3, fig.width=9, warning = FALSE}
+# str(DATA.In_longer)
+dat2plot <- DATA.In_long %>%
+  dplyr::select(subjects, amplitude_induced, amplitude_evoked, modulation_induced, modulation_evoked, time, con_validity, pos_rel_target)%>%
+  group_by(subjects, time, pos_rel_target, con_validity) %>%
+  summarise(
+    amplitude_induced = mean(amplitude_induced),
+    amplitude_evoked = mean(amplitude_evoked), 
+    modulation_induced = mean(modulation_induced), 
+    modulation_evoked = mean(modulation_evoked)) %>%
+  ungroup()
+  
+
+theme_set(theme_bw())
+ggplot(dat2plot, aes(x=interaction( pos_rel_target, con_validity), 
+                              y=amplitude_induced, fill=pos_rel_target, color = pos_rel_target)) +
+  geom_line(aes(group = interaction(subjects, con_validity)),alpha = 0.3, colour = "grey80") +
+  geom_beeswarm(aes(color = pos_rel_target, x = interaction( pos_rel_target, con_validity), group = pos_rel_target), 
+                cex=2, size = 3, shape=21,alpha=1,fill="grey80",shape=21)+
+  stat_summary(fun=mean, aes(ymin=..y.., ymax=..y.., color =pos_rel_target), geom='errorbar', width=0.9, size=1.5) +
+  facet_grid(.~time) +
+  # scale_x_discrete("ceuing condition", breaks=waiver(), 
+  #                  labels = c("inva","lid","neut","ral","val","id")) +
+  scale_x_discrete("ceuing condition", breaks=waiver(), 
+                   labels = c("invalid","invalid","neutral","neutral","valid","valid")) +
+  scale_fill_manual(values=c("steelblue", "red3")) +
+  scale_color_manual(values=c("steelblue", "red3"))+
+  ggtitle("SSVEP | induced amplitude | rel. to cue")
+
+
+theme_set(theme_bw())
+ggplot(dat2plot, aes(x=interaction( pos_rel_target, con_validity), 
+                              y=amplitude_evoked, fill=pos_rel_target, color = pos_rel_target)) +
+  geom_line(aes(group = interaction(subjects, con_validity)),alpha = 0.3, colour = "grey80") +
+  geom_beeswarm(aes(color = pos_rel_target, x = interaction( pos_rel_target, con_validity), group = pos_rel_target), 
+                cex=2, size = 3, shape=21,alpha=1,fill="grey80",shape=21)+
+  stat_summary(fun=mean, aes(ymin=..y.., ymax=..y.., color =pos_rel_target), geom='errorbar', width=0.9, size=1.5) +
+  facet_grid(.~time) +
+  # scale_x_discrete("ceuing condition", breaks=waiver(), 
+  #                  labels = c("inva","lid","neut","ral","val","id")) +
+  scale_x_discrete("ceuing condition", breaks=waiver(), 
+                   labels = c("invalid","invalid","neutral","neutral","valid","valid")) +
+  scale_fill_manual(values=c("steelblue", "red3")) +
+  scale_color_manual(values=c("steelblue", "red3"))+
+  ggtitle("SSVEP | evoked amplitude | rel. to cue")
+
+
+theme_set(theme_bw())
+ggplot(dat2plot, aes(x=interaction( pos_rel_target, con_validity), 
+                              y=modulation_induced, fill=pos_rel_target, color = pos_rel_target)) +
+  geom_line(aes(group = interaction(subjects, con_validity)),alpha = 0.3, colour = "grey80") +
+  geom_beeswarm(aes(color = pos_rel_target, x = interaction( pos_rel_target, con_validity), group = pos_rel_target), 
+                cex=2, size = 3, shape=21,alpha=1,fill="grey80",shape=21)+
+  stat_summary(fun=mean, aes(ymin=..y.., ymax=..y.., color =pos_rel_target), geom='errorbar', width=0.9, size=1.5) +
+  facet_grid(.~time) +
+  # scale_x_discrete("ceuing condition", breaks=waiver(), 
+  #                  labels = c("inva","lid","neut","ral","val","id")) +
+  scale_x_discrete("ceuing condition", breaks=waiver(), 
+                   labels = c("invalid","invalid","neutral","neutral","valid","valid")) +
+  scale_fill_manual(values=c("steelblue", "red3")) +
+  scale_color_manual(values=c("steelblue", "red3"))+
+  ggtitle("SSVEP | induced modulation | rel. to cue")
+
+
+theme_set(theme_bw())
+ggplot(dat2plot, aes(x=interaction( pos_rel_target, con_validity), 
+                              y=modulation_evoked, fill=pos_rel_target, color = pos_rel_target)) +
+  geom_line(aes(group = interaction(subjects, con_validity)),alpha = 0.3, colour = "grey80") +
+  geom_beeswarm(aes(color = pos_rel_target, x = interaction( pos_rel_target, con_validity), group = pos_rel_target), 
+                cex=2, size = 3, shape=21,alpha=1,fill="grey80",shape=21)+
+  stat_summary(fun=mean, aes(ymin=..y.., ymax=..y.., color =pos_rel_target), geom='errorbar', width=0.9, size=1.5) +
+  facet_grid(.~time) +
+  # scale_x_discrete("ceuing condition", breaks=waiver(), 
+  #                  labels = c("inva","lid","neut","ral","val","id")) +
+  scale_x_discrete("ceuing condition", breaks=waiver(), 
+                   labels = c("invalid","invalid","neutral","neutral","valid","valid")) +
+  scale_fill_manual(values=c("steelblue", "red3")) +
+  scale_color_manual(values=c("steelblue", "red3"))+
+  ggtitle("SSVEP | evoked modulation | rel. to cue")
+
+
+```
+
+<br> 
+1b  Illustrate Data as is
+
+* cued, uncued, neutral
+* pooled across left and right side
+
+<br>  
+
+```{r plot_data_st_v1, results = "hide",  fig.height=3, fig.width=9, warning = FALSE}
+# str(DATA.In_longer)
+dat2plot <- DATA.In_long %>%
+  dplyr::select(subjects, amplitude_induced, amplitude_evoked, modulation_induced, modulation_evoked, time, attention)%>%
+  group_by(subjects, time, attention) %>%
+  summarise(
+    amplitude_induced = mean(amplitude_induced),
+    amplitude_evoked = mean(amplitude_evoked), 
+    modulation_induced = mean(modulation_induced), 
+    modulation_evoked = mean(modulation_evoked)) %>%
+  ungroup()
+  
+
+theme_set(theme_bw())
+ggplot(dat2plot, aes(x= attention, y=amplitude_induced, fill=attention, color = attention)) +
+  geom_line(aes(group = subjects),alpha = 0.3, colour = "grey60") +
+  geom_beeswarm(aes(color = attention, x = attention, group = attention), 
+                cex=2, size = 3, shape=21,alpha=1,fill="grey40",shape=21)+
+  stat_summary(fun=mean, aes(ymin=..y.., ymax=..y.., color =attention), geom='errorbar', width=0.9, size=1.5) +
+  facet_grid(.~time) +
+  scale_fill_manual(values=c("#F1831A", "#293C4A", "#198A83"))+
+  scale_color_manual(values=c("#F1831A", "#293C4A", "#198A83"))+
+  ggtitle("SSVEP | induced amplitude | by attention")
+
+
+
+theme_set(theme_bw())
+ggplot(dat2plot, aes(x= attention, y=amplitude_evoked, fill=attention, color = attention)) +
+  geom_line(aes(group = subjects),alpha = 0.3, colour = "grey60") +
+  geom_beeswarm(aes(color = attention, x = attention, group = attention), 
+                cex=2, size = 3, shape=21,alpha=1,fill="grey40",shape=21)+
+  stat_summary(fun=mean, aes(ymin=..y.., ymax=..y.., color =attention), geom='errorbar', width=0.9, size=1.5) +
+  facet_grid(.~time) +
+  scale_fill_manual(values=c("#F1831A", "#293C4A", "#198A83"))+
+  scale_color_manual(values=c("#F1831A", "#293C4A", "#198A83"))+
+  ggtitle("SSVEP | evoked amplitude | by attention")
+
+
+theme_set(theme_bw())
+ggplot(dat2plot, aes(x= attention, y=modulation_induced, fill=attention, color = attention)) +
+  geom_line(aes(group = subjects),alpha = 0.3, colour = "grey60") +
+  geom_beeswarm(aes(color = attention, x = attention, group = attention), 
+                cex=2, size = 3, shape=21,alpha=1,fill="grey40",shape=21)+
+  stat_summary(fun=mean, aes(ymin=..y.., ymax=..y.., color =attention), geom='errorbar', width=0.9, size=1.5) +
+  facet_grid(.~time) +
+  scale_fill_manual(values=c("#F1831A", "#293C4A", "#198A83"))+
+  scale_color_manual(values=c("#F1831A", "#293C4A", "#198A83"))+
+  ggtitle("SSVEP | induced modulation | by attention")
+
+
+
+theme_set(theme_bw())
+ggplot(dat2plot, aes(x= attention, y=modulation_evoked, fill=attention, color = attention)) +
+  geom_line(aes(group = subjects),alpha = 0.3, colour = "grey60") +
+  geom_beeswarm(aes(color = attention, x = attention, group = attention), 
+                cex=2, size = 3, shape=21,alpha=1,fill="grey40",shape=21)+
+  stat_summary(fun=mean, aes(ymin=..y.., ymax=..y.., color =attention), geom='errorbar', width=0.9, size=1.5) +
+  facet_grid(.~time) +
+  scale_fill_manual(values=c("#F1831A", "#293C4A", "#198A83"))+
+  scale_color_manual(values=c("#F1831A", "#293C4A", "#198A83"))+
+  ggtitle("SSVEP | evoked modulation | by attention")
+
+```
+  
+  
+<br> 
+1c Illustrate data for specific time window
+
+<br>  
+
+```{r plot_data_avg_compound, results = "hide",  fig.height=6, fig.width=4, warning = FALSE}
+
+### for saving with alpha = 1
+#evoked baseline corrected####
+dat2plot <- DATA.In_long %>%
+  dplyr::select(subjects, amplitude_induced, amplitude_evoked, modulation_induced, modulation_evoked, time, attention)%>%
+  group_by(subjects, time, attention) %>%
+  summarise(
+    amplitude_induced = mean(amplitude_induced),
+    amplitude_evoked = mean(amplitude_evoked), 
+    modulation_induced = mean(modulation_induced), 
+    modulation_evoked = mean(modulation_evoked)) %>%
+  ungroup()%>%
+  filter(time=="[500 1500] ")
+  # filter(time=="[1000 2000] ")
+
+plot1 <- ggplot(dat2plot, aes(x = attention, y = modulation_evoked, fill = attention)) +
+  geom_hline(yintercept=0, show.legend = FALSE) +
+  geom_line(aes(group = interaction(subjects,time)),colour = "grey60",alpha = 1,size =1) +
+  geom_beeswarm(aes(color = attention, x = attention,
+                    group = attention), cex=2.5, size = 5,alpha=1,fill="grey40",shape=21)+
+  # geom_point(aes(color = attention, x = interaction(time,condition),
+  #                   group = attention), size = 4,alpha=0.4)+
+  stat_summary(fun.y=mean, aes(ymin=..y.., ymax=..y.., color =attention), geom='errorbar', width=0.9, size=1.5) +
+  scale_x_discrete("attention", breaks=waiver(), labels = rep(c(""),1,3)) +
+  # theme(legend.position="bottom") +
+  ylab(expression(paste("amplitude modulation in %")))+
+  # labs(title=sprintf("SSVEP modulation | evoked"),
+  #      subtitle="collapsed across frequencies")+
+  scale_fill_manual(values=c("#F1831A", "#293C4A", "#198A83"))+
+  # scale_fill_manual(values=c("#FFC876", "#162B3F", "#1A776F"))+
+  # scale_fill_brewer(palette = "Dark2")+
+  scale_color_manual(values=c("#F1831A", "#293C4A", "#198A83"))+
+  # scale_color_manual(values=c("#FFC876", "#162B3F", "#1A776F"))+
+  # scale_color_brewer(palette = "Dark2")+
+  theme(legend.position="none")+
+  # scale_y_continuous(limits=c(-60, 140))
+  scale_y_continuous(limits=c(-30, 80))
+
+
+plot2 <- ggplot(dat2plot, aes(y = modulation_evoked, fill = attention, x = 1)) +
+  geom_flat_violin(aes(fill = attention),position = position_nudge(x = .1, y = 0), adjust = 1, trim = FALSE, alpha = 1, colour = NA)+
+  scale_fill_manual(values=c("#F1831A", "#293C4A", "#198A83"))+
+  # scale_fill_manual(values=c("#FFC876", "#162B3F", "#1A776F"))+
+  # scale_fill_brewer(palette = "Dark2")+
+  scale_color_manual(values=c("#F1831A", "#293C4A", "#198A83"))+
+  # scale_color_manual(values=c("#FFC876", "#162B3F", "#1A776F"))+
+  # scale_color_brewer(palette = "Dark2")+
+  theme(axis.title.y=element_blank(),
+        axis.text.y=element_blank(),
+        axis.ticks.y=element_blank())+
+  theme(axis.title.x=element_blank(),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank())+
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())+
+  # scale_y_continuous(limits=c(-60, 140))
+  scale_y_continuous(limits=c(-30, 80))
+
+
+
+# cowplot::plot_grid(plot1, plot2, plot3, ncol = 3,labels = "AUTO")
+plotttitle <- ggdraw() + draw_label("SSVEP modulation | evoked", fontface='bold')
+plotplots <- ggarrange(plot1, plot2,ncol = 2,common.legend = TRUE,align = "h", widths=c(3,1))
+
+savefig <- multi_panel_figure(columns = 1, rows = 1, panel_label_type = "none", width = 4, height = 6, unit = "in")
+saveplot <- ggarrange(plotttitle, plotplots, nrow = 2, heights=c(0.2, 1))
+
+savefig %<>%
+  fill_panel(saveplot, column = 1, row = 1)
+savefig
+# save_multi_panel_figure(savefig, "general_postcue_mod_evoSSVEP.eps")
+
+
+
+
+### for saving with alpha = 1
+#induced baseline corrected####
+
+plot1 <- ggplot(dat2plot, aes(x = attention, y = modulation_induced, fill = attention)) +
+  geom_hline(yintercept=0, show.legend = FALSE) +
+  geom_line(aes(group = interaction(subjects,time)),colour = "grey60",alpha = 1,size =1) +
+  geom_beeswarm(aes(color = attention, x = attention,
+                    group = attention), cex=2.5, size = 5,alpha=1,fill="grey40",shape=21)+
+  # geom_point(aes(color = attention, x = interaction(time,condition),
+  #                   group = attention), size = 4,alpha=0.4)+
+  stat_summary(fun.y=mean, aes(ymin=..y.., ymax=..y.., color =attention), geom='errorbar', width=0.9, size=1.5) +
+  scale_x_discrete("attention", breaks=waiver(), labels = rep(c(""),1,3)) +
+  # theme(legend.position="bottom") +
+  ylab(expression(paste("amplitude modulation in %")))+
+  # labs(title=sprintf("SSVEP modulation | evoked"),
+  #      subtitle="collapsed across frequencies")+
+  scale_fill_manual(values=c("#F1831A", "#293C4A", "#198A83"))+
+  # scale_fill_manual(values=c("#FFC876", "#162B3F", "#1A776F"))+
+  # scale_fill_brewer(palette = "Dark2")+
+  scale_color_manual(values=c("#F1831A", "#293C4A", "#198A83"))+
+  # scale_color_manual(values=c("#FFC876", "#162B3F", "#1A776F"))+
+  # scale_color_brewer(palette = "Dark2")+
+  theme(legend.position="none")+
+  # scale_y_continuous(limits=c(-60, 140))
+  scale_y_continuous(limits=c(-20, 50))
+
+
+plot2 <- ggplot(dat2plot, aes(y = modulation_induced, fill = attention, x = 1)) +
+  geom_flat_violin(aes(fill = attention),position = position_nudge(x = .1, y = 0), adjust = 1, trim = FALSE, alpha = 1, colour = NA)+
+  scale_fill_manual(values=c("#F1831A", "#293C4A", "#198A83"))+
+  # scale_fill_manual(values=c("#FFC876", "#162B3F", "#1A776F"))+
+  # scale_fill_brewer(palette = "Dark2")+
+  scale_color_manual(values=c("#F1831A", "#293C4A", "#198A83"))+
+  # scale_color_manual(values=c("#FFC876", "#162B3F", "#1A776F"))+
+  # scale_color_brewer(palette = "Dark2")+
+  theme(axis.title.y=element_blank(),
+        axis.text.y=element_blank(),
+        axis.ticks.y=element_blank())+
+  theme(axis.title.x=element_blank(),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank())+
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())+
+  # scale_y_continuous(limits=c(-60, 140))
+  scale_y_continuous(limits=c(-20, 50))
+
+
+
+# cowplot::plot_grid(plot1, plot2, plot3, ncol = 3,labels = "AUTO")
+plotttitle <- ggdraw() + draw_label("SSVEP modulation | induced", fontface='bold')
+plotplots <- ggarrange(plot1, plot2,ncol = 2,common.legend = TRUE,align = "h", widths=c(3,1))
+
+savefig <- multi_panel_figure(columns = 1, rows = 1, panel_label_type = "none", width = 4, height = 6, unit = "in")
+saveplot <- ggarrange(plotttitle, plotplots, nrow = 2, heights=c(0.2, 1))
+
+savefig %<>%
+  fill_panel(saveplot, column = 1, row = 1)
+savefig
+# save_multi_panel_figure(savefig, "general_postcue_mod_indSSVEP.eps")
+```
+
+## tests  
+<br>  
+
+test of general model
+
+### ANOVA electrophysiological measures
+<br>  
+
+ANOVA_RM for electrophysiological measures: meas ~ ATTENTION(cued, neutral, uncued)
+
+```{r ANOVA_RT_ValXSei, message=FALSE, warning=FALSE, include=TRUE}
+#ANOVAe
+DATA.In_long %>%
+  dplyr::select(subjects, amplitude_induced, amplitude_evoked, modulation_induced, modulation_evoked, time, attention)%>%
+  group_by(subjects, time, attention) %>%
+  summarise(
+    amplitude_induced = mean(amplitude_induced),
+    amplitude_evoked = mean(amplitude_evoked), 
+    modulation_induced = mean(modulation_induced), 
+    modulation_evoked = mean(modulation_evoked)) %>%
+  ungroup()%>%
+  filter(time=="[500 1500] ")%>%
+  pivot_longer(amplitude_induced:modulation_evoked, names_to = "signal", values_to = "value") %>%
+  group_by(signal)%>%
+  nest() %>%
+  mutate(stats= purrr::map(data, ~broom::tidy(
+    anova(aov_ez(id="subjects", dv = "value", data = ., within = "attention"))
+  ))) %>%
+  dplyr::select(-data) %>%
+  unnest()%>%
+  mutate(
+    `p.value` = cell_spec(ifelse(round(`p.value`,4)<.001,"< .001",round(`p.value`,4)), 
+                        color = ifelse(is.nan(`p.value`),"blue", ifelse(`p.value` < .05, "green", "red")),
+                        bold = ifelse(is.nan(`p.value`),F, ifelse(`p.value` < .05, T,F)),
+                        align = "center")
+  ) %>%
+  dplyr::select(signal, term, `num.Df`, `den.Df`, MSE, `statistic`, ges, `p.value`) %>%
+  kable(escape = F, digits = c(3,3,3,3,3,3,3,3,3), caption = c("repeated measures ANOVA ")) %>%
+  kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
+
+
+```

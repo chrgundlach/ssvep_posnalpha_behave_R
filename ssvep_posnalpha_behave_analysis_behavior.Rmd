@@ -68,6 +68,7 @@ datafile1 <- "C:/Users/psy05cvd/Dropbox/work/R-statistics/experiments/ssvep_posn
 # Analysis of Behavioral Data (Posner Paradigma)  
 <br>  
 
+
 ## subaveraged Daten werden geladen
 Loading data `r toString(datafile1)`
 
@@ -118,6 +119,7 @@ DATA.In_long$pre_event_type <- as.factor(DATA.In_long$pre_event_type)
 DATA.In_long$post_event_pos <- as.factor(DATA.In_long$post_event_pos)
 DATA.In_long$post_event_direction_c <- as.factor(DATA.In_long$post_event_direction_c)
 ```
+
 
 # Illustration of Data of pre-cue task
 <br> 
@@ -780,10 +782,17 @@ summary(post_hocs.validity$contrasts) %>%
                         bold = ifelse(is.nan(p.value),F, ifelse(p.value < .05, T,F)),
                         align = "left")
   ) %>%
-  mutate(CohensD = `t.ratio`/sqrt(df+1))%>%
+  # mutate(CohensD = `t.ratio`/sqrt(df+1))%>%
+  mutate(`CohensD` =
+           summary(eff_size(contrast(post_hocs.validity, method = "pairwise", adjust = "holm"),
+                            sigma = sqrt(mean(sigma(StatsOut$lm)^2)), # RMS of sigma()
+                            edf = df.residual(StatsOut$lm), method = "identity"))$effect.size
+  )%>%
   kable(escape = F, digits = c(3,3,3,3,3,3,3,3,3), 
         caption = c("contrasts for estimated marginal means | by validity | dv = RT | corrected: Holm")) %>%
   kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
+
+
 
 post_hocs.side$emmeans %>%
   kable(escape = F, digits = c(3,3,3,3,3,3,3,3,3), caption = c("estimated marginal means | by side | dv = RT")) %>%
@@ -796,7 +805,12 @@ summary(post_hocs.side$contrasts) %>%
                         bold = ifelse(is.nan(p.value),F, ifelse(p.value < .05, T,F)),
                         align = "left")
   ) %>%
-  mutate(CohensD = `t.ratio`/sqrt(df+1))%>%
+  # mutate(CohensD = `t.ratio`/sqrt(df+1))%>%
+  mutate(`CohensD` =
+           summary(eff_size(contrast(post_hocs.side, method = "pairwise", adjust = "holm"),
+                            sigma = sqrt(mean(sigma(StatsOut$lm)^2)), # RMS of sigma()
+                            edf = df.residual(StatsOut$lm), method = "identity"))$effect.size
+  )%>%
   kable(escape = F, digits = c(3,3,3,3,3,3,3,3,3), 
         caption = c("contrasts for estimated marginal means | by side | dv = RT | corrected: Holm")) %>%
   kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
@@ -812,7 +826,12 @@ summary(post_hocs.valXside$contrasts) %>%
                         bold = ifelse(is.nan(p.value),F, ifelse(p.value < .05, T,F)),
                         align = "left")
   ) %>%
-  mutate(CohensD = `t.ratio`/sqrt(df+1))%>%
+  # mutate(CohensD = `t.ratio`/sqrt(df+1))%>%
+  mutate(`CohensD` =
+           summary(eff_size(contrast(post_hocs.valXside, method = "pairwise", adjust = "holm"),
+                            sigma = sqrt(mean(sigma(StatsOut$lm)^2)), # RMS of sigma()
+                            edf = df.residual(StatsOut$lm), method = "identity"))$effect.size
+  )%>%
   kable(escape = F, digits = c(3,3,3,3,3,3,3,3,3), 
         caption = c("contrasts for estimated marginal means | by validity and side | dv = RT | corrected: Holm")) %>%
   kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
@@ -850,7 +869,7 @@ StatsData %>%
   unnest(cols = c(stats, meanval, std))%>%
   ungroup()%>%
   dplyr::select(contrast, meanval, std, statistic, parameter, p.value)%>%
-  mutate(p.value = p.adjust(p.value, method="bonferroni")) %>%
+  mutate(p.value = p.adjust(p.value, method="holm")) %>%
   mutate(CohensD = `statistic`/sqrt(parameter))%>%
   mutate(
     p.value = cell_spec(ifelse(round(p.value,4)<.001,"< .001",round(p.value,4)), 
@@ -858,10 +877,13 @@ StatsData %>%
                         bold = ifelse(is.nan(p.value),F, ifelse(p.value < .05, T,F)),
                         align = "center")
   ) %>%
-  kable(escape = F, digits = c(3,3,3,3,3,3,3,3,3), caption = c("t-tests against 0 | dv = RT difference ")) %>%
+  kable(escape = F, digits = c(3,3,3,3,3,3,3,3,3), caption = c("classical approach: t-tests against 0 | dv = RT difference ")) %>%
   kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
   
 ```
+
+
+
 
 ### ANOVA RR
 <br>  
@@ -922,7 +944,12 @@ summary(post_hocs.validity$contrasts) %>%
                         bold = ifelse(is.nan(p.value),F, ifelse(p.value < .05, T,F)),
                         align = "left")
   ) %>%
-  mutate(CohensD = `t.ratio`/sqrt(df+1))%>%
+  # mutate(CohensD = `t.ratio`/sqrt(df+1))%>%
+  mutate(`CohensD` =
+           summary(eff_size(contrast(post_hocs.validity, method = "pairwise", adjust = "holm"),
+                            sigma = sqrt(mean(sigma(StatsOut$lm)^2)), # RMS of sigma()
+                            edf = df.residual(StatsOut$lm), method = "identity"))$effect.size
+  )%>%
   kable(escape = F, digits = c(3,3,3,3,3,3,3,3,3), 
         caption = c("contrasts for estimated marginal means | by validity | dv = HR | corrected: Holm")) %>%
   kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
@@ -938,7 +965,12 @@ summary(post_hocs.side$contrasts) %>%
                         bold = ifelse(is.nan(p.value),F, ifelse(p.value < .05, T,F)),
                         align = "left")
   ) %>%
-  mutate(CohensD = `t.ratio`/sqrt(df+1))%>%
+  # mutate(CohensD = `t.ratio`/sqrt(df+1))%>%
+  mutate(`CohensD` =
+           summary(eff_size(contrast(post_hocs.side, method = "pairwise", adjust = "holm"),
+                            sigma = sqrt(mean(sigma(StatsOut$lm)^2)), # RMS of sigma()
+                            edf = df.residual(StatsOut$lm), method = "identity"))$effect.size
+  )%>%
   kable(escape = F, digits = c(3,3,3,3,3,3,3,3,3), 
         caption = c("contrasts for estimated marginal means | by side | dv = HR | corrected: Holm")) %>%
   kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
@@ -954,7 +986,12 @@ summary(post_hocs.valXside$contrasts) %>%
                         bold = ifelse(is.nan(p.value),F, ifelse(p.value < .05, T,F)),
                         align = "left")
   ) %>%
-  mutate(CohensD = `t.ratio`/sqrt(df+1))%>%
+  # mutate(CohensD = `t.ratio`/sqrt(df+1))%>%
+  mutate(`CohensD` =
+           summary(eff_size(contrast(post_hocs.valXside, method = "pairwise", adjust = "holm"),
+                            sigma = sqrt(mean(sigma(StatsOut$lm)^2)), # RMS of sigma()
+                            edf = df.residual(StatsOut$lm), method = "identity"))$effect.size
+  )%>%
   kable(escape = F, digits = c(3,3,3,3,3,3,3,3,3), 
         caption = c("contrasts for estimated marginal means | by validity and side | dv = HR | corrected: Holm")) %>%
   kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
@@ -993,7 +1030,7 @@ StatsData %>%
   unnest(cols = c(stats, meanval, std))%>%
   ungroup()%>%
   dplyr::select(contrast, meanval, std, statistic, parameter, p.value)%>%
-  mutate(p.value = p.adjust(p.value, method="bonferroni")) %>%
+  mutate(p.value = p.adjust(p.value, method="holm")) %>%
   mutate(CohensD = `statistic`/sqrt(parameter))%>%
   mutate(
     p.value = cell_spec(ifelse(round(p.value,4)<.001,"< .001",round(p.value,4)), 
