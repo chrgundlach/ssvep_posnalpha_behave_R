@@ -1619,9 +1619,9 @@ g <- ggplot(bestmodel.ef.ef_draws_validity, aes(y = cue_validity_label, x = .val
     y = "validity"
   )
 
-# print(g)
-ggsave(filename = "figures/MarginEffects_Validity_PredRTs_ModelValVisAlpha.eps", width = 5, height = 3.5,
-       plot = print(g))
+print(g)
+# ggsave(filename = "figures/MarginEffects_Validity_PredRTs_ModelValVisAlpha.eps", width = 5, height = 3.5,
+#        plot = print(g))
 
 
 # now gather all the single draws to be able to plot the variance of the contrast
@@ -1648,9 +1648,9 @@ g<-ggplot(bestmodel.ef.ef_draws_validity_contr, aes(y = contrast, x = .value)) +
     y = "validity"
   )
 
-# print(g)
-ggsave(filename = "figures/MarginEffects_Validity_Contrasts_ModelValVisAlpha.eps", width = 5, height = 3.5,
-       plot = print(g))
+print(g)
+# ggsave(filename = "figures/MarginEffects_Validity_Contrasts_ModelValVisAlpha.eps", width = 5, height = 3.5,
+#        plot = print(g))
 
 
 # savefig %<>%
@@ -1729,9 +1729,9 @@ g <- ggplot(bestmodel.ef.slope_contraTarget, aes( x = .value)) +
   )+
   theme(axis.text.y=element_blank(),axis.ticks.y=element_blank())
 
-# print(g)
-ggsave(filename = "figures/MarginEffects_VisAlphaTarg_SlopeDistr_ModelValVisAlpha.eps", width = 5, height = 3.5,
-       plot = print(g))
+print(g)
+# ggsave(filename = "figures/MarginEffects_VisAlphaTarg_SlopeDistr_ModelValVisAlpha.eps", width = 5, height = 3.5,
+#        plot = print(g))
 
 bestmodel.ef.slope_contraTarget %>% median_hdi() %>%
   kable(escape = F, digits = c(6,6,6,6,6,6,6,6,6), caption = c("alpha slope: mean and CI")) %>%
@@ -1742,9 +1742,9 @@ bestmodel.ef.slope_contraTarget %>% median_hdi() %>%
 ```
 
 
-###  Extract marginal effects for pre-target visual interaction alpha model
+###  Extract marginal effects for post-cue visual interaction alpha model
 
-Now for illustrating the whole picture, lets plot the motor alpha model
+Now for illustrating the whole picture, lets plot the visual alpha model
 
 **'RT ~ Cue * vis_alpha_contratarg + ( cue | subjects)'**
 
@@ -2149,10 +2149,10 @@ g <- ggplot(bestmodel.ef.ef_draws_validity, aes(y = cue_validity_label, x = .val
     y = "validity"
   )
 
-# print(g)
-ggsave(filename = "figures/MarginEffects_PostCue_FullModelVisAlpha_ValidityEffects.eps",
-       width = 5, height = 3.5,
-       plot = print(g))
+print(g)
+# ggsave(filename = "figures/MarginEffects_PostCue_FullModelVisAlpha_ValidityEffects.eps",
+#        width = 5, height = 3.5,
+#        plot = print(g))
 
 # now gather all the single draws to be able to plot the variance of the contrast
 bestmodel.ef.ef_draws_validity_contr <- bestmodel.ef.model %>% 
@@ -2179,10 +2179,10 @@ g <- ggplot(bestmodel.ef.ef_draws_validity_contr, aes(y = contrast, x = .value))
   )
 
 
-# print(g)
-ggsave(filename = "figures/MarginEffects_PostCue_FullModelVisAlpha_ValidityEffectContrasts.eps",
-       width = 5, height = 3.5,
-       plot = print(g))
+print(g)
+# ggsave(filename = "figures/MarginEffects_PostCue_FullModelVisAlpha_ValidityEffectContrasts.eps",
+#        width = 5, height = 3.5,
+#        plot = print(g))
 
 ```
 
@@ -2221,6 +2221,7 @@ g <- ggplot(bestmodel.ef.tidy_exppred2, aes(x = contra_target, y = .epred)) +
   facet_grid(cue_validity_label~.)+
   labs(x = "alpha amplitude contra target", y = "predicted RT",
        fill = "Credible interval") +
+  ylim(c(400,1300))+
   theme(legend.position = "bottom")
 # 
 # print(g)
@@ -2257,6 +2258,7 @@ g <- ggplot(bestmodel.ef.tidy_exppred3, aes(x = contra_nontarget, y = .epred)) +
   facet_grid(cue_validity_label~.)+
   labs(x = "alpha amplitude contra nontarget", y = "predicted RT",
        fill = "Credible interval") +
+  ylim(c(400,1300))+
   theme(legend.position = "bottom")
   
 # print(g)
@@ -2309,18 +2311,18 @@ g<-ggplot(bestmodel.ef.slopes_alpha, aes( x = .value, y=cue_validity_label)) +
   )
 
 
-# print(g)
-ggsave(filename = "figures/MarginEffects_PostCue_FullModelVisAlpha_Alpha_SlopeDistr.eps",
-       width = 4, height = 4,
-       plot = print(g))
+print(g)
+# ggsave(filename = "figures/MarginEffects_PostCue_FullModelVisAlpha_Alpha_SlopeDistr.eps",
+#        width = 4, height = 4,
+#        plot = print(g))
 
 
 bestmodel.ef.slope_contraTarget %>% median_hdi() %>%
-  kable(escape = F, digits = c(6,6,6,6,6,6,6,6,6), caption = c("alpha contratarget: mean and CI")) %>%
+  kable(escape = F, digits = c(3,3,3,3,3,3,6,6,6), caption = c("alpha contratarget: mean and CI")) %>%
   kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
 
 bestmodel.ef.slope_contraNontarget %>% median_hdi() %>%
-  kable(escape = F, digits = c(6,6,6,6,6,6,6,6,6), caption = c("alpha contranontarget: mean and CI")) %>%
+  kable(escape = F, digits = c(3,3,3,3,3,3,6,6,6), caption = c("alpha contranontarget: mean and CI")) %>%
   kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
 
 ```
@@ -3077,10 +3079,10 @@ g <- ggplot(bestmodel.ef.ef_draws_validity, aes(y = cue_validity_label, x = .val
   )
 
 
-# print(g)
-ggsave(filename = "figures/MarginEffects_PostCue_FullModelSSVEP_ValidityEffects.eps",
-       width = 5, height = 3.5,
-       plot = print(g))
+print(g)
+# ggsave(filename = "figures/MarginEffects_PostCue_FullModelSSVEP_ValidityEffects.eps",
+#        width = 5, height = 3.5,
+#        plot = print(g))
 
 
 # now gather all the single draws to be able to plot the variance of the contrast
@@ -3107,10 +3109,10 @@ g<-ggplot(bestmodel.ef.ef_draws_validity_contr, aes(y = contrast, x = .value)) +
     y = "validity"
   )
 
-# print(g)
-ggsave(filename = "figures/MarginEffects_PostCue_FullModelSSVEP_ValidityEffectContrasts.eps",
-       width = 5, height = 3.5,
-       plot = print(g))
+print(g)
+# ggsave(filename = "figures/MarginEffects_PostCue_FullModelSSVEP_ValidityEffectContrasts.eps",
+#        width = 5, height = 3.5,
+#        plot = print(g))
 ```
 
 We now can similarly extract the slopes of the **alpha** and **RT** relationship
@@ -3146,6 +3148,7 @@ g <- ggplot(bestmodel.ef.tidy_exppred2, aes(x = post_cue_SSVEP_contra_target, y 
   facet_grid(cue_validity_label~.)+
   labs(x = "SSVEP amplitude contra target", y = "predicted RT",
        fill = "Credible interval") +
+  ylim(c(400,1300))+
   theme(legend.position = "bottom")
 
 
@@ -3190,7 +3193,7 @@ ggsave(filename = "figures/MarginEffects_PostCue_FullModelSSVEP_SSVEP_SlopeDistr
        plot = print(g))
 
 bestmodel.ef.slope_contraTarget %>% median_hdi() %>%
-  kable(escape = F, digits = c(6,6,6,6,6,6,6,6,6), caption = c("SSVEP slope: mean and CI")) %>%
+  kable(escape = F, digits = c(3,3,3,3,3,3,6,6,6), caption = c("SSVEP slope: mean and CI")) %>%
   kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
 ```
 
@@ -3618,10 +3621,10 @@ g <- ggplot(bestmodel.ef.ef_draws_validity, aes(y = cue_validity_label, x = .val
     y = "validity"
   )
 
-# print(g)
-ggsave(filename = "figures/MarginEffects_PostCue_FullModelMotAlpha_ValidityEffects.eps",
-       width = 5, height = 3.5,
-       plot = print(g))
+print(g)
+# ggsave(filename = "figures/MarginEffects_PostCue_FullModelMotAlpha_ValidityEffects.eps",
+#        width = 5, height = 3.5,
+#        plot = print(g))
 
 
 
@@ -3649,10 +3652,10 @@ g <- ggplot(bestmodel.ef.ef_draws_validity_contr, aes(y = contrast, x = .value))
     y = "validity"
   )
 
-# print(g)
-ggsave(filename = "figures/MarginEffects_PostCue_FullModelMotAlpha_ValidityEffectContrasts.eps",
-       width = 5, height = 3.5,
-       plot = print(g))
+print(g)
+# ggsave(filename = "figures/MarginEffects_PostCue_FullModelMotAlpha_ValidityEffectContrasts.eps",
+#        width = 5, height = 3.5,
+#        plot = print(g))
 ```
 
 We now can similarly extract the slopes of the **alpha** and **RT** relationship
@@ -3687,6 +3690,7 @@ g <- ggplot(bestmodel.ef.tidy_exppred2, aes(x = malpha_contra_target, y = .epred
   facet_grid(cue_validity_label~.)+
   labs(x = "motor alpha amplitude contra target", y = "predicted RT",
        fill = "Credible interval") +
+  ylim(c(400,1300))+
   theme(legend.position = "bottom")
 
 # now lets get the slop of the modulation by alpha
@@ -3731,7 +3735,7 @@ ggsave(filename = "figures/MarginEffects_PostCue_FullModelMotAlpha_MotAlpha_Slop
 
 
 bestmodel.ef.slope_contraTarget %>% median_hdi() %>%
-  kable(escape = F, digits = c(6,6,6,6,6,6,6,6,6), caption = c("motor alpha slope: mean and CI")) %>%
+  kable(escape = F, digits = c(3,3,3,3,3,3,6,6,6), caption = c("motor alpha slope: mean and CI")) %>%
   kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
   
 

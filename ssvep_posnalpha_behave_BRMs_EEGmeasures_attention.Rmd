@@ -1437,6 +1437,8 @@ ggsave(filename = "figures/MarginEffects_motAlphapredicted_by_validity_contrats.
 # based on https://www.andrewheiss.com/blog/2021/11/10/ame-bayes-re-guide/
 # which model to use?
 bestmodel.ef.model <- fit_EEG_SSVEP_validity_alpha
+bestmodel.ef.model <- fit_EEG_SSVEP_validity_x_alpha
+
 # what is the data of the model?
 bestmodel.ef.data <- bestmodel.ef.model$data
 
@@ -1563,7 +1565,7 @@ bestmodel.ef.ef_draws_validity <- bestmodel.ef.model %>%
   gather_emmeans_draws()
 
 theme_set(theme_bw())
-ggplot(bestmodel.ef.ef_draws_validity, aes(y = attention, x = .value)) +
+g <-ggplot(bestmodel.ef.ef_draws_validity, aes(y = attention, x = .value)) +
   stat_halfeye(
     aes(fill = attention, fill_ramp = after_stat(level)),
     .width = c(.95, 1),
@@ -1579,6 +1581,9 @@ ggplot(bestmodel.ef.ef_draws_validity, aes(y = attention, x = .value)) +
     y = "validity"
   )
 
+# print(g)
+ggsave(filename = "figures/MarginEffects_SSVEPpredicted_by_validityXvisalpha_predictvals.eps", width = 5, height = 3.5,
+       plot = print(g))
 
 
 # now gather all the single draws to be able to plot the variance of the contrast
@@ -1589,7 +1594,7 @@ bestmodel.ef.ef_draws_validity_contr <- bestmodel.ef.model %>%
   gather_emmeans_draws()
 
 theme_set(theme_bw())
-ggplot(bestmodel.ef.ef_draws_validity_contr, aes(y = contrast, x = .value)) +
+g <- ggplot(bestmodel.ef.ef_draws_validity_contr, aes(y = contrast, x = .value)) +
   stat_halfeye(
     aes(fill = contrast, fill_ramp = after_stat(level)),
     .width = c(.95, 1),
@@ -1605,13 +1610,15 @@ ggplot(bestmodel.ef.ef_draws_validity_contr, aes(y = contrast, x = .value)) +
     y = "validity"
   )
 
-
+# print(g)
+ggsave(filename = "figures/MarginEffects_SSVEPpredicted_by_validityXvisalpha_contrasts.eps", width = 5, height = 3.5,
+       plot = print(g))
 ```
 
 
 We now can similarly extract the slopes of the **alpha** and **RT** relationship
 
-```{r SSVEP compl marginal effects disp effects visual alpha -marginal means,  fig.height=3.5, fig.width=5,  warning = FALSE, message=FALSE, eval = TRUE}
+```{r SSVEP compl marginal effects disp effects visual alpha -marginal means,  fig.height=4, fig.width=4,  warning = FALSE, message=FALSE, eval = TRUE}
 # now trying to get the regression line right for the alpha predictors
 
 ## alpha
@@ -1643,13 +1650,14 @@ theme_set(theme_bw())
 ggplot(bestmodel.ef.tidy_exppred2, aes(x = visualAlpha, y = .epred)) +
   stat_lineribbon(.width = c(0.5, 0.8, 0.95, 1)) + 
   scale_fill_brewer(palette = "Reds") +
-  labs(x = "alpha amplitude contra stimulus (cued, uncued, neutral)", y = "predicted SSVEP (cued, uncued, neutral)",
+  facet_grid(attention~.)+
+  labs(x = "alpha amplitude contra stimulus", y = "predicted SSVEP",
        fill = "Credible interval") +
   theme(legend.position = "bottom")
 
 # now lets get the slop of the modulation by alpha
 bestmodel.ef.slope_contraTarget <- bestmodel.ef.model %>% 
-  emtrends(~ 1, # 1 means, we want the average slop
+  emtrends(~ attention, # 1 means, we want the average slop
            var = "visualAlpha",
            epred = TRUE) %>% 
   gather_emmeans_draws()
@@ -1657,9 +1665,9 @@ bestmodel.ef.slope_contraTarget <- bestmodel.ef.model %>%
 
 
 theme_set(theme_bw())
-ggplot(bestmodel.ef.slope_contraTarget, aes( x = .value)) +
+ggplot(bestmodel.ef.slope_contraTarget, aes( x = .value, y=attention)) +
   stat_halfeye(
-    aes( fill = after_stat(level)),
+    aes(fill = attention, fill_ramp = after_stat(level)),
     .width = c(.95, 1),
   ) +
   # stat_dots(aes(fill = alpha_signal,color = alpha_signal, fill_ramp = after_stat(level), colour_ramp = after_stat(level)),

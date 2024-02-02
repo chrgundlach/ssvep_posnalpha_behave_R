@@ -2231,6 +2231,7 @@ g <- ggplot(bestmodel.ef.tidy_exppred2, aes(x = contra_target, y = .epred)) +
   facet_grid(cue_validity_label~.)+
   labs(x = "alpha amplitude contra target", y = "predicted RT",
        fill = "Credible interval") +
+  ylim(c(400,1300))+
   theme(legend.position = "bottom")
 
 # print(g)
@@ -2267,6 +2268,7 @@ g <- ggplot(bestmodel.ef.tidy_exppred3, aes(x = contra_nontarget, y = .epred)) +
   facet_grid(cue_validity_label~.)+
   labs(x = "alpha amplitude contra nontarget", y = "predicted RT",
        fill = "Credible interval") +
+  ylim(c(400,1300))+
   theme(legend.position = "bottom")
   
 # print(g)
@@ -2324,11 +2326,11 @@ ggsave(filename = "figures/MarginEffects_PreTarget_FullModelVisAlpha_Alpha_Slope
 
 
 bestmodel.ef.slope_contraTarget %>% median_hdi() %>%
-  kable(escape = F, digits = c(6,6,6,6,6,6,6,6,6), caption = c("alpha contratarget: mean and CI")) %>%
+  kable(escape = F, digits = c(3,3,3,3,6,6,6,6,6), caption = c("alpha contratarget: mean and CI")) %>%
   kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
 
 bestmodel.ef.slope_contraNontarget %>% median_hdi() %>%
-  kable(escape = F, digits = c(6,6,6,6,6,6,6,6,6), caption = c("alpha contranontarget: mean and CI")) %>%
+  kable(escape = F, digits = c(3,3,3,3,6,6,6,6,6), caption = c("alpha contranontarget: mean and CI")) %>%
   kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
 
 ```
@@ -2554,6 +2556,7 @@ g <- ggplot(bestmodel.ef.tidy_exppred2, aes(x = pre_target_malpha_contra_target,
   facet_grid(cue_validity_label~.)+
   labs(x = "alpha amplitude contra target", y = "predicted RT",
        fill = "Credible interval") +
+  ylim(c(400,1300))+
   theme(legend.position = "bottom")
 
 # now lets get the slop of the modulation by alpha
@@ -2598,7 +2601,7 @@ ggsave(filename = "figures/MarginEffects_PreTarget_FullModelMotAlpha_MotAlpha_Sl
 
 
 bestmodel.ef.slope_contraTarget %>% median_hdi() %>%
-  kable(escape = F, digits = c(6,6,6,6,6,6,6,6,6), caption = c("alpha slope: mean and CI")) %>%
+  kable(escape = F, digits = c(3,3,3,3,6,6,6,6,6), caption = c("alpha slope: mean and CI")) %>%
   kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
   
 
@@ -2829,6 +2832,7 @@ g <- ggplot(bestmodel.ef.tidy_exppred2, aes(x = post_cue_SSVEP_contra_target, y 
   # scale_fill_manual(values=c("red3")) +
   labs(x = "SSVEP amplitude contra target", y = "predicted RT",
        fill = "Credible interval") +
+  ylim(c(400,1300))+
   theme(legend.position = "bottom")
 
 print(g)
@@ -3104,6 +3108,7 @@ g <- ggplot(bestmodel.ef.tidy_exppred2, aes(x = post_cue_SSVEP_contra_target, y 
   facet_grid(cue_validity_label~.)+
   labs(x = "SSVEP amplitude contra target", y = "predicted RT",
        fill = "Credible interval") +
+  ylim(c(400,1300))+
   theme(legend.position = "bottom")
 
 # print(g)
@@ -3147,7 +3152,7 @@ ggsave(filename = "figures/MarginEffects_PreTarget_FullModelSSVEP_SSVEP_SlopeDis
        plot = print(g))
 
 bestmodel.ef.slope_contraTarget %>% median_hdi() %>%
-  kable(escape = F, digits = c(6,6,6,6,6,6,6,6,6), caption = c("SSVEP slope: mean and CI")) %>%
+  kable(escape = F, digits = c(3,3,3,3,6,6,6,6,6), caption = c("SSVEP slope: mean and CI")) %>%
   kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
 ```
 
@@ -3635,6 +3640,7 @@ g <- ggplot(bestmodel.ef.tidy_exppred2, aes(x = post_target_malpha_contra_target
   facet_grid(cue_validity_label~.)+
   labs(x = "alpha amplitude contra target", y = "predicted RT",
        fill = "Credible interval") +
+  ylim(c(400,1300))+
   theme(legend.position = "bottom")
 
 # now lets get the slop of the modulation by alpha
@@ -3680,7 +3686,7 @@ ggsave(filename = "figures/MarginEffects_PostTarget_FullModelMotAlpha_MotAlpha_S
 
 
 bestmodel.ef.slope_contraTarget %>% median_hdi() %>%
-  kable(escape = F, digits = c(6,6,6,6,6,6,6,6,6), caption = c("alpha slope: mean and CI")) %>%
+  kable(escape = F, digits = c(3,3,3,3,6,6,6,6,6), caption = c("alpha slope: mean and CI")) %>%
   kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
   
 
