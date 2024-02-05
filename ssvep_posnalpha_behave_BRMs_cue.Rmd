@@ -580,6 +580,19 @@ fit_intercept = brm(formula = post_RT ~ 1 + (1|subject),
           cores = 4
           )  # Save all that hard work.
 
+# intercept model
+fit_intercept_CueNested = brm(formula = post_RT ~ 1 + (cue_validity_label|subject),
+          data = modeldata, 
+          family = shifted_lognormal(),
+          file = 'fit_intercept_CueNested_slog',
+          save_pars = save_pars(all = TRUE),
+          file_refit = "on_change",
+          # file_refit = "always",
+          # file_refit = "never",
+          cores = 4
+          )  # Save all that hard work.
+
+
 
 # validity model
 fit_validity = brm(formula = post_RT ~ cue_validity_label + (cue_validity_label|subject),
@@ -1210,6 +1223,7 @@ this also takes some time as it is based on a cross validation procedure; but on
 # add relevant criteria for model comparison
 # compare models
 fit_intercept <- add_criterion(fit_intercept, c("loo", "waic", "bayes_R2"))
+fit_intercept_CueNested <- add_criterion(fit_intercept_CueNested, c("loo", "waic", "bayes_R2"))
 fit_validity <- add_criterion(fit_validity, c("loo", "waic", "bayes_R2"))
 
 fit_visalpha <- add_criterion(fit_visalpha, c("loo", "waic", "bayes_R2"))
@@ -1381,7 +1395,7 @@ loo_compare(fit_intercept, fit_validity_of,
   kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
 
 as.data.frame(rbind(
-  bayes_R2(fit_intercept), bayes_R2(fit_validity_of), bayes_R2(fit_validity),
+  bayes_R2(fit_intercept), bayes_R2(fit_intercept_CueNested), bayes_R2(fit_validity_of), bayes_R2(fit_validity),
   bayes_R2(fit_visalpha), bayes_R2(fit_alpha2), bayes_R2(fit_motoralpha), bayes_R2(fit_SSVEP),
   bayes_R2(fit_validity_visalpha_of), bayes_R2(fit_validity_x_visalpha_of),
   bayes_R2(fit_validity_visalpha), bayes_R2(fit_validity_x_visalpha),
@@ -1394,7 +1408,7 @@ as.data.frame(rbind(
   bayes_R2(fit_validity_SSVEP), bayes_R2(fit_validity_x_SSVEP),
   bayes_R2(fit_validity_SSVEP_alpha_of), bayes_R2(fit_validity_x_SSVEP_alpha_of),
   bayes_R2(fit_validity_SSVEP_alpha), bayes_R2(fit_validity_x_SSVEP_alpha)),
-  row.names = c("fit_intercept","fit_validity_onlyfixed", "fit_validity",
+  row.names = c("fit_intercept","fit_intercept_CueNested", "fit_validity_onlyfixed", "fit_validity",
                 "fit_visalpha","fit_alpha2","fit_motoralpha","fit_SSVEP",
                 "fit_validity_visalpha_of", "fit_validity_x_visalpha_of",
                 "fit_validity_visalpha", "fit_validity_x_visalpha",
