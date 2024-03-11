@@ -64,6 +64,10 @@ library(posterior)
 
 library(ggdist)
 library(multipanelfigure)
+library(ggtern)
+
+library(DescTools)
+library(BayesFactor)
 
 # source('C:/Users/psy05cvd/Dropbox/work/R-statistics/general_functions/RainCloudPlots/tutorial_R/R_rainclouds.R')
 # source('C:/Users/psy05cvd/Dropbox/work/R-statistics/general_functions/RainCloudPlots/tutorial_R/summarySE.R')
@@ -72,6 +76,11 @@ library(multipanelfigure)
 source('C:/Users/psy05cvd/Dropbox/work/R-statistics/general_functions/RainCloudPlots/tutorial_R/R_rainclouds.R')
 source('C:/Users/psy05cvd/Dropbox/work/R-statistics/general_functions/RainCloudPlots/tutorial_R/R_rainclouds.R')
 
+
+source('C:/Users/psy05cvd/Dropbox/work/R-statistics/examples/Bayesian_rank-based_hypothesis_testing/rankBasedCommonFunctions.R')
+source('C:/Users/psy05cvd/Dropbox/work/R-statistics/examples/Bayesian_rank-based_hypothesis_testing/rankSumSampler.R') # Wilcoxon rank sum function
+source('C:/Users/psy05cvd/Dropbox/work/R-statistics/examples/Bayesian_rank-based_hypothesis_testing/signRankSampler.R') # Wilcoxon signed-rank function
+source('C:/Users/psy05cvd/Dropbox/work/R-statistics/examples/Bayesian_rank-based_hypothesis_testing/spearmanSampler.R')# Spearman's rho function
 
 datafile1 <- "data_in/Behavior_FFT_singletrials_cue.txt"
 timewindows = c("[-1000 0]ms", "[0 1000]ms", "[500 1500]ms")
@@ -1506,6 +1515,113 @@ DATA.In_longer %>%
 
 ## Additional models
 <br>
+
+### SSVEP and behavior correlation
+
+
+```{r correlation - estimation, echo=FALSE, message=FALSE, fig.height=3, fig.width=3}
+def.cormethod ="spearman"
+num.iter = 10000
+
+
+corr_behavior <- DATA.In_longer %>%
+  dplyr::select(subject, trialnumber, cue_validity_label, post_event_pos_label, post_hit, post_RT)%>%
+  filter(post_hit=="hit")%>%
+  group_by(subject, trialnumber,cue_validity_label)%>%
+  summarise(post_RT=mean(post_RT))%>%
+  group_by(cue_validity_label,subject)%>%
+  summarize(Mean_RT = mean(post_RT), Median_RT = median(post_RT), SD_RT = SD(post_RT))%>%
+  ungroup()%>%
+  mutate(cue_validity_label = factor(cue_validity_label, levels=c('invalid','neutral','valid'), ordered = T))
+
+corr_SSVEP <- DATA.In_longer %>%
+  filter(post_hit == "hit") %>%
+  dplyr::select(subject, trialnumber, cue_validity_label, post_event_pos_label, signal, time, amplitude, pos_rel_target)%>%
+  group_by(subject, cue_validity_label, post_event_pos_label, signal, time, pos_rel_target) %>%
+  dplyr::summarise(amplitude=mean(amplitude))%>%
+  ungroup()%>%
+  pivot_wider(names_from = "time", values_from = amplitude) %>%
+  mutate(pre_to_post = ((`[500 1500]ms`/`[-1000 0]ms`)-1)*100)%>%
+  # mutate(pre_to_post = `[500 1500]ms`-`[-1000 0]ms`)%>%
+  pivot_longer(`[-1000 0]ms`:pre_to_post, names_to = "time", values_to = "amplitude") %>%
+  group_by(subject, cue_validity_label, signal, time, pos_rel_target) %>%
+  dplyr::summarise(amplitude=mean(amplitude))%>%
+  ungroup()%>%
+  filter(time == "pre_to_post", signal == "SSVEP") %>%
+  group_by(subject, cue_validity_label, pos_rel_target)%>%
+  dplyr::summarise(Mean_SSVEP = mean(amplitude))%>%
+  ungroup()%>%
+  mutate(cue_validity_label = factor(cue_validity_label, levels=c('invalid','neutral','valid'), ordered = T))
+
+corrdata <- merge(corr_SSVEP, corr_behavior, by = c('subject','cue_validity_label')) %>%
+  filter(pos_rel_target=="contra_target", cue_validity_label=="valid")
+
+# calculate correlations
+# calculate confidence intervals
+corrRho = SpearmanRho(x = corrdata$Mean_SSVEP, y = corrdata$Mean_RT, conf.level = .95)
+cbf = correlationBF(corrdata$Mean_SSVEP, corrdata$Mean_RT, rscale = "medium",iterations=num.iter)
+
+### with brand new
+# van Doorn, J., Ly, A., Marsman, M., and Wagenmakers, E.-J. (2020). Bayesian rank-based hypothesis testing for the rank sum test, the signed rank test, and Spearman’s ρ. J. Appl. Stat. 47, 2984–3006. doi:10.1080/02664763.2019.1709053.
+rhoSamples <- spearmanGibbsSampler(xVals = corrdata$Mean_SSVEP,
+                                   yVals = corrdata$Mean_RT, 
+                                   nSamples = 5e3)
+# Give the posterior samples for rho to the function below to compute BF10
+cbfSP = computeBayesFactorOneZero(rhoSamples$rhoSamples, 
+                          whichTest = "Spearman",
+                          priorParameter = 1)
+
+
+ggscatter(corrdata, x = "Mean_SSVEP", y = "Mean_RT", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = def.cormethod, size = 3, alpha = 0.6, cor.coef.size = 3, cor.coeff.args = list(digits = 3),
+          add.params = list(fill = "lightgray"),
+          ggtheme = theme_bw(),
+          xlab = "target SSVEP pre-to-post mod | valid", ylab = "RT in ms | valid",
+          # title = sprintf("Rho: %1.3f CI[%1.3f %1.3f]; BF: %1.3f",corrRho1[[1]],corrRho1[[2]],corrRho1[[3]],extractBF(cbf1)[[1]])
+          title = sprintf("Rho: %1.3f CI[%1.3f %1.3f]; BF: %1.3f",corrRho[[1]],corrRho[[2]],corrRho[[3]],cbfSP)
+)+
+  font("title", size = 8)
+
+
+
+
+corrdata <- merge(corr_SSVEP, corr_behavior, by = c('subject','cue_validity_label')) %>%
+  filter(pos_rel_target=="contra_target") %>%
+  dplyr::select(-Median_RT, -SD_RT)%>%
+  pivot_wider(names_from = "cue_validity_label", values_from = c("Mean_SSVEP", "Mean_RT")) %>%
+  mutate(SSVEP_valid_Min_invalid = Mean_SSVEP_valid-Mean_SSVEP_invalid)%>%
+  mutate(RT_valid_Min_invalid = Mean_RT_valid-Mean_RT_invalid)
+
+# calculate correlations
+# calculate confidence intervals
+corrRho = SpearmanRho(x = corrdata$SSVEP_valid_Min_invalid, y = corrdata$RT_valid_Min_invalid, conf.level = .95)
+cbf = correlationBF(corrdata$SSVEP_valid_Min_invalid, corrdata$RT_valid_Min_invalid, rscale = "medium",iterations=num.iter)
+
+### with brand new
+# van Doorn, J., Ly, A., Marsman, M., and Wagenmakers, E.-J. (2020). Bayesian rank-based hypothesis testing for the rank sum test, the signed rank test, and Spearman’s ρ. J. Appl. Stat. 47, 2984–3006. doi:10.1080/02664763.2019.1709053.
+rhoSamples <- spearmanGibbsSampler(xVals = corrdata$SSVEP_valid_Min_invalid,
+                                   yVals = corrdata$RT_valid_Min_invalid, 
+                                   nSamples = 5e3)
+# Give the posterior samples for rho to the function below to compute BF10
+cbfSP = computeBayesFactorOneZero(rhoSamples$rhoSamples, 
+                          whichTest = "Spearman",
+                          priorParameter = 1)
+
+
+ggscatter(corrdata, x = "SSVEP_valid_Min_invalid", y = "RT_valid_Min_invalid", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = def.cormethod, size = 3, alpha = 0.6, cor.coef.size = 3, cor.coeff.args = list(digits = 3),
+          add.params = list(fill = "lightgray"),
+          ggtheme = theme_bw(),
+          xlab = "diff SSVEP pre-to-post mod | valid - invalid", ylab = "diff RT in ms | valid - invalid",
+          # title = sprintf("Rho: %1.3f CI[%1.3f %1.3f]; BF: %1.3f",corrRho1[[1]],corrRho1[[2]],corrRho1[[3]],extractBF(cbf1)[[1]])
+          title = sprintf("Rho: %1.3f CI[%1.3f %1.3f]; BF: %1.3f",corrRho[[1]],corrRho[[2]],corrRho[[3]],cbfSP)
+)+
+  font("title", size = 8)
+
+
+```
 
 ### linear mixed models SSVEP
 <br>

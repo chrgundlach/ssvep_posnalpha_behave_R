@@ -70,9 +70,20 @@ library(rstanarm)
 
 library(ggdist)
 
+library(ggtern)
+
+library(DescTools)
+library(BayesFactor)
+
 # source('C:/Users/psy05cvd/Dropbox/work/R-statistics/general_functions/RainCloudPlots/tutorial_R/R_rainclouds.R')
 # source('C:/Users/psy05cvd/Dropbox/work/R-statistics/general_functions/RainCloudPlots/tutorial_R/summarySE.R')
 # source('C:/Users/psy05cvd/Dropbox/work/R-statistics/general_functions/RainCloudPlots/tutorial_R/simulateData.R')
+
+
+source('C:/Users/psy05cvd/Dropbox/work/R-statistics/examples/Bayesian_rank-based_hypothesis_testing/rankBasedCommonFunctions.R')
+source('C:/Users/psy05cvd/Dropbox/work/R-statistics/examples/Bayesian_rank-based_hypothesis_testing/rankSumSampler.R') # Wilcoxon rank sum function
+source('C:/Users/psy05cvd/Dropbox/work/R-statistics/examples/Bayesian_rank-based_hypothesis_testing/signRankSampler.R') # Wilcoxon signed-rank function
+source('C:/Users/psy05cvd/Dropbox/work/R-statistics/examples/Bayesian_rank-based_hypothesis_testing/spearmanSampler.R')# Spearman's rho function
 
 datafile1 <- "data_in/Behavior_FFT_singletrials_cue.txt"
 timewindows = c("[-1000 0]ms", "[0 1000]ms", "[500 1500]ms")
@@ -4012,7 +4023,8 @@ fit_zside_visalpha = brm(formula = post_RT ~ Zpost_cue_vis_alpha_contra_target +
           family = shifted_lognormal(),
           file = 'fit_zside_visalpha_slog',
           save_pars = save_pars(all = TRUE),
-          file_refit = "on_change",
+          # file_refit = "on_change",
+          file_refit = "never",
           cores = 4
           # file_refit = "always"
           )  # Save all that hard work.
@@ -4023,7 +4035,8 @@ fit_validity_zside_visalpha = brm(formula = post_RT ~ cue_validity_label + Zpost
           family = shifted_lognormal(),
           file = 'fit_validity_zside_visalpha_slog',
           save_pars = save_pars(all = TRUE),
-          file_refit = "on_change",
+          # file_refit = "on_change",
+          file_refit = "never",
           cores = 4
           # file_refit = "always"
           )  # Save all that hard work.
@@ -4829,5 +4842,202 @@ loo_compare(
 # Altman, D. G., & Bland, J. M. (2011). How to obtain the P value from a confidence interval. BMJ , 343, d2304. https://doi.org/10.1136/bmj.d2304
 # exp(-0.717*(-6.96899967/3.9459330)-0.416*(-6.96899967/3.9459330)^2)
 # exp(-0.717*(6.96899967/3.5)-0.416*(6.96899967/3.5)^2)
+
+```
+
+## control Analyses time on task?
+additional fits and comparisons with alpha as nested factor as well
+
+<br>
+...is related to trial-by-trial variance of amplitude values of post-cue [500 to 1500]ms  **alpha-band activity** and **SSVEPs**...
+
+```{r SSVEP and alpha correlation across trials, results = "hide",  fig.height=3.5, fig.width=4, warning = FALSE, message=FALSE}
+def.cormethod ="spearman"
+num.iter = 10000
+
+corrdata <- DATA.In_longer %>%
+  dplyr::select(subject, trialnumber,time, cue_validity_label, pos_rel_target, amplitude, signal, post_hit, post_RT)%>%
+  filter(post_hit=="hit", time=="[500 1500]ms")%>%
+  group_by(subject, trialnumber,cue_validity_label, signal, pos_rel_target)%>%
+  summarise(amplitude=mean(amplitude), post_RT = mean(post_RT))%>%
+  pivot_wider(names_from = c("signal","pos_rel_target"), values_from = "amplitude")%>%
+  mutate(trialnumber = as.numeric(trialnumber))
+
+
+# calculate correlations RT and trials
+# calculate confidence intervals
+corrRho = SpearmanRho(x = corrdata$trialnumber, y = corrdata$post_RT, conf.level = .95)
+cbf = correlationBF(corrdata$trialnumber, corrdata$post_RT, rscale = "medium",iterations=num.iter)
+
+
+ggscatter(corrdata, x = "trialnumber", y = "post_RT", 
+          color = "black", size = 1, alpha = 0.1, # Points color, shape and size
+          add = "reg.line",
+          add.params = list(color = "red2", fill = "lightgray"),
+          conf.int = TRUE,  
+          cor.coef = TRUE, 
+          cor.method = def.cormethod, cor.coef.size = 3, cor.coeff.args = list(digits = 3, color = "red2"),
+          ggtheme = theme_bw(),
+          xlab = "trialnumber", ylab = "RT in ms",
+          # title = sprintf("Rho: %1.3f CI[%1.3f %1.3f]; BF: %1.3f",corrRho1[[1]],corrRho1[[2]],corrRho1[[3]],extractBF(cbf1)[[1]])
+          title = sprintf("Rho: %1.3f CI[%1.3f %1.3f]; BF: %1.3f",
+                          corrRho[[1]],corrRho[[2]],corrRho[[3]],cbf@bayesFactor$bf)
+)+
+  font("title", size = 8)
+
+
+# calculate correlations target SSVEP and trials
+# calculate confidence intervals
+corrRho = SpearmanRho(x = corrdata$trialnumber, y = corrdata$SSVEP_contra_target, conf.level = .95)
+cbf = correlationBF(corrdata$trialnumber, corrdata$SSVEP_contra_target, rscale = "medium",iterations=num.iter)
+
+
+ggscatter(corrdata, x = "trialnumber", y = "SSVEP_contra_target", 
+          color = "black", size = 1, alpha = 0.1, # Points color, shape and size
+          add = "reg.line",
+          add.params = list(color = "red2", fill = "lightgray"),
+          conf.int = TRUE,  
+          cor.coef = TRUE, 
+          cor.method = def.cormethod, cor.coef.size = 3, cor.coeff.args = list(digits = 3, color = "red2"),
+          ggtheme = theme_bw(),
+          xlab = "trialnumber", ylab = "target SSVEP amplitude in muV/cm²",
+          # title = sprintf("Rho: %1.3f CI[%1.3f %1.3f]; BF: %1.3f",corrRho1[[1]],corrRho1[[2]],corrRho1[[3]],extractBF(cbf1)[[1]])
+          title = sprintf("Rho: %1.3f CI[%1.3f %1.3f]; BF: %1.3f",
+                          corrRho[[1]],corrRho[[2]],corrRho[[3]],cbf@bayesFactor$bf)
+)+
+  font("title", size = 8)
+
+
+# calculate correlations target alpha and trials
+# calculate confidence intervals
+corrRho = SpearmanRho(x = corrdata$trialnumber, y = corrdata$visualAlpha_contra_target, conf.level = .95)
+cbf = correlationBF(corrdata$trialnumber, corrdata$visualAlpha_contra_target, rscale = "medium",iterations=num.iter)
+
+
+ggscatter(corrdata, x = "trialnumber", y = "visualAlpha_contra_target", 
+          color = "black", size = 1, alpha = 0.1, # Points color, shape and size
+          add = "reg.line",
+          add.params = list(color = "red2", fill = "lightgray"),
+          conf.int = TRUE,  
+          cor.coef = TRUE, 
+          cor.method = def.cormethod, cor.coef.size = 3, cor.coeff.args = list(digits = 3, color = "red2"),
+          ggtheme = theme_bw(),
+          xlab = "trialnumber", ylab = "vis alpha contra target amp in muV/cm²",
+          # title = sprintf("Rho: %1.3f CI[%1.3f %1.3f]; BF: %1.3f",corrRho1[[1]],corrRho1[[2]],corrRho1[[3]],extractBF(cbf1)[[1]])
+          title = sprintf("Rho: %1.3f CI[%1.3f %1.3f]; BF: %1.3f",
+                          corrRho[[1]],corrRho[[2]],corrRho[[3]],cbf@bayesFactor$bf)
+)+
+  font("title", size = 8)
+
+
+# calculate correlations nontarget alpha and trials
+# calculate confidence intervals
+corrRho = SpearmanRho(x = corrdata$trialnumber, y = corrdata$visualAlpha_contra_nontarget, conf.level = .95)
+cbf = correlationBF(corrdata$trialnumber, corrdata$visualAlpha_contra_nontarget, rscale = "medium",iterations=num.iter)
+
+
+ggscatter(corrdata, x = "trialnumber", y = "visualAlpha_contra_nontarget", 
+          color = "black", size = 1, alpha = 0.1, # Points color, shape and size
+          add = "reg.line",
+          add.params = list(color = "red2", fill = "lightgray"),
+          conf.int = TRUE,  
+          cor.coef = TRUE, 
+          cor.method = def.cormethod, cor.coef.size = 3, cor.coeff.args = list(digits = 3, color = "red2"),
+          ggtheme = theme_bw(),
+          xlab = "trialnumber", ylab = "vis alpha contra non target amp in muV/cm²",
+          # title = sprintf("Rho: %1.3f CI[%1.3f %1.3f]; BF: %1.3f",corrRho1[[1]],corrRho1[[2]],corrRho1[[3]],extractBF(cbf1)[[1]])
+          title = sprintf("Rho: %1.3f CI[%1.3f %1.3f]; BF: %1.3f",
+                          corrRho[[1]],corrRho[[2]],corrRho[[3]],cbf@bayesFactor$bf)
+)+
+  font("title", size = 8)
+
+
+corrdata <- DATA.In_longer %>%
+  dplyr::select(subject, trialnumber,time, cue_validity_label, pos_rel_target, amplitude, signal, post_hit, post_RT)%>%
+  filter(post_hit=="hit", time=="[500 1500]ms", cue_validity_label=="valid")%>%
+  group_by(subject, trialnumber,cue_validity_label, signal, pos_rel_target)%>%
+  summarise(amplitude=mean(amplitude), post_RT = mean(post_RT))%>%
+  pivot_wider(names_from = c("signal","pos_rel_target"), values_from = "amplitude")%>%
+  mutate(trialnumber = as.numeric(trialnumber))%>%
+  mutate(subject = as.factor(subject))
+
+
+# calculate correlations target alpha and trials
+# calculate confidence intervals
+corrRho = SpearmanRho(x = corrdata$trialnumber, y = corrdata$visualAlpha_contra_target, conf.level = .95)
+cbf = correlationBF(corrdata$trialnumber, corrdata$visualAlpha_contra_target, rscale = "medium",iterations=num.iter)
+
+
+ggscatter(corrdata, x = "trialnumber", y = "visualAlpha_contra_target", 
+          color = "black", size = 1, alpha = 0.1, # Points color, shape and size
+          add = "reg.line",
+          add.params = list(color = "red2", fill = "lightgray"),
+          conf.int = TRUE,  
+          cor.coef = TRUE, 
+          cor.method = def.cormethod, cor.coef.size = 3, cor.coeff.args = list(digits = 3, color = "red2"),
+          ggtheme = theme_bw(),
+          xlab = "trialnumber", ylab = "vis alpha contra target amp in muV/cm²",
+          # title = sprintf("valid trials only: Rho: %1.3f CI[%1.3f %1.3f]; BF: %1.3f",corrRho1[[1]],corrRho1[[2]],corrRho1[[3]],extractBF(cbf1)[[1]])
+          title = sprintf("valid trials only: Rho: %1.3f CI[%1.3f %1.3f]; BF: %1.3f",
+                          corrRho[[1]],corrRho[[2]],corrRho[[3]],cbf@bayesFactor$bf)
+)+
+  font("title", size = 8)
+
+corrdata <- DATA.In_longer %>%
+  dplyr::select(subject, trialnumber,time, cue_validity_label, pos_rel_target, amplitude, signal, post_hit, post_RT)%>%
+  filter(post_hit=="hit", time=="[500 1500]ms", cue_validity_label=="valid")%>%
+  group_by(subject, trialnumber,cue_validity_label, signal)%>%
+  summarise(amplitude=mean(amplitude), post_RT = mean(post_RT))%>%
+  pivot_wider(names_from = c("signal"), values_from = "amplitude")%>%
+  mutate(trialnumber = as.numeric(trialnumber))%>%
+  mutate(subject = as.factor(subject))
+
+# calculate correlations target alpha and trials
+# calculate confidence intervals
+corrRho = SpearmanRho(x = corrdata$trialnumber, y = corrdata$visualAlpha, conf.level = .95)
+cbf = correlationBF(corrdata$trialnumber, corrdata$visualAlpha, rscale = "medium",iterations=num.iter)
+
+
+ggscatter(corrdata, x = "trialnumber", y = "visualAlpha", 
+          color = "black", size = 1, alpha = 0.1, # Points color, shape and size
+          add = "reg.line",
+          add.params = list(color = "red2", fill = "lightgray"),
+          conf.int = TRUE,  
+          cor.coef = TRUE, 
+          cor.method = def.cormethod, cor.coef.size = 3, cor.coeff.args = list(digits = 3, color = "red2"),
+          ggtheme = theme_bw(),
+          xlab = "trialnumber", ylab = "vis alpha amp in muV/cm²",
+          # title = sprintf("valid trials only: Rho: %1.3f CI[%1.3f %1.3f]; BF: %1.3f",corrRho1[[1]],corrRho1[[2]],corrRho1[[3]],extractBF(cbf1)[[1]])
+          title = sprintf("valid trials only: Rho: %1.3f CI[%1.3f %1.3f]; BF: %1.3f",
+                          corrRho[[1]],corrRho[[2]],corrRho[[3]],cbf@bayesFactor$bf)
+)+
+  font("title", size = 8)
+```
+
+<br>
+for participants?
+
+```{r SSVEP and alpha correlation across trials 2, results = "hide",  fig.height=7.5, fig.width=4, warning = FALSE, message=FALSE}
+def.cormethod ="spearman"
+num.iter = 10000
+
+corrdata <- DATA.In_longer %>%
+  dplyr::select(subject, trialnumber,time, cue_validity_label, pos_rel_target, amplitude, signal, post_hit, post_RT)%>%
+  filter(post_hit=="hit", time=="[500 1500]ms", cue_validity_label=="valid")%>%
+  group_by(subject, trialnumber,cue_validity_label, signal, pos_rel_target)%>%
+  summarise(amplitude=mean(amplitude), post_RT = mean(post_RT))%>%
+  pivot_wider(names_from = c("signal","pos_rel_target"), values_from = "amplitude")%>%
+  mutate(trialnumber = as.numeric(trialnumber))%>%
+  mutate(subject = as.factor(subject))
+
+# separate for participants
+ggscatter(corrdata, x = "trialnumber", y = "visualAlpha_contra_target",
+          add = "reg.line",                         # Add regression line
+          conf.int = TRUE,                          # Add confidence interval
+          color = "subject",            # Color by groups "cyl"
+          alpha = 0.3+
+          # shape = "subject"                             # Change point shape by groups "cyl"
+          )
+
 
 ```

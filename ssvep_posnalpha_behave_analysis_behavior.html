@@ -11,7 +11,7 @@
 
 <meta name="author" content="Christopher Gundlach" />
 
-<meta name="date" content="2023-10-23" />
+<meta name="date" content="2024-03-07" />
 
 <title>Behavioral Analysis Posner+SSVEP paradigm</title>
 
@@ -1813,7 +1813,7 @@ border-radius: 0px;
 paradigm</h1>
 <h4 class="author"><a href="https://www.researchgate.net/profile/Christopher_Gundlach">Christopher
 Gundlach</a></h4>
-<h4 class="date">2023-10-23</h4>
+<h4 class="date">2024-03-07</h4>
 
 </div>
 
@@ -2954,7 +2954,12 @@ valid
                         bold = ifelse(is.nan(p.value),F, ifelse(p.value &lt; .05, T,F)),
                         align = &quot;left&quot;)
   ) %&gt;%
-  mutate(CohensD = `t.ratio`/sqrt(df+1))%&gt;%
+  # mutate(CohensD = `t.ratio`/sqrt(df+1))%&gt;%
+  mutate(`CohensD` =
+           summary(eff_size(contrast(post_hocs.validity, method = &quot;pairwise&quot;, adjust = &quot;holm&quot;),
+                            sigma = sqrt(mean(sigma(StatsOut$lm)^2)), # RMS of sigma()
+                            edf = df.residual(StatsOut$lm), method = &quot;identity&quot;))$effect.size
+  )%&gt;%
   kable(escape = F, digits = c(3,3,3,3,3,3,3,3,3), 
         caption = c(&quot;contrasts for estimated marginal means | by validity | dv = RT | corrected: Holm&quot;)) %&gt;%
   kable_styling(&quot;striped&quot;, full_width = T, bootstrap_options = c(&quot;striped&quot;, &quot;hover&quot;, &quot;condensed&quot;, &quot;responsive&quot;,font_size = 8))</code></pre>
@@ -3010,7 +3015,7 @@ invalid - neutral
 .001</span>
 </td>
 <td style="text-align:right;">
-0.550
+0.276
 </td>
 </tr>
 <tr>
@@ -3034,7 +3039,7 @@ invalid - valid
 .001</span>
 </td>
 <td style="text-align:right;">
-0.843
+0.422
 </td>
 </tr>
 <tr>
@@ -3057,7 +3062,7 @@ neutral - valid
 <span style=" font-weight: bold;    color: green !important;text-align: left;">0.0342</span>
 </td>
 <td style="text-align:right;">
-0.293
+0.147
 </td>
 </tr>
 </tbody>
@@ -3141,7 +3146,12 @@ right
                         bold = ifelse(is.nan(p.value),F, ifelse(p.value &lt; .05, T,F)),
                         align = &quot;left&quot;)
   ) %&gt;%
-  mutate(CohensD = `t.ratio`/sqrt(df+1))%&gt;%
+  # mutate(CohensD = `t.ratio`/sqrt(df+1))%&gt;%
+  mutate(`CohensD` =
+           summary(eff_size(contrast(post_hocs.side, method = &quot;pairwise&quot;, adjust = &quot;holm&quot;),
+                            sigma = sqrt(mean(sigma(StatsOut$lm)^2)), # RMS of sigma()
+                            edf = df.residual(StatsOut$lm), method = &quot;identity&quot;))$effect.size
+  )%&gt;%
   kable(escape = F, digits = c(3,3,3,3,3,3,3,3,3), 
         caption = c(&quot;contrasts for estimated marginal means | by side | dv = RT | corrected: Holm&quot;)) %&gt;%
   kable_styling(&quot;striped&quot;, full_width = T, bootstrap_options = c(&quot;striped&quot;, &quot;hover&quot;, &quot;condensed&quot;, &quot;responsive&quot;,font_size = 8))</code></pre>
@@ -3196,7 +3206,7 @@ left - right
 <span style="     color: red !important;text-align: left;">0.8697</span>
 </td>
 <td style="text-align:right;">
-0.031
+0.017
 </td>
 </tr>
 </tbody>
@@ -3381,7 +3391,12 @@ right
                         bold = ifelse(is.nan(p.value),F, ifelse(p.value &lt; .05, T,F)),
                         align = &quot;left&quot;)
   ) %&gt;%
-  mutate(CohensD = `t.ratio`/sqrt(df+1))%&gt;%
+  # mutate(CohensD = `t.ratio`/sqrt(df+1))%&gt;%
+  mutate(`CohensD` =
+           summary(eff_size(contrast(post_hocs.valXside, method = &quot;pairwise&quot;, adjust = &quot;holm&quot;),
+                            sigma = sqrt(mean(sigma(StatsOut$lm)^2)), # RMS of sigma()
+                            edf = df.residual(StatsOut$lm), method = &quot;identity&quot;))$effect.size
+  )%&gt;%
   kable(escape = F, digits = c(3,3,3,3,3,3,3,3,3), 
         caption = c(&quot;contrasts for estimated marginal means | by validity and side | dv = RT | corrected: Holm&quot;)) %&gt;%
   kable_styling(&quot;striped&quot;, full_width = T, bootstrap_options = c(&quot;striped&quot;, &quot;hover&quot;, &quot;condensed&quot;, &quot;responsive&quot;,font_size = 8))</code></pre>
@@ -3436,7 +3451,7 @@ invalid left - neutral left
 <span style="     color: red !important;text-align: left;">0.4557</span>
 </td>
 <td style="text-align:right;">
-0.191
+0.163
 </td>
 </tr>
 <tr>
@@ -3459,7 +3474,7 @@ invalid left - valid left
 <span style=" font-weight: bold;    color: green !important;text-align: left;">0.0036</span>
 </td>
 <td style="text-align:right;">
-0.375
+0.319
 </td>
 </tr>
 <tr>
@@ -3482,7 +3497,7 @@ invalid left - invalid right
 <span style="     color: red !important;text-align: left;">1</span>
 </td>
 <td style="text-align:right;">
--0.157
+-0.127
 </td>
 </tr>
 <tr>
@@ -3505,7 +3520,7 @@ invalid left - neutral right
 <span style="     color: red !important;text-align: left;">0.4192</span>
 </td>
 <td style="text-align:right;">
-0.272
+0.262
 </td>
 </tr>
 <tr>
@@ -3528,7 +3543,7 @@ invalid left - valid right
 <span style=" font-weight: bold;    color: green !important;text-align: left;">0.033</span>
 </td>
 <td style="text-align:right;">
-0.415
+0.399
 </td>
 </tr>
 <tr>
@@ -3551,7 +3566,7 @@ neutral left - valid left
 <span style="     color: red !important;text-align: left;">0.4737</span>
 </td>
 <td style="text-align:right;">
-0.184
+0.156
 </td>
 </tr>
 <tr>
@@ -3574,7 +3589,7 @@ neutral left - invalid right
 <span style="     color: red !important;text-align: left;">0.2816</span>
 </td>
 <td style="text-align:right;">
--0.301
+-0.290
 </td>
 </tr>
 <tr>
@@ -3597,7 +3612,7 @@ neutral left - neutral right
 <span style="     color: red !important;text-align: left;">1</span>
 </td>
 <td style="text-align:right;">
-0.122
+0.099
 </td>
 </tr>
 <tr>
@@ -3620,7 +3635,7 @@ neutral left - valid right
 <span style="     color: red !important;text-align: left;">0.4737</span>
 </td>
 <td style="text-align:right;">
-0.246
+0.236
 </td>
 </tr>
 <tr>
@@ -3643,7 +3658,7 @@ valid left - invalid right
 <span style=" font-weight: bold;    color: green !important;text-align: left;">0.0123</span>
 </td>
 <td style="text-align:right;">
--0.463
+-0.446
 </td>
 </tr>
 <tr>
@@ -3666,7 +3681,7 @@ valid left - neutral right
 <span style="     color: red !important;text-align: left;">1</span>
 </td>
 <td style="text-align:right;">
--0.059
+-0.057
 </td>
 </tr>
 <tr>
@@ -3689,7 +3704,7 @@ valid left - valid right
 <span style="     color: red !important;text-align: left;">1</span>
 </td>
 <td style="text-align:right;">
-0.099
+0.080
 </td>
 </tr>
 <tr>
@@ -3713,7 +3728,7 @@ invalid right - neutral right
 .001</span>
 </td>
 <td style="text-align:right;">
-0.457
+0.389
 </td>
 </tr>
 <tr>
@@ -3737,7 +3752,7 @@ invalid right - valid right
 .001</span>
 </td>
 <td style="text-align:right;">
-0.619
+0.526
 </td>
 </tr>
 <tr>
@@ -3760,7 +3775,7 @@ neutral right - valid right
 <span style="     color: red !important;text-align: left;">0.5337</span>
 </td>
 <td style="text-align:right;">
-0.162
+0.138
 </td>
 </tr>
 </tbody>
@@ -3797,7 +3812,7 @@ StatsData %&gt;%
   unnest(cols = c(stats, meanval, std))%&gt;%
   ungroup()%&gt;%
   dplyr::select(contrast, meanval, std, statistic, parameter, p.value)%&gt;%
-  mutate(p.value = p.adjust(p.value, method=&quot;bonferroni&quot;)) %&gt;%
+  mutate(p.value = p.adjust(p.value, method=&quot;holm&quot;)) %&gt;%
   mutate(CohensD = `statistic`/sqrt(parameter))%&gt;%
   mutate(
     p.value = cell_spec(ifelse(round(p.value,4)&lt;.001,&quot;&lt; .001&quot;,round(p.value,4)), 
@@ -3805,11 +3820,11 @@ StatsData %&gt;%
                         bold = ifelse(is.nan(p.value),F, ifelse(p.value &lt; .05, T,F)),
                         align = &quot;center&quot;)
   ) %&gt;%
-  kable(escape = F, digits = c(3,3,3,3,3,3,3,3,3), caption = c(&quot;t-tests against 0 | dv = RT difference &quot;)) %&gt;%
+  kable(escape = F, digits = c(3,3,3,3,3,3,3,3,3), caption = c(&quot;classical approach: t-tests against 0 | dv = RT difference &quot;)) %&gt;%
   kable_styling(&quot;striped&quot;, full_width = T, bootstrap_options = c(&quot;striped&quot;, &quot;hover&quot;, &quot;condensed&quot;, &quot;responsive&quot;,font_size = 8))</code></pre>
 <table class="table table-striped table-hover table-condensed table-responsive" style="margin-left: auto; margin-right: auto;">
 <caption>
-t-tests against 0 | dv = RT difference
+classical approach: t-tests against 0 | dv = RT difference
 </caption>
 <thead>
 <tr>
@@ -3854,7 +3869,7 @@ valid_MINUS_neutral
 27
 </td>
 <td style="text-align:left;">
-<span style=" font-weight: bold;    color: green !important;text-align: center;">0.0215</span>
+<span style=" font-weight: bold;    color: green !important;text-align: center;">0.0072</span>
 </td>
 <td style="text-align:right;">
 -0.560
@@ -3901,7 +3916,7 @@ neutral_MINUS_invalid
 27
 </td>
 <td style="text-align:left;">
-<span style=" font-weight: bold;    color: green !important;text-align: center;">0.0015</span>
+<span style=" font-weight: bold;    color: green !important;text-align: center;">0.001</span>
 </td>
 <td style="text-align:right;">
 -0.761
@@ -4198,7 +4213,7 @@ invalid - neutral
 <span style=" font-weight: bold;    color: green !important;text-align: left;">0.0025</span>
 </td>
 <td style="text-align:right;">
--0.459
+-0.397
 </td>
 </tr>
 <tr>
@@ -4222,7 +4237,7 @@ invalid - valid
 .001</span>
 </td>
 <td style="text-align:right;">
--0.521
+-0.451
 </td>
 </tr>
 <tr>
@@ -4245,7 +4260,7 @@ neutral - valid
 <span style="     color: red !important;text-align: left;">0.6471</span>
 </td>
 <td style="text-align:right;">
--0.062
+-0.054
 </td>
 </tr>
 </tbody>
@@ -4370,7 +4385,7 @@ left - right
 <span style="     color: red !important;text-align: left;">0.7697</span>
 </td>
 <td style="text-align:right;">
-0.056
+0.043
 </td>
 </tr>
 </tbody>
@@ -4596,7 +4611,7 @@ invalid left - neutral left
 <span style="     color: red !important;text-align: left;">0.1947</span>
 </td>
 <td style="text-align:right;">
--0.233
+-0.370
 </td>
 </tr>
 <tr>
@@ -4619,7 +4634,7 @@ invalid left - valid left
 <span style=" font-weight: bold;    color: green !important;text-align: left;">0.0344</span>
 </td>
 <td style="text-align:right;">
--0.303
+-0.480
 </td>
 </tr>
 <tr>
@@ -4642,7 +4657,7 @@ invalid left - invalid right
 <span style="     color: red !important;text-align: left;">1</span>
 </td>
 <td style="text-align:right;">
-0.029
+0.042
 </td>
 </tr>
 <tr>
@@ -4665,7 +4680,7 @@ invalid left - neutral right
 <span style="     color: red !important;text-align: left;">0.4997</span>
 </td>
 <td style="text-align:right;">
--0.229
+-0.382
 </td>
 </tr>
 <tr>
@@ -4688,7 +4703,7 @@ invalid left - valid right
 <span style="     color: red !important;text-align: left;">0.4997</span>
 </td>
 <td style="text-align:right;">
--0.228
+-0.380
 </td>
 </tr>
 <tr>
@@ -4711,7 +4726,7 @@ neutral left - valid left
 <span style="     color: red !important;text-align: left;">1</span>
 </td>
 <td style="text-align:right;">
--0.069
+-0.110
 </td>
 </tr>
 <tr>
@@ -4734,7 +4749,7 @@ neutral left - invalid right
 <span style="     color: red !important;text-align: left;">0.3939</span>
 </td>
 <td style="text-align:right;">
-0.247
+0.412
 </td>
 </tr>
 <tr>
@@ -4757,7 +4772,7 @@ neutral left - neutral right
 <span style="     color: red !important;text-align: left;">1</span>
 </td>
 <td style="text-align:right;">
--0.008
+-0.012
 </td>
 </tr>
 <tr>
@@ -4780,7 +4795,7 @@ neutral left - valid right
 <span style="     color: red !important;text-align: left;">1</span>
 </td>
 <td style="text-align:right;">
--0.006
+-0.009
 </td>
 </tr>
 <tr>
@@ -4803,7 +4818,7 @@ valid left - invalid right
 <span style="     color: red !important;text-align: left;">0.1162</span>
 </td>
 <td style="text-align:right;">
-0.313
+0.522
 </td>
 </tr>
 <tr>
@@ -4826,7 +4841,7 @@ valid left - neutral right
 <span style="     color: red !important;text-align: left;">1</span>
 </td>
 <td style="text-align:right;">
-0.059
+0.098
 </td>
 </tr>
 <tr>
@@ -4849,7 +4864,7 @@ valid left - valid right
 <span style="     color: red !important;text-align: left;">1</span>
 </td>
 <td style="text-align:right;">
-0.069
+0.101
 </td>
 </tr>
 <tr>
@@ -4872,7 +4887,7 @@ invalid right - neutral right
 <span style="     color: red !important;text-align: left;">0.0956</span>
 </td>
 <td style="text-align:right;">
--0.267
+-0.424
 </td>
 </tr>
 <tr>
@@ -4895,7 +4910,7 @@ invalid right - valid right
 <span style="     color: red !important;text-align: left;">0.0956</span>
 </td>
 <td style="text-align:right;">
--0.266
+-0.421
 </td>
 </tr>
 <tr>
@@ -4918,7 +4933,7 @@ neutral right - valid right
 <span style="     color: red !important;text-align: left;">1</span>
 </td>
 <td style="text-align:right;">
-0.002
+0.003
 </td>
 </tr>
 </tbody>
@@ -4973,7 +4988,7 @@ valid_MINUS_neutral
 27
 </td>
 <td style="text-align:left;">
-<span style="     color: red !important;text-align: center;">1</span>
+<span style="     color: red !important;text-align: center;">0.4665</span>
 </td>
 <td style="text-align:right;">
 0.142
@@ -5019,7 +5034,7 @@ neutral_MINUS_invalid
 27
 </td>
 <td style="text-align:left;">
-<span style=" font-weight: bold;    color: green !important;text-align: center;">0.0329</span>
+<span style=" font-weight: bold;    color: green !important;text-align: center;">0.0219</span>
 </td>
 <td style="text-align:right;">
 0.526
