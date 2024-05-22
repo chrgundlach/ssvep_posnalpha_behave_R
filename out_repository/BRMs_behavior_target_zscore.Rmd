@@ -1,5 +1,5 @@
 ---
-title: "BRMS analysis | Posnalpha Behave | target window"
+title: "BRMS analysis | Posnalpha Behave | target window | zscored by subject x cue_validity"
 author: "Christopher Gundlach"
 date: '`r Sys.Date()`'
 output:

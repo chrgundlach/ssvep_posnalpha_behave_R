@@ -78,7 +78,8 @@ library(BayesFactor)
 source(file = 'R_rainclouds.R')
 
 # datafile1 <- "D:/experimental_data/2024_PosnalphaBehave_Repository/data/eeg/Behavior_FFT_singletrials_cue.txt"
-datafile1 <- ".../data/eeg/Behavior_FFT_singletrials_cue.txt" # adapt this path 
+datafile1 <- "C:/Users/EEG/Documents/R/Christopher/ssvep_posnalpha_behave_R/data_in/Behavior_FFT_singletrials_cue.txt"
+# datafile1 <- ".../data/eeg/Behavior_FFT_singletrials_cue.txt" # adapt this path 
 timewindows = c("[-1000 0]ms", "[0 1000]ms", "[500 1500]ms")
 
 ```
@@ -347,6 +348,7 @@ fit_validity_x_motoralpha <- add_criterion(fit_validity_x_motoralpha, c("loo", "
 # summary(fit_validity_x_alpha1_alpha2)
 # summary(fit_validity_x_SSVEP)
 # summary(fit_validity_x_motoralpha)
+plot(conditional_effects(fit_validity_x_alpha1_alpha2), ask = FALSE)
 
 ```
 
