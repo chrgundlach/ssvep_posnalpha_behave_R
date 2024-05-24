@@ -22,8 +22,8 @@ options(width=120,scipen=0,digits=8) # change output width (for better printing)
 cat("\014") # clear console
 # dev.off() # clear plots (if no plots are present, comment it out or it will throw an error)
 rm(list=ls()) # clear environment
-# wd="C:/Users/psy05cvd/Dropbox/work/R-statistics/experiments/ssvep_posnalpha_behave/" # work directory
-# setwd(wd) # set work directory
+wd="C:/Users/EEG/Documents/R/Christopher/ssvep_posnalpha_behave_R" # work directory
+setwd(wd) # set work directory
 
 # Load relevant libraries:
 
@@ -574,9 +574,9 @@ g <- ggplot(bestmodel.ef.tidy_exppred2, aes(x = contra_target, y = .epred)) +
   theme(legend.position = "bottom")
 # 
 print(g)
-# ggsave(filename = "figures/MarginEffects_PostCue_FullModelVisAlpha_AlphaContraTarget_Slopes.eps",
+# ggsave(filename = file.path("figures","MarginEffects_PostCue_FullModelVisAlpha_AlphaContraTarget_Slopes_zscored.eps"),
 #        width = 4, height = 4,
-#        plot = print(g))
+#        plot = g)
 
 
 ## alpha contra nontarget
@@ -611,7 +611,7 @@ g <- ggplot(bestmodel.ef.tidy_exppred3, aes(x = contra_nontarget, y = .epred)) +
   theme(legend.position = "bottom")
   
 print(g)
-# ggsave(filename = "figures/MarginEffects_PostCue_FullModelVisAlpha_AlphaContraNonTarget_Slopes.eps",
+# ggsave(filename = "figures/MarginEffects_PostCue_FullModelVisAlpha_AlphaContraNonTarget_Slopes_zscored.eps",
 #        width = 4, height = 4,
 #        plot = print(g))
 
@@ -661,7 +661,7 @@ g<-ggplot(bestmodel.ef.slopes_alpha, aes( x = .value, y=cue_validity_label)) +
 
 
 print(g)
-# ggsave(filename = "figures/MarginEffects_PostCue_FullModelVisAlpha_Alpha_SlopeDistr.eps",
+# ggsave(filename = "figures/MarginEffects_PostCue_FullModelVisAlpha_Alpha_SlopeDistr_zscored.eps",
 #        width = 4, height = 4,
 #        plot = print(g))
 
@@ -670,9 +670,6 @@ bestmodel.ef.slope_contraTarget %>% median_hdi() %>%
   kable(escape = F, digits = c(3,3,3,3,3,3,6,6,6), caption = c("alpha contratarget: mean and CI")) %>%
   kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
 
-bestmodel.ef.slope_contraNontarget %>% median_hdi() %>%
-  kable(escape = F, digits = c(3,3,3,3,3,3,6,6,6), caption = c("alpha contranontarget: mean and CI")) %>%
-  kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
 
 ```
 
@@ -869,7 +866,7 @@ g <- ggplot(bestmodel.ef.tidy_exppred2, aes(x = post_cue_SSVEP_contra_target, y 
 
 
 print(g)
-# ggsave(filename = "figures/MarginEffects_PostCue_FullModelSSVEP_SSVEP_Slopes.eps",
+# ggsave(filename = "figures/MarginEffects_PostCue_FullModelSSVEP_SSVEP_Slopes_zscored.eps",
 #        width = 4, height = 4,
 #        plot = print(g))
 
@@ -904,7 +901,7 @@ g <- ggplot(bestmodel.ef.slope_contraTarget, aes( x = .value, y=cue_validity_lab
   )
 
 print(g)
-# ggsave(filename = "figures/MarginEffects_PostCue_FullModelSSVEP_SSVEP_SlopeDistr.eps",
+# ggsave(filename = "figures/MarginEffects_PostCue_FullModelSSVEP_SSVEP_SlopeDistr_zscored.eps",
 #        width = 4, height = 4,
 #        plot = print(g))
 
@@ -1110,7 +1107,7 @@ bestmodel.ef.slope_contraTarget <- bestmodel.ef.model %>%
   gather_emmeans_draws()
 
 print(g)
-# ggsave(filename = "figures/MarginEffects_PostCue_FullModelMotAlpha_MotAlpha_Slopes.eps",
+# ggsave(filename = "figures/MarginEffects_PostCue_FullModelMotAlpha_MotAlpha_Slopes_zscored.eps",
 #        width = 4, height = 4,
 #        plot = print(g))
 
@@ -1138,7 +1135,7 @@ g <- ggplot(bestmodel.ef.slope_contraTarget, aes( x = .value, y=cue_validity_lab
   )
 
 print(g)
-# ggsave(filename = "figures/MarginEffects_PostCue_FullModelMotAlpha_MotAlpha_SlopeDistr.eps",
+# ggsave(filename = "figures/MarginEffects_PostCue_FullModelMotAlpha_MotAlpha_SlopeDistr_zscored.eps",
 #        width = 4, height = 4,
 #        plot = print(g))
 
