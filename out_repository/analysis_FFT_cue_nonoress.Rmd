@@ -64,8 +64,8 @@ source(file = 'R_rainclouds.R')
 
 
 # datafile1 <- "D:/experimental_data/2024_PosnalphaBehave_Repository/data/eeg/Behavior_FFT_singletrials_cue.txt"
-datafile1 <- "C:/Users/EEG/Documents/R/Christopher/ssvep_posnalpha_behave_R/data_in/Behavior_FFT_singletrials_cue_nonoress.txt"
-# datafile1 <- "C:/Users/psy05cvd/Dropbox/work/R-statistics/experiments/ssvep_posnalpha_behave/data_in/Behavior_FFT_singletrials_cue_nonoress.txt"
+# datafile1 <- "C:/Users/EEG/Documents/R/Christopher/ssvep_posnalpha_behave_R/data_in/Behavior_FFT_singletrials_cue_nonoress.txt"
+datafile1 <- "C:/Users/psy05cvd/Dropbox/work/R-statistics/experiments/ssvep_posnalpha_behave/data_in/Behavior_FFT_singletrials_cue_nonoress.txt"
 # datafile1 <- ".../data/eeg/Behavior_FFT_singletrials_cue.txt" # adapt path to 
 timewindows = c("[-1000 0]ms", "[0 1000]ms", "[500 1500]ms")
 
@@ -323,8 +323,8 @@ plot2 <- ggplot(dat2plot, aes(y = amplitude, fill = attention, x = 1)) +
 plotttitle <- ggdraw() + draw_label("visual alpha modulation", fontface='bold')
 plotplots <- ggarrange(plot1, plot2,ncol = 2,common.legend = TRUE,align = "h", widths=c(4,1))
 saveplot <- ggarrange(plotttitle, plotplots, nrow = 2, heights=c(0.2, 1))
-# ggsave(filename = "figures/VisAlpha_Mod.eps", width = 2.5, height = 3.5,
-#        plot = print(saveplot))
+# ggsave(filename = "VisAlpha_Mod_nonoress.eps", width = 2.5, height = 3.5,
+#        plot = saveplot)
 print(saveplot)
 
 
@@ -383,8 +383,9 @@ plotttitle <- ggdraw() + draw_label("motor alpha modulation", fontface='bold')
 plotplots <- ggarrange(plot1, plot2,ncol = 2,common.legend = TRUE,align = "h", widths=c(4,1))
 saveplot <- ggarrange(plotttitle, plotplots, nrow = 2, heights=c(0.2, 1))
 print(saveplot)
-# ggsave(filename = "figures/MotorAlpha_Mod.eps", width = 2.5, height = 3.5,
-#        plot = print(saveplot))
+# ggsave(filename = "MotorAlpha_Mod_nonoress.eps", width = 2.5, height = 3.5,
+#        plot = saveplot)
+
 
 ```
 
