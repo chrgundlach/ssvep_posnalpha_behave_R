@@ -209,6 +209,19 @@ modeldata2 = DATA.In_longer %>%
   filter(post_hit == "hit", signal == "visualAlpha", time == "[500 1500]ms")%>%
   mutate(visalpha = amplitude)
 
+# just do the intercept model
+
+fit_EEG_vis_alpha_intercept = brm(formula = visalpha ~ 1 + (1|subject),
+          data = modeldata2, 
+          family = shifted_lognormal(),
+          file = 'fit_EEGv2_vis_alpha_targ_intercept_slog',
+          save_pars = save_pars(all = TRUE),
+          # file_refit = "on_change",
+          # file_refit = "always",
+          file_refit = "never",
+          cores = 4
+          )  # Save all that hard work.
+
 
 fit_EEG_vis_alpha_validity = brm(formula = visalpha ~ 1 + attention + (attention|subject),
           data = modeldata2, 
@@ -226,6 +239,16 @@ modeldata3 = DATA.In_longer %>%
   filter(post_hit == "hit", signal == "motorAlpha", time == "[500 1500]ms")%>%
   mutate(motalpha = amplitude)
 
+fit_EEG_mot_alpha_intercept = brm(formula = motalpha ~ 1 + (1|subject),
+          data = modeldata3, 
+          family = shifted_lognormal(),
+          file = 'fit_EEGv2_mot_alpha_intercept_slog',
+          save_pars = save_pars(all = TRUE),
+          # file_refit = "on_change",
+          # file_refit = "always",
+          file_refit = "never",
+          cores = 4
+          )  # Save all that hard work.
 
 fit_EEG_mot_alpha_validity = brm(formula = motalpha ~ 1 + attention + (attention|subject),
           data = modeldata3, 
@@ -245,6 +268,16 @@ modeldata3 = DATA.In_longer %>%
   dplyr::select(-Zamplitude)%>%
   pivot_wider(names_from = c(signal), values_from = amplitude)
 
+fit_EEG_SSVEP_intercept = brm(formula = SSVEP ~ 1 + (1|subject),
+          data = modeldata3, 
+          family = shifted_lognormal(),
+          file = 'fit_EEGv2_SSVEP_intercept_slog',
+          save_pars = save_pars(all = TRUE),
+          # file_refit = "on_change",
+          # file_refit = "always",
+          file_refit = "never",
+          cores = 4
+          )  # Save all that hard work.
 
 # * by visual alpha * validtiy: **target_SSVEP ~ vis_alpha * cue ( cue | subjects)**
   
@@ -272,6 +305,13 @@ this also takes some time as it is based on a cross validation procedure; but on
 # add relevant criteria for model comparison
 # compare models
 
+fit_EEG_vis_alpha_intercept <- add_criterion(fit_EEG_vis_alpha_intercept, c("loo", "waic", "bayes_R2"))
+
+fit_EEG_mot_alpha_intercept<- add_criterion(fit_EEG_mot_alpha_intercept, c("loo", "waic", "bayes_R2"))
+
+fit_EEG_SSVEP_intercept <- add_criterion(fit_EEG_SSVEP_intercept, c("loo", "waic", "bayes_R2"))
+
+
 fit_EEG_vis_alpha_validity <- add_criterion(fit_EEG_vis_alpha_validity, c("loo", "waic", "bayes_R2"))
 
 fit_EEG_mot_alpha_validity <- add_criterion(fit_EEG_mot_alpha_validity, c("loo", "waic", "bayes_R2"))
@@ -289,16 +329,24 @@ We can compute a Byesian version of the R² value for brms regression models for
 
 
 as.data.frame(rbind(
+  bayes_R2(fit_EEG_vis_alpha_intercept),
+  bayes_R2(fit_EEG_mot_alpha_intercept),
+  bayes_R2(fit_EEG_SSVEP_intercept),
   bayes_R2(fit_EEG_vis_alpha_validity),
   bayes_R2(fit_EEG_mot_alpha_validity),
   bayes_R2(fit_EEG_SSVEP_validity_x_alpha)),
-  row.names = c( "fit_EEG_vis_alpha_validity", 
+  row.names = c( "fit_EEG_vis_alpha_intercept", 
+                "fit_EEG_mot_alpha_intercept", 
+                "fit_EEG_SSVEP_intercept",
+                "fit_EEG_vis_alpha_validity", 
                 "fit_EEG_mot_alpha_validity", 
                 "fit_EEG_SSVEP_validity_x_alpha"))%>%
   kable(escape = F, digits = c(6,6,6,6,6,6,6,6,6), caption = c("alpha, ssvep and combined models | bayes_R2")) %>%
   kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
 
-
+summary(fit_EEG_vis_alpha_intercept)
+summary(fit_EEG_mot_alpha_intercept)
+summary(fit_EEG_SSVEP_intercept)
 summary(fit_EEG_vis_alpha_validity)
 summary(fit_EEG_mot_alpha_validity)
 summary(fit_EEG_SSVEP_validity_x_alpha)
