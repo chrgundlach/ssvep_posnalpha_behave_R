@@ -68,9 +68,9 @@ library(ggdist)
 
 source(file = 'R_rainclouds.R')
 
-# datafile1 <- "D:/experimental_data/2024_PosnalphaBehave_Repository/data/eeg/Behavior_FFT_singletrials_cue.txt"
-datafile1 <- "C:/Users/EEG/Documents/R/Christopher/ssvep_posnalpha_behave_R/data_in/Behavior_FFT_singletrials_cue_nonoress.txt"
-# datafile1 <- ".../data/eeg/Behavior_FFT_singletrials_cue.txt" # adapt this path 
+datafile1 <- "D:/experimental_data/2024_PosnalphaBehave_Repository/data/eeg/Behavior_FFT_singletrials_cue.txt"
+# datafile1 <- "C:/Users/EEG/Documents/R/Christopher/ssvep_posnalpha_behave_R/data_in/Behavior_FFT_singletrials_cue_nonoress.txt"
+# datafile1 <- ".../data/eeg/Behavior_FFT_singletrials_cue.txt" # adapt this path
 timewindows = c("[-1000 0]ms", "[0 1000]ms", "[500 1500]ms")
 
 ```
@@ -775,7 +775,7 @@ head(bestmodel.ef.tidy_exppred2)%>%
 
 
 theme_set(theme_bw())
-ggplot(bestmodel.ef.tidy_exppred2, aes(x = visualAlpha, y = .epred)) +
+g <- ggplot(bestmodel.ef.tidy_exppred2, aes(x = visualAlpha, y = .epred)) +
   stat_lineribbon(.width = c(0.5, 0.8, 0.95, 1)) + 
   scale_fill_brewer(palette = "Reds") +
   facet_grid(attention~.)+
@@ -789,11 +789,14 @@ bestmodel.ef.slope_contraTarget <- bestmodel.ef.model %>%
            var = "visualAlpha",
            epred = TRUE) %>% 
   gather_emmeans_draws()
+print(g)
+# ggsave(filename = "MarginEffects_SSVEP_predictedby_ALPHA_RegressLine.eps", width = 5, height = 3.5,
+#        plot = g)
 
 
 
 theme_set(theme_bw())
-ggplot(bestmodel.ef.slope_contraTarget, aes( x = .value, y=attention)) +
+g <- ggplot(bestmodel.ef.slope_contraTarget, aes( x = .value, y=attention)) +
   stat_halfeye(
     aes(fill = attention, fill_ramp = after_stat(level)),
     .width = c(.95, 1),
@@ -813,6 +816,9 @@ ggplot(bestmodel.ef.slope_contraTarget, aes( x = .value, y=attention)) +
     y = "density",
   )+
   theme(axis.text.y=element_blank(),axis.ticks.y=element_blank())
+print(g)
+# ggsave(filename = "MarginEffects_SSVEP_predictedby_ALPHA_Slopes.eps", width = 5, height = 3.5,
+#        plot = g)
 
 bestmodel.ef.slope_contraTarget %>% median_hdi() %>%
   kable(escape = F, digits = c(6,6,6,6,6,6,6,6,6), caption = c("alpha slope: mean and CI")) %>%
