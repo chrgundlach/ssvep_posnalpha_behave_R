@@ -22,8 +22,8 @@ options(width=120,scipen=0,digits=8) # change output width (for better printing)
 cat("\014") # clear console
 # dev.off() # clear plots (if no plots are present, comment it out or it will throw an error)
 rm(list=ls()) # clear environment
-wd="C:/Users/EEG/Documents/R/Christopher/ssvep_posnalpha_behave_R" # work directory
-setwd(wd) # set work directory
+# wd="C:/Users/EEG/Documents/R/Christopher/ssvep_posnalpha_behave_R" # work directory
+# setwd(wd) # set work directory
 
 # Load relevant libraries:
 
@@ -668,6 +668,10 @@ print(g)
 
 bestmodel.ef.slope_contraTarget %>% median_hdi() %>%
   kable(escape = F, digits = c(3,3,3,3,3,3,6,6,6), caption = c("alpha contratarget: mean and CI")) %>%
+  kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
+
+bestmodel.ef.slope_contraNontarget %>% median_hdi() %>%
+  kable(escape = F, digits = c(3,3,3,3,3,3,6,6,6), caption = c("alpha contranontarget: mean and CI")) %>%
   kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
 
 

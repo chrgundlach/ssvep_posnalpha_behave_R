@@ -1,5 +1,5 @@
 ---
-title: "BRMS analysis | Posnalpha Behave | target window | revision: no RESS component excluded"
+title: "BRMS analysis | Posnalpha Behave | target window | revision: no RESS component excluded | zscored for cue-validity levels"
 author: "Christopher Gundlach"
 date: '`r Sys.Date()`'
 output:
