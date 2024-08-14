@@ -870,7 +870,7 @@ StatsData %>%
   ungroup()%>%
   dplyr::select(contrast, meanval, std, statistic, parameter, p.value)%>%
   mutate(p.value = p.adjust(p.value, method="holm")) %>%
-  mutate(CohensD = `statistic`/sqrt(parameter))%>%
+  mutate(CohensD = `statistic`/sqrt(parameter+1))%>%
   mutate(
     p.value = cell_spec(ifelse(round(p.value,4)<.001,"< .001",round(p.value,4)), 
                         color = ifelse(is.nan(p.value),"blue", ifelse(p.value < .05, "green", "red")),
@@ -1031,7 +1031,7 @@ StatsData %>%
   ungroup()%>%
   dplyr::select(contrast, meanval, std, statistic, parameter, p.value)%>%
   mutate(p.value = p.adjust(p.value, method="holm")) %>%
-  mutate(CohensD = `statistic`/sqrt(parameter))%>%
+  mutate(CohensD = `statistic`/sqrt(parameter+1))%>%
   mutate(
     p.value = cell_spec(ifelse(round(p.value,4)<.001,"< .001",round(p.value,4)), 
                         color = ifelse(is.nan(p.value),"blue", ifelse(p.value < .05, "green", "red")),
