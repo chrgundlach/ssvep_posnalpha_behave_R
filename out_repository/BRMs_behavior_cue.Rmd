@@ -77,8 +77,8 @@ library(BayesFactor)
 
 source(file = 'R_rainclouds.R')
 
-datafile1 <- "D:/experimental_data/2024_PosnalphaBehave_Repository/data/eeg/Behavior_FFT_singletrials_cue.txt"
-# datafile1 <- "C:/Users/EEG/Documents/R/Christopher/ssvep_posnalpha_behave_R/data_in/Behavior_FFT_singletrials_cue.txt"
+# datafile1 <- "D:/experimental_data/2024_PosnalphaBehave_Repository/data/eeg/Behavior_FFT_singletrials_cue.txt"
+datafile1 <- "C:/Users/EEG/Documents/R/Christopher/ssvep_posnalpha_behave_R/data_in/Behavior_FFT_singletrials_cue.txt"
 # datafile1 <- ".../data/eeg/Behavior_FFT_singletrials_cue.txt" # adapt this path 
 timewindows = c("[-1000 0]ms", "[0 1000]ms", "[500 1500]ms")
 
@@ -321,6 +321,28 @@ fit_validity_x_motoralpha = brm(formula = post_RT ~ cue_validity_label * malpha_
 
 
 
+# combined alpha model
+# alter data to extract post-cue alpha contra to target
+modeldata8 = DATA.In_longer %>%
+  filter(post_hit == "hit", signal != "motorAlpha", time == "[500 1500]ms")%>%
+  dplyr::select(subject, trialnumber, cue_validity_label, post_RT,signal, pos_rel_target, amplitude) %>%
+  pivot_wider(names_from = c("signal","pos_rel_target"), values_from = amplitude)
+
+# visual alpha contra target and contra non-target x validity + SSVEP x validity
+fit_validity_x_alpha1_alpha2_SSVEP = brm(
+  formula = post_RT ~ cue_validity_label * visualAlpha_contra_target 
+  + cue_validity_label * visualAlpha_contra_nontarget
+  + cue_validity_label * SSVEP_contra_target + (cue_validity_label|subject),
+          data = modeldata8, 
+          family = shifted_lognormal(),
+          file = 'fit_validity_x_visalpha1_visalpha2_SSVEP_slog',
+          save_pars = save_pars(all = TRUE),
+          # file_refit = "on_change",
+          # file_refit = "always",
+          file_refit = "never",
+          cores = 4
+          )  # Save all that hard work.
+
 ```
 
 
@@ -339,6 +361,8 @@ fit_validity_x_alpha1_alpha2 <- add_criterion(fit_validity_x_alpha1_alpha2, c("l
 fit_validity_x_SSVEP <- add_criterion(fit_validity_x_SSVEP, c("loo", "waic", "bayes_R2"))
 fit_validity_x_motoralpha <- add_criterion(fit_validity_x_motoralpha, c("loo", "waic", "bayes_R2"))
 
+fit_validity_x_alpha1_alpha2_SSVEP <- add_criterion(fit_validity_x_alpha1_alpha2_SSVEP, c("loo", "waic", "bayes_R2"))
+
 
 
 
@@ -348,7 +372,8 @@ fit_validity_x_motoralpha <- add_criterion(fit_validity_x_motoralpha, c("loo", "
 # summary(fit_validity_x_alpha1_alpha2)
 # summary(fit_validity_x_SSVEP)
 # summary(fit_validity_x_motoralpha)
-plot(conditional_effects(fit_validity_x_alpha1_alpha2), ask = FALSE)
+# summary(fit_validity_x_alpha1_alpha2_SSVEP)
+# plot(conditional_effects(fit_validity_x_alpha1_alpha2), ask = FALSE)
 
 ```
 
@@ -363,12 +388,14 @@ as.data.frame(rbind(
   bayes_R2(fit_validity),
   bayes_R2(fit_validity_x_alpha1_alpha2),
   bayes_R2(fit_validity_x_motoralpha),
-  bayes_R2(fit_validity_x_SSVEP)),
+  bayes_R2(fit_validity_x_SSVEP),
+  bayes_R2(fit_validity_x_alpha1_alpha2_SSVEP)),
   row.names = c("fit_intercept",
                 "fit_validity",
                 "fit_validity_x_alpha1_alpha2",
                 "fit_validity_x_motalpha",
-                "fit_validity_x_SSVEP"))%>%
+                "fit_validity_x_SSVEP",
+                "fit_validity_x_alpha1_alpha2_SSVEP"))%>%
   kable(escape = F, digits = c(9,9,9,9,9,9,9,9,9), caption = c("alpha, ssvep and combined models | bayes_R2")) %>%
   kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
 
@@ -1139,6 +1166,354 @@ bestmodel.ef.slope_contraTarget %>% median_hdi() %>%
   kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
   
 
+
+```
+
+
+###  Extract marginal effects for post-cue visual alpha and SSVEP interaction model target + nontarget + SSVEP target
+
+Now for illustrating the whole picture, lets plot the motor alpha model
+
+**'RT ~ Cue * vis_alpha_contratarg + Cue * vis_alpha_contranontarg + Cue * SSVEP + ( cue | subjects)'**
+
+```{r visalphainter contra ipsi SSVEP model pre marginal effects disp effects,  fig.height=3.5, fig.width=5,  warning = FALSE, message=FALSE, eval = TRUE}
+# based on https://www.andrewheiss.com/blog/2021/11/10/ame-bayes-re-guide/
+# which model to use?
+bestmodel.ef.model <- fit_validity_x_alpha1_alpha2_SSVEP
+# what is the data of the model?
+bestmodel.ef.data <- bestmodel.ef.model$data
+
+# see data
+#head(bestmodel.ef.data)
+
+# show effects of the model
+tidy(bestmodel.ef.model)%>%
+  kable(escape = F, digits = c(6,6,6,6,6,6,6,6,6), caption = c("effects of best model")) %>%
+  kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
+```
+
+
+We then create a new data set with an alpha amplitude value fixed at the median of the original data, to be able to illustrate the distribution of the marginal means and their effect for the attentional cue, i.e. the factor **validity**
+
+Based on the new data we can extract **predicted values** or **expected predicted values**. The former also includes the  uncertainty for each individual observation (e.g., observational-level residual variance) of each prediction. We're however more interested in the latter, which more focusses on the uncertainty in the model parameters and not necessarily the individual-level residuals.
+
+```{r visalphainter SSVEP model marginal effects disp effects VALIDITY -data ,  fig.height=3.5, fig.width=5,  warning = FALSE, message=FALSE, eval = TRUE}
+# use range of data from orignal study 
+bestmodel.ef.newdata3 <- expand_grid(
+  cue_validity_label = c('valid','neutral','invalid'),
+  visualAlpha_contra_target = median(bestmodel.ef.data$visualAlpha_contra_target),
+  visualAlpha_contra_nontarget = median(bestmodel.ef.data$visualAlpha_contra_nontarget),
+  SSVEP_contra_target = median(bestmodel.ef.data$SSVEP_contra_target),
+  # contra_nontarget = median(bestmodel.ef.data$contra_nontarget),
+  # post_cue_vis_alpha_contra_target = seq(min(bestmodel.ef.data$post_cue_vis_alpha_contra_target),max(bestmodel.ef.data$post_cue_vis_alpha_contra_target),1),
+  # contra_nontarget = seq(min(bestmodel.ef.data$contra_nontarget),max(bestmodel.ef.data$contra_nontarget),1),
+  # subject = as.factor(unique(bestmodel.ef.data$subject))
+  subject = as.factor(c(120)) # for a 'new' subject
+)
+
+# use 'predicted_draws' to draw from posterior predictive distribution
+# this still incorporates variance of each individual observation in the model
+# we may not want to have this around for marginal effects, awe we're more focused on the expected value
+bestmodel.ef.tidy_pred <- bestmodel.ef.model %>%
+  predicted_draws(newdata = bestmodel.ef.newdata3, allow_new_levels = TRUE)
+head(bestmodel.ef.tidy_pred)%>%
+  kable(escape = F, digits = c(6,6,6,6,6,6,6,6,6), caption = c("predicted data")) %>%
+  kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
+  
+
+
+# use 'expected draws' ('epred_draws') as we're more intereste in the expected value of the outcome
+# which means we’re more focused on the uncertainty in the model parameters and not necessarily the individual-level residuals
+# same as fitte function (only with nicer wrapper)
+bestmodel.ef.tidy_exppred <- bestmodel.ef.model %>%
+  epred_draws(newdata = bestmodel.ef.newdata3, allow_new_levels = TRUE)
+head(bestmodel.ef.tidy_exppred)%>%
+  kable(escape = F, digits = c(6,6,6,6,6,6,6,6,6), caption = c("predicted data")) %>%
+  kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
+  
+
+
+```
+
+Now with the `emmeans` package, we can extract the distribution of median RTs derived from the predicted RT-value distributions of each single draw/simulation. We can also directly calculate contrasts and derive the 95%-CI of the effects.
+
+```{r visalphainterSSVEP model marginal effects disp effects VALIDITY -marginal means,  fig.height=3.5, fig.width=5,  warning = FALSE, message=FALSE, eval = TRUE}
+
+# now we want to see the effects using emmeans
+# check cue validity effect via pairwise comparisons
+# first the emmeans (point estimate = median of distrbution)
+bestmodel.ef.model %>% 
+  emmeans(~ cue_validity_label,
+          epred = TRUE)%>%
+  kable(escape = F, digits = c(3,3,3,6,3,3,3,3,3), 
+        caption = c("average marginal effect | point measure = median of RT in ms")) %>%
+  # kable_classic(full_width = F) %>%
+  column_spec(1, bold = T)%>%
+  kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
+
+# pairwise comparisons
+bestmodel.ef.model %>% 
+  emmeans(~ cue_validity_label,
+          epred = TRUE)%>% 
+  contrast(method = "revpairwise")%>%
+  kable(escape = F, digits = c(3,3,3,6,3,3,3,3,3), 
+        caption = c("average marginal effect differences | point measure = median of RT in ms")) %>%
+  # kable_classic(full_width = F) %>%
+  column_spec(1, bold = T)%>%
+  kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
+
+# now gather all the single draws to be able to plot the variance predicted RTs for different validity levels
+bestmodel.ef.ef_draws_validity <- bestmodel.ef.model %>% 
+  emmeans(~ cue_validity_label,
+          epred = TRUE)%>% 
+  gather_emmeans_draws()
+
+theme_set(theme_bw())
+g <- ggplot(bestmodel.ef.ef_draws_validity, aes(y = cue_validity_label, x = .value)) +
+  stat_halfeye(
+    aes(fill = cue_validity_label, fill_ramp = after_stat(level)),
+    .width = c(.95, 1),
+    position = "dodgejust",
+  ) +
+  scale_fill_manual(values=c("#F1831A", "#293C4A", "#198A83")) +
+  scale_color_manual(values=c("#F1831A", "#293C4A", "#198A83"))+
+  labs(
+    title = "Average predicted RTs in ms", 
+    subtitle = "based on medians for all draws of the model",
+    fill_ramp = "interval",
+    x = "difference in ms",
+    y = "validity"
+  )
+
+print(g)
+# ggsave(filename = "figures/MarginEffects_PostCue_FullModelVisAlpha_ValidityEffects.eps",
+#        width = 5, height = 3.5,
+#        plot = print(g))
+
+# now gather all the single draws to be able to plot the variance of the contrast
+bestmodel.ef.ef_draws_validity_contr <- bestmodel.ef.model %>% 
+  emmeans(~ cue_validity_label,
+          epred = TRUE)%>% 
+  contrast(method = "revpairwise") %>%
+  gather_emmeans_draws()
+
+theme_set(theme_bw())
+g <- ggplot(bestmodel.ef.ef_draws_validity_contr, aes(y = contrast, x = .value)) +
+  stat_halfeye(
+    aes(fill = contrast, fill_ramp = after_stat(level)),
+    .width = c(.95, 1),
+    position = "dodgejust",
+  ) +
+  geom_vline(xintercept = 0)+
+  scale_fill_brewer(palette = "Greens")+
+  labs(
+    title = "Average marginal effect in ms", 
+    subtitle = "based on medians for all draws of the model",
+    fill_ramp = "interval",
+    x = "difference in ms",
+    y = "validity"
+  )
+
+
+print(g)
+# ggsave(filename = "figures/MarginEffects_PostCue_FullModelVisAlpha_ValidityEffectContrasts.eps",
+#        width = 5, height = 3.5,
+#        plot = print(g))
+
+```
+
+We now can similarly extract the slopes of the **alpha** and **RT** relationship
+
+```{r visalphainterSSVEP model marginal effects disp effects visual alpha inter -marginal means,  fig.height=4, fig.width=5,  warning = FALSE, message=FALSE, eval = TRUE}
+# now trying to get the regression line right for the alpha predictors
+
+
+
+## alpha contra target
+# use range of data from orignal study with varying alpha contra target (in range of original data)
+bestmodel.ef.newdata2 <- expand_grid(
+  cue_validity_label = c('valid','neutral','invalid'),
+  # contra_target = median(bestmodel.ef.data$contra_target),
+  visualAlpha_contra_nontarget = median(bestmodel.ef.data$visualAlpha_contra_nontarget),
+  visualAlpha_contra_target = seq(min(bestmodel.ef.data$visualAlpha_contra_target),max(bestmodel.ef.data$visualAlpha_contra_target),1),
+  SSVEP_contra_target = median(bestmodel.ef.data$SSVEP_contra_target),
+  # subject = as.factor(unique(bestmodel.ef.data$subject))
+  subject = as.factor(c(120)) # for a 'new' subject
+)
+
+# use 'expected draws' ('epred_draws') as we're more intereste in the expected value of the outcome
+# which means we’re more focused on the uncertainty in the model parameters and not necessarily the individual-level residuals
+# same as fitte function (only with nicer wrapper)
+bestmodel.ef.tidy_exppred2 <- bestmodel.ef.model %>%
+  epred_draws(newdata = bestmodel.ef.newdata2, allow_new_levels = TRUE)
+head(bestmodel.ef.tidy_exppred2)%>%
+  kable(escape = F, digits = c(6,6,6,6,6,6,6,6,6), caption = c("predicted data | alpha contra target")) %>%
+  kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
+
+theme_set(theme_bw())
+g <- ggplot(bestmodel.ef.tidy_exppred2, aes(x = visualAlpha_contra_target, y = .epred)) +
+  stat_lineribbon(.width = c(0.5, 0.8, 0.95, 1)) + 
+  scale_fill_brewer(palette = "Reds") +
+  facet_grid(cue_validity_label~.)+
+  labs(x = "alpha amplitude contra target", y = "predicted RT",
+       fill = "Credible interval") +
+  ylim(c(400,1300))+
+  theme(legend.position = "bottom")
+# 
+print(g)
+# ggsave(filename = "figures/MarginEffects_PostCue_FullModelVisAlphaSSVEP_AlphaContraTarget_Slopes.eps",
+#        width = 4, height = 4,
+#        plot = print(g))
+
+
+## alpha contra nontarget
+# use range of data from orignal study with varying alpha contra target (in range of original data)
+bestmodel.ef.newdata5 <- expand_grid(
+  cue_validity_label = c('valid','neutral','invalid'),
+  visualAlpha_contra_target = median(bestmodel.ef.data$visualAlpha_contra_target),
+  visualAlpha_contra_nontarget = seq(min(bestmodel.ef.data$visualAlpha_contra_nontarget),max(bestmodel.ef.data$visualAlpha_contra_nontarget),1),
+  SSVEP_contra_target = median(bestmodel.ef.data$SSVEP_contra_target),
+  # subject = as.factor(unique(bestmodel.ef.data$subject))
+  subject = as.factor(c(120)) # for a 'new' subject
+)
+
+# use 'expected draws' ('epred_draws') as we're more intereste in the expected value of the outcome
+# which means we’re more focused on the uncertainty in the model parameters and not necessarily the individual-level residuals
+# same as fitte function (only with nicer wrapper)
+bestmodel.ef.tidy_exppred3 <- bestmodel.ef.model %>%
+  epred_draws(newdata = bestmodel.ef.newdata5, allow_new_levels = TRUE)
+head(bestmodel.ef.tidy_exppred3)%>%
+  kable(escape = F, digits = c(6,6,6,6,6,6,6,6,6), caption = c("predicted data | alpha contra non target")) %>%
+  kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
+
+theme_set(theme_bw())
+g <- ggplot(bestmodel.ef.tidy_exppred3, aes(x = visualAlpha_contra_nontarget, y = .epred)) +
+  stat_lineribbon(.width = c(0.5, 0.8, 0.95, 1)) + 
+  scale_fill_brewer(palette = "Blues") +
+  facet_grid(cue_validity_label~.)+
+  labs(x = "alpha amplitude contra nontarget", y = "predicted RT",
+       fill = "Credible interval") +
+  ylim(c(400,1300))+
+  theme(legend.position = "bottom")
+  
+print(g)
+# ggsave(filename = "figures/MarginEffects_PostCue_FullModelVisAlphaSSVEP_AlphaContraNonTarget_Slopes.eps",
+#        width = 4, height = 4,
+#        plot = print(g))
+
+
+
+## SSVEP contra target
+# use range of data from orignal study with varying alpha contra target (in range of original data)
+bestmodel.ef.newdata5 <- expand_grid(
+  cue_validity_label = c('valid','neutral','invalid'),
+  visualAlpha_contra_target = median(bestmodel.ef.data$visualAlpha_contra_target),
+  visualAlpha_contra_nontarget = median(bestmodel.ef.data$visualAlpha_contra_nontarget),
+  SSVEP_contra_target = seq(min(bestmodel.ef.data$SSVEP_contra_target),max(bestmodel.ef.data$SSVEP_contra_target),1),
+  # subject = as.factor(unique(bestmodel.ef.data$subject))
+  subject = as.factor(c(120)) # for a 'new' subject
+)
+
+# use 'expected draws' ('epred_draws') as we're more intereste in the expected value of the outcome
+# which means we’re more focused on the uncertainty in the model parameters and not necessarily the individual-level residuals
+# same as fitte function (only with nicer wrapper)
+bestmodel.ef.tidy_exppred3 <- bestmodel.ef.model %>%
+  epred_draws(newdata = bestmodel.ef.newdata5, allow_new_levels = TRUE)
+head(bestmodel.ef.tidy_exppred3)%>%
+  kable(escape = F, digits = c(6,6,6,6,6,6,6,6,6), caption = c("predicted data | alpha contra non target")) %>%
+  kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
+
+theme_set(theme_bw())
+g <- ggplot(bestmodel.ef.tidy_exppred3, aes(x = SSVEP_contra_target, y = .epred)) +
+  stat_lineribbon(.width = c(0.5, 0.8, 0.95, 1)) + 
+  scale_fill_brewer(palette = "Oranges") +
+  facet_grid(cue_validity_label~.)+
+  labs(x = "SSVEP amplitude contra target", y = "predicted RT",
+       fill = "Credible interval") +
+  ylim(c(400,1300))+
+  theme(legend.position = "bottom")
+  
+print(g)
+# ggsave(filename = "figures/MarginEffects_PostCue_FullModelVisAlphaSSVEP_SSVEP_Slopes.eps",
+#        width = 4, height = 4,
+#        plot = print(g))
+
+
+
+
+
+# now lets get the slop of the modulation by alpha
+bestmodel.ef.slope_visualAlpha_contra_target <- bestmodel.ef.model %>% 
+  emtrends(~ cue_validity_label, # 1 means, we want the average slop
+           var = "visualAlpha_contra_target",
+           epred = TRUE) %>% 
+  gather_emmeans_draws()
+
+bestmodel.ef.slope_visualAlpha_contra_nontarget <- bestmodel.ef.model %>% 
+  emtrends(~ cue_validity_label, # 1 means, we want the average slop
+           var = "visualAlpha_contra_nontarget",
+           epred = TRUE) %>% 
+  gather_emmeans_draws()
+
+bestmodel.ef.slope_SSVEP_contra_target <- bestmodel.ef.model %>% 
+  emtrends(~ cue_validity_label, # 1 means, we want the average slop
+           var = "SSVEP_contra_target",
+           epred = TRUE) %>% 
+  gather_emmeans_draws()
+
+bestmodel.ef.slopes_signals <- bind_rows(
+  "visualAlpha_contra_target" = bestmodel.ef.slope_visualAlpha_contra_target,
+  "visualAlpha_contra_nontarget" = bestmodel.ef.slope_visualAlpha_contra_nontarget,
+  "SSVEP_contra_target" = bestmodel.ef.slope_SSVEP_contra_target,
+  .id = "signal") %>% 
+  mutate(signal = fct_inorder(signal))
+
+
+theme_set(theme_bw())
+g<-ggplot(bestmodel.ef.slopes_signals, aes( x = .value, y=cue_validity_label)) +
+  stat_halfeye(
+    aes(fill = signal, fill_ramp = after_stat(level)),
+    .width = c(.95, 1),
+  ) +
+  # stat_dots(aes(fill = alpha_signal,color = alpha_signal, fill_ramp = after_stat(level), colour_ramp = after_stat(level)),
+  #           .width = c(.95, 1))+
+  geom_vline(xintercept = 0)+
+  # facet_grid(cue_validity_label~.)+
+  scale_fill_manual(values=c("red3","steelblue","gold")) +
+  scale_color_manual(values=c("red3", "steelblue","gold"))+
+  labs(
+    title = "Average marginal effect: alpha slopes", 
+    subtitle = "for all draws of the model",
+    fill_ramp = "interval",
+    colour_ramp = "interval",
+    x = "slope"
+  )
+
+
+print(g)
+ggsave(filename = "figures/MarginEffects_PostCue_FullModelVisAlpha_Alpha_SSVEP_SlopeDistr.eps",
+       width = 4, height = 4,
+       plot = print(g))
+
+
+bestmodel.ef.slope_visualAlpha_contra_target %>% median_hdi() %>%
+  kable(escape = F, digits = c(3,3,3,3,3,3,6,6,6), caption = c("alpha contratarget: mean and CI")) %>%
+  kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
+
+bestmodel.ef.slope_visualAlpha_contra_nontarget %>% median_hdi() %>%
+  kable(escape = F, digits = c(3,3,3,3,3,3,6,6,6), caption = c("alpha contranontarget: mean and CI")) %>%
+  kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
+
+bestmodel.ef.slope_SSVEP_contra_target %>% median_hdi() %>%
+  kable(escape = F, digits = c(3,3,3,3,3,3,6,6,6), caption = c("alpha contranontarget: mean and CI")) %>%
+  kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
+
+
+# contrast difference
+loo_compare(fit_validity_x_alpha1_alpha2,  fit_validity_x_alpha1_alpha2_SSVEP,
+            criterion = c("loo"))%>%
+  kable(escape = F, digits = c(9,9,9,9,9,9,9,9,9), caption = c("alpha model vs alpha SSVEP model | loo comparison")) %>%
+  kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
 
 ```
 
