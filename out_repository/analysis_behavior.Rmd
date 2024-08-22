@@ -53,6 +53,7 @@ library(tidyverse)
 source(file = 'R_rainclouds.R')
 
 datafile1 <- "D:/experimental_data/2024_PosnalphaBehave_Repository/data/behavior/Behavior_singletrials.txt"
+datafile1 <- "C:/Users/EEG/Documents/R/Christopher/ssvep_posnalpha_behave_R/data_in/Behavior_singletrials.txt"
 # datafile1 <- "...data/behavior/Behavior_singletrials.txt" # adapt path to 
 
 ```
@@ -514,6 +515,7 @@ StatsOut%>%
   kable(escape = F, digits = c(3,3,3,3,3,3,3,3,3), caption = c("repeated measures ANOVA | dv = RT")) %>%
   kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
 
+
 ```
 
 #### Post-hoc t-Tests RT  
@@ -543,7 +545,15 @@ summary(post_hocs.validity$contrasts) %>%
   mutate(`CohensD` =
            summary(eff_size(contrast(post_hocs.validity, method = "pairwise", adjust = "holm"),
                             sigma = sqrt(mean(sigma(StatsOut$lm)^2)), # RMS of sigma()
-                            edf = df.residual(StatsOut$lm), method = "identity"))$effect.size
+                            edf = df.residual(StatsOut$lm), method = "identity"))$effect.size,
+         `lowCI` =
+           summary(eff_size(contrast(post_hocs.validity, method = "pairwise", adjust = "holm"),
+                            sigma = sqrt(mean(sigma(StatsOut$lm)^2)), # RMS of sigma()
+                            edf = df.residual(StatsOut$lm), method = "identity"))$lower.CL,
+         `highCI` =
+           summary(eff_size(contrast(post_hocs.validity, method = "pairwise", adjust = "holm"),
+                            sigma = sqrt(mean(sigma(StatsOut$lm)^2)), # RMS of sigma()
+                            edf = df.residual(StatsOut$lm), method = "identity"))$upper.CL
   )%>%
   kable(escape = F, digits = c(3,3,3,3,3,3,3,3,3), 
         caption = c("contrasts for estimated marginal means | by validity | dv = RT | corrected: Holm")) %>%
@@ -618,7 +628,15 @@ summary(post_hocs.validity$contrasts) %>%
   mutate(`CohensD` =
            summary(eff_size(contrast(post_hocs.validity, method = "pairwise", adjust = "holm"),
                             sigma = sqrt(mean(sigma(StatsOut$lm)^2)), # RMS of sigma()
-                            edf = df.residual(StatsOut$lm), method = "identity"))$effect.size
+                            edf = df.residual(StatsOut$lm), method = "identity"))$effect.size,
+         `lowCI` =
+           summary(eff_size(contrast(post_hocs.validity, method = "pairwise", adjust = "holm"),
+                            sigma = sqrt(mean(sigma(StatsOut$lm)^2)), # RMS of sigma()
+                            edf = df.residual(StatsOut$lm), method = "identity"))$lower.CL,
+         `highCI` =
+           summary(eff_size(contrast(post_hocs.validity, method = "pairwise", adjust = "holm"),
+                            sigma = sqrt(mean(sigma(StatsOut$lm)^2)), # RMS of sigma()
+                            edf = df.residual(StatsOut$lm), method = "identity"))$upper.CL
   )%>%
   kable(escape = F, digits = c(3,3,3,3,3,3,3,3,3), 
         caption = c("contrasts for estimated marginal means | by validity | dv = HR | corrected: Holm")) %>%

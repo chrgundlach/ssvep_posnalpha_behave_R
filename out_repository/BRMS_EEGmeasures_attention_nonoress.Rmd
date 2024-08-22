@@ -1050,7 +1050,7 @@ bestmodel.ef.slope_contraTarget <- bestmodel.ef.model %>%
            epred = TRUE) %>% 
   gather_emmeans_draws()
 print(g)
-# ggsave(filename = "MarginEffects_SSVEP_predictedby_ALPHA_RegressLine.eps", width = 5, height = 3.5,
+# ggsave(filename = "figures/MarginEffects_rightSSVEP_predictedby_ALPHA_RegressLine_rev02.eps", width = 4, height = 4,
 #        plot = g)
 
 
@@ -1077,8 +1077,8 @@ g <- ggplot(bestmodel.ef.slope_contraTarget, aes( x = .value, y=attention)) +
   )+
   theme(axis.text.y=element_blank(),axis.ticks.y=element_blank())
 print(g)
-# ggsave(filename = "MarginEffects_SSVEP_predictedby_ALPHA_Slopes.eps", width = 5, height = 3.5,
-#        plot = g)
+ggsave(filename = "figures/MarginEffects_rightSSVEP_predictedby_ALPHA_Slopes_rev02.eps", width = 4, height = 4,
+       plot = g)
 
 bestmodel.ef.slope_contraTarget %>% median_hdi() %>%
   kable(escape = F, digits = c(6,6,6,6,6,6,6,6,6), caption = c("alpha slope: mean and CI")) %>%

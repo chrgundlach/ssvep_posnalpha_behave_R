@@ -64,8 +64,8 @@ source(file = 'R_rainclouds.R')
 
 
 # datafile1 <- "D:/experimental_data/2024_PosnalphaBehave_Repository/data/eeg/Behavior_FFT_singletrials_cue.txt"
-# datafile1 <- "C:/Users/EEG/Documents/R/Christopher/ssvep_posnalpha_behave_R/data_in/Behavior_FFT_singletrials_cue_nonoress.txt"
-datafile1 <- "C:/Users/psy05cvd/Dropbox/work/R-statistics/experiments/ssvep_posnalpha_behave/data_in/Behavior_FFT_singletrials_cue_nonoress.txt"
+datafile1 <- "C:/Users/EEG/Documents/R/Christopher/ssvep_posnalpha_behave_R/data_in/Behavior_FFT_singletrials_cue_nonoress.txt"
+# datafile1 <- "C:/Users/psy05cvd/Dropbox/work/R-statistics/experiments/ssvep_posnalpha_behave/data_in/Behavior_FFT_singletrials_cue_nonoress.txt"
 # datafile1 <- ".../data/eeg/Behavior_FFT_singletrials_cue.txt" # adapt path to 
 timewindows = c("[-1000 0]ms", "[0 1000]ms", "[500 1500]ms")
 
@@ -526,7 +526,7 @@ anovamodel_SSVEP <- dat2model %>%
 anovamodel_visalpha <- dat2model %>%
   filter(signal == "visualAlpha") %>%
   aov_ez(id="subject", dv = "amplitude", data = ., within = "attention", include_aov = TRUE)
-anovamodel_motalpha <- dat2model %>%
+anovamodel_motalpha <- dat2model %>% 
   filter(signal == "motorAlpha") %>%
   aov_ez(id="subject", dv = "amplitude", data = ., within = "attention", include_aov = TRUE)
 
@@ -534,6 +534,13 @@ anovamodel_motalpha <- dat2model %>%
 post_hocs.SSVEP <- emmeans(anovamodel_SSVEP$aov, "attention", contr = "pairwise",adjust = "holm") # adjust = holm
 post_hocs.visalpha <- emmeans(anovamodel_visalpha$aov, "attention", contr = "pairwise",adjust = "holm") # adjust = holm
 post_hocs.motalpha <- emmeans(anovamodel_motalpha$aov, "attention", contr = "pairwise",adjust = "holm") # adjust = holm
+
+eff_size(post_hocs.SSVEP$contrasts,
+         sigma = sqrt(mean(sigma(anovamodel_SSVEP$lm)^2)), # RMS of sigma()
+         edf = df.residual(anovamodel_SSVEP$lm), method = "identity")
+
+
+
 
 # output
 post_hocs.SSVEP$emmeans %>%
@@ -547,7 +554,20 @@ summary(post_hocs.SSVEP$contrasts) %>%
                         bold = ifelse(is.nan(p.value),F, ifelse(p.value < .05, T,F)),
                         align = "left")
   ) %>%
-  mutate(CohensD = `t.ratio`/sqrt(df+1))%>%
+  # mutate(CohensD = `t.ratio`/sqrt(df+1))%>%
+  mutate(`CohensD` =
+           summary(eff_size(post_hocs.SSVEP$contrasts,
+                            sigma = sqrt(mean(sigma(anovamodel_SSVEP$lm)^2)), # RMS of sigma()
+                            edf = df.residual(anovamodel_SSVEP$lm), method = "identity"))$effect.size,
+         `lowCI` =
+           summary(eff_size(post_hocs.SSVEP$contrasts,
+                            sigma = sqrt(mean(sigma(anovamodel_SSVEP$lm)^2)), # RMS of sigma()
+                            edf = df.residual(anovamodel_SSVEP$lm), method = "identity"))$lower.CL,
+         `highCI` =
+           summary(eff_size(post_hocs.SSVEP$contrasts,
+                            sigma = sqrt(mean(sigma(anovamodel_SSVEP$lm)^2)), # RMS of sigma()
+                            edf = df.residual(anovamodel_SSVEP$lm), method = "identity"))$upper.CL
+  ) %>%
   kable(escape = F, digits = c(3,3,3,3,3,3,3,3,3), 
         caption = c("contrasts for estimated marginal means | by att. focus | dv = SSVEP | corrected: Holm")) %>%
   kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
@@ -564,7 +584,20 @@ summary(post_hocs.visalpha$contrasts) %>%
                         bold = ifelse(is.nan(p.value),F, ifelse(p.value < .05, T,F)),
                         align = "left")
   ) %>%
-  mutate(CohensD = `t.ratio`/sqrt(df+1))%>%
+  # mutate(CohensD = `t.ratio`/sqrt(df+1))%>%
+  mutate(`CohensD` =
+           summary(eff_size(post_hocs.visalpha$contrasts,
+                            sigma = sqrt(mean(sigma(anovamodel_visalpha$lm)^2)), # RMS of sigma()
+                            edf = df.residual(anovamodel_visalpha$lm), method = "identity"))$effect.size,
+         `lowCI` =
+           summary(eff_size(post_hocs.visalpha$contrasts,
+                            sigma = sqrt(mean(sigma(anovamodel_visalpha$lm)^2)), # RMS of sigma()
+                            edf = df.residual(anovamodel_visalpha$lm), method = "identity"))$lower.CL,
+         `highCI` =
+           summary(eff_size(post_hocs.visalpha$contrasts,
+                            sigma = sqrt(mean(sigma(anovamodel_visalpha$lm)^2)), # RMS of sigma()
+                            edf = df.residual(anovamodel_visalpha$lm), method = "identity"))$upper.CL
+  ) %>%
   kable(escape = F, digits = c(3,3,3,3,3,3,3,3,3), 
         caption = c("contrasts for estimated marginal means | by att. focus | dv = visual alpha | corrected: Holm")) %>%
   kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
@@ -580,7 +613,20 @@ summary(post_hocs.motalpha$contrasts) %>%
                         bold = ifelse(is.nan(p.value),F, ifelse(p.value < .05, T,F)),
                         align = "left")
   ) %>%
-  mutate(CohensD = `t.ratio`/sqrt(df+1))%>%
+  # mutate(CohensD = `t.ratio`/sqrt(df+1))%>%
+  mutate(`CohensD` =
+           summary(eff_size(post_hocs.motalpha$contrasts,
+                            sigma = sqrt(mean(sigma(anovamodel_motalpha$lm)^2)), # RMS of sigma()
+                            edf = df.residual(anovamodel_motalpha$lm), method = "identity"))$effect.size,
+         `lowCI` =
+           summary(eff_size(post_hocs.motalpha$contrasts,
+                            sigma = sqrt(mean(sigma(anovamodel_motalpha$lm)^2)), # RMS of sigma()
+                            edf = df.residual(anovamodel_motalpha$lm), method = "identity"))$lower.CL,
+         `highCI` =
+           summary(eff_size(post_hocs.motalpha$contrasts,
+                            sigma = sqrt(mean(sigma(anovamodel_motalpha$lm)^2)), # RMS of sigma()
+                            edf = df.residual(anovamodel_motalpha$lm), method = "identity"))$upper.CL
+  ) %>%
   kable(escape = F, digits = c(3,3,3,3,3,3,3,3,3), 
         caption = c("contrasts for estimated marginal means | by att. focus | dv = motor alpha | corrected: Holm")) %>%
   kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
@@ -606,7 +652,15 @@ summary(contrast(SSVEP.emm.s, method = "identity", adjust = "holm")) %>% # same 
   mutate(`CohensD` =
            summary(eff_size(contrast(SSVEP.emm.s, method = "identity", adjust = "holm"),
                             sigma = sqrt(mean(sigma(anovamodel_SSVEP$lm)^2)), # RMS of sigma()
-                            edf = df.residual(anovamodel_SSVEP$lm), method = "identity"))$effect.size
+                            edf = df.residual(anovamodel_SSVEP$lm), method = "identity"))$effect.size,
+         `lowCI` =
+           summary(eff_size(contrast(SSVEP.emm.s, method = "identity", adjust = "holm"),
+                            sigma = sqrt(mean(sigma(anovamodel_SSVEP$lm)^2)), # RMS of sigma()
+                            edf = df.residual(anovamodel_SSVEP$lm), method = "identity"))$lower.CL,
+         `highCI` =
+           summary(eff_size(contrast(SSVEP.emm.s, method = "identity", adjust = "holm"),
+                            sigma = sqrt(mean(sigma(anovamodel_SSVEP$lm)^2)), # RMS of sigma()
+                            edf = df.residual(anovamodel_SSVEP$lm), method = "identity"))$upper.CL
   )%>%
   mutate(
     p.value = cell_spec(ifelse(round(p.value,4)<.001,"< .001",round(p.value,4)), 
@@ -624,8 +678,16 @@ summary(contrast(SSVEP.emm.s, method = "identity", adjust = "holm")) %>% # same 
 summary(contrast(visalpha.emm.s, method = "identity", adjust = "holm")) %>% # same implementation
   mutate(`CohensD` =
            summary(eff_size(contrast(visalpha.emm.s, method = "identity", adjust = "holm"),
-                            sigma = sqrt(mean(sigma(anovamodel_SSVEP$lm)^2)), # RMS of sigma()
-                            edf = df.residual(anovamodel_SSVEP$lm), method = "identity"))$effect.size
+                            sigma = sqrt(mean(sigma(anovamodel_visalpha$lm)^2)), # RMS of sigma()
+                            edf = df.residual(anovamodel_visalpha$lm), method = "identity"))$effect.size,
+         `lowCI` =
+           summary(eff_size(contrast(visalpha.emm.s, method = "identity", adjust = "holm"),
+                            sigma = sqrt(mean(sigma(anovamodel_visalpha$lm)^2)), # RMS of sigma()
+                            edf = df.residual(anovamodel_visalpha$lm), method = "identity"))$lower.CL,
+         `highCI` =
+           summary(eff_size(contrast(visalpha.emm.s, method = "identity", adjust = "holm"),
+                            sigma = sqrt(mean(sigma(anovamodel_visalpha$lm)^2)), # RMS of sigma()
+                            edf = df.residual(anovamodel_visalpha$lm), method = "identity"))$upper.CL
   )%>%
   mutate(
     p.value = cell_spec(ifelse(round(p.value,4)<.001,"< .001",round(p.value,4)), 
@@ -643,8 +705,16 @@ summary(contrast(visalpha.emm.s, method = "identity", adjust = "holm")) %>% # sa
 summary(contrast(motalpha.emm.s, method = "identity", adjust = "holm")) %>% # same implementation
   mutate(`CohensD` =
            summary(eff_size(contrast(motalpha.emm.s, method = "identity", adjust = "holm"),
-                            sigma = sqrt(mean(sigma(anovamodel_SSVEP$lm)^2)), # RMS of sigma()
-                            edf = df.residual(anovamodel_SSVEP$lm), method = "identity"))$effect.size
+                            sigma = sqrt(mean(sigma(anovamodel_motalpha$lm)^2)), # RMS of sigma()
+                            edf = df.residual(anovamodel_motalpha$lm), method = "identity"))$effect.size,
+         `lowCI` =
+           summary(eff_size(contrast(motalpha.emm.s, method = "identity", adjust = "holm"),
+                            sigma = sqrt(mean(sigma(anovamodel_motalpha$lm)^2)), # RMS of sigma()
+                            edf = df.residual(anovamodel_motalpha$lm), method = "identity"))$lower.CL,
+         `highCI` =
+           summary(eff_size(contrast(motalpha.emm.s, method = "identity", adjust = "holm"),
+                            sigma = sqrt(mean(sigma(anovamodel_motalpha$lm)^2)), # RMS of sigma()
+                            edf = df.residual(anovamodel_motalpha$lm), method = "identity"))$upper.CL
   )%>%
   mutate(
     p.value = cell_spec(ifelse(round(p.value,4)<.001,"< .001",round(p.value,4)), 
@@ -656,5 +726,10 @@ summary(contrast(motalpha.emm.s, method = "identity", adjust = "holm")) %>% # sa
   kable(escape = F, digits = c(3,3,3,3,3,3,3,3,3), 
         caption = c("contrasts for estimated marginal means | against zero | dv = motor alpha modulation | corrected: Holm")) %>%
   kable_styling("striped", full_width = T, bootstrap_options = c("striped", "hover", "condensed", "responsive",font_size = 8))
+
+
+
+
+
 ```
 
