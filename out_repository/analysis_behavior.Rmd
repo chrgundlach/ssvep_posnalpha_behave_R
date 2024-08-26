@@ -53,7 +53,6 @@ library(tidyverse)
 source(file = 'R_rainclouds.R')
 
 datafile1 <- "D:/experimental_data/2024_PosnalphaBehave_Repository/data/behavior/Behavior_singletrials.txt"
-datafile1 <- "C:/Users/EEG/Documents/R/Christopher/ssvep_posnalpha_behave_R/data_in/Behavior_singletrials.txt"
 # datafile1 <- "...data/behavior/Behavior_singletrials.txt" # adapt path to 
 
 ```

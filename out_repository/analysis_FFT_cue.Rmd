@@ -63,9 +63,6 @@ library(BayesFactor)
 source(file = 'R_rainclouds.R')
 
 
-# datafile1 <- "D:/experimental_data/2024_PosnalphaBehave_Repository/data/eeg/Behavior_FFT_singletrials_cue.txt"
-datafile1 <- "C:/Users/psy05cvd/Dropbox/work/R-statistics/experiments/ssvep_posnalpha_behave/data_in/Behavior_FFT_singletrials_cue.txt"
-datafile1 <- "C:/Users/EEG/Documents/R/Christopher/ssvep_posnalpha_behave_R/data_in/Behavior_FFT_singletrials_cue.txt"
 # datafile1 <- ".../data/eeg/Behavior_FFT_singletrials_cue.txt" # adapt path to 
 timewindows = c("[-1000 0]ms", "[0 1000]ms", "[500 1500]ms")
 

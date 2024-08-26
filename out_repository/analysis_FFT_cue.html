@@ -11,7 +11,7 @@
 
 <meta name="author" content="Christopher Gundlach" />
 
-<meta name="date" content="2024-03-12" />
+<meta name="date" content="2024-08-26" />
 
 <title>Analysis of general effects for Neural Measures | Posner+SSVEP paradigm</title>
 
@@ -1813,7 +1813,7 @@ border-radius: 0px;
 Measures | Posner+SSVEP paradigm</h1>
 <h4 class="author"><a href="https://www.researchgate.net/profile/Christopher_Gundlach">Christopher
 Gundlach</a></h4>
-<h4 class="date">2024-03-12</h4>
+<h4 class="date">2024-08-26</h4>
 
 </div>
 
@@ -1835,7 +1835,7 @@ margin-right: auto;
 <div id="subaveraged-daten-werden-geladen" class="section level2">
 <h2>subaveraged Daten werden geladen</h2>
 <p>Loading data
-D:/experimental_data/2024_PosnalphaBehave_Repository/data/eeg/Behavior_FFT_singletrials_cue.txt</p>
+C:/Users/psy05cvd/Dropbox/work/R-statistics/experiments/ssvep_posnalpha_behave/data_in/Behavior_FFT_singletrials_cue.txt</p>
 <p>The data has the following structure</p>
 <ul>
 <li>trialnumber = trial</li>
@@ -2740,6 +2740,13 @@ uncued)</h3>
 <pre><code>## `summarise()` has grouped output by &#39;subject&#39;, &#39;post_event_pos_label&#39;, &#39;signal&#39;, &#39;time&#39;. You can override using the
 ## `.groups` argument.
 ## `summarise()` has grouped output by &#39;subject&#39;, &#39;signal&#39;, &#39;time&#39;. You can override using the `.groups` argument.</code></pre>
+<pre><code>##  contrast           effect.size    SE df lower.CL upper.CL
+##  (uncued - neutral)     -0.3928 0.158 54   -0.709  -0.0762
+##  (uncued - cued)        -0.4066 0.159 54   -0.725  -0.0888
+##  (neutral - cued)       -0.0139 0.149 54   -0.312   0.2840
+## 
+## sigma used for effect sizes: 9.49 
+## Confidence level used: 0.95</code></pre>
 <table class="table table-striped table-hover table-condensed table-responsive" style="margin-left: auto; margin-right: auto;">
 <caption>
 estimated marginal means | by att. focus | dv = SSVEP
@@ -2857,6 +2864,12 @@ p.value
 <th style="text-align:right;">
 CohensD
 </th>
+<th style="text-align:right;">
+lowCI
+</th>
+<th style="text-align:right;">
+highCI
+</th>
 </tr>
 </thead>
 <tbody>
@@ -2880,7 +2893,13 @@ uncued - neutral
 <span style=" font-weight: bold;    color: green !important;text-align: left;">0.0251</span>
 </td>
 <td style="text-align:right;">
--0.356
+-0.393
+</td>
+<td style="text-align:right;">
+-0.709
+</td>
+<td style="text-align:right;">
+-0.076
 </td>
 </tr>
 <tr>
@@ -2903,7 +2922,13 @@ uncued - cued
 <span style=" font-weight: bold;    color: green !important;text-align: left;">0.0251</span>
 </td>
 <td style="text-align:right;">
--0.369
+-0.407
+</td>
+<td style="text-align:right;">
+-0.725
+</td>
+<td style="text-align:right;">
+-0.089
 </td>
 </tr>
 <tr>
@@ -2926,7 +2951,13 @@ neutral - cued
 <span style="     color: red !important;text-align: left;">0.926</span>
 </td>
 <td style="text-align:right;">
--0.013
+-0.014
+</td>
+<td style="text-align:right;">
+-0.312
+</td>
+<td style="text-align:right;">
+0.284
 </td>
 </tr>
 </tbody>
@@ -3048,6 +3079,12 @@ p.value
 <th style="text-align:right;">
 CohensD
 </th>
+<th style="text-align:right;">
+lowCI
+</th>
+<th style="text-align:right;">
+highCI
+</th>
 </tr>
 </thead>
 <tbody>
@@ -3071,7 +3108,13 @@ uncued - neutral
 <span style="     color: red !important;text-align: left;">0.0629</span>
 </td>
 <td style="text-align:right;">
-0.298
+0.351
+</td>
+<td style="text-align:right;">
+0.018
+</td>
+<td style="text-align:right;">
+0.683
 </td>
 </tr>
 <tr>
@@ -3094,7 +3137,13 @@ uncued - cued
 <span style=" font-weight: bold;    color: green !important;text-align: left;">0.0143</span>
 </td>
 <td style="text-align:right;">
-0.397
+0.468
+</td>
+<td style="text-align:right;">
+0.125
+</td>
+<td style="text-align:right;">
+0.811
 </td>
 </tr>
 <tr>
@@ -3117,7 +3166,13 @@ neutral - cued
 <span style="     color: red !important;text-align: left;">0.4649</span>
 </td>
 <td style="text-align:right;">
-0.099
+0.117
+</td>
+<td style="text-align:right;">
+-0.203
+</td>
+<td style="text-align:right;">
+0.437
 </td>
 </tr>
 </tbody>
@@ -3239,6 +3294,12 @@ p.value
 <th style="text-align:right;">
 CohensD
 </th>
+<th style="text-align:right;">
+lowCI
+</th>
+<th style="text-align:right;">
+highCI
+</th>
 </tr>
 </thead>
 <tbody>
@@ -3262,7 +3323,13 @@ uncued - neutral
 <span style="     color: red !important;text-align: left;">0.2728</span>
 </td>
 <td style="text-align:right;">
-0.149
+0.212
+</td>
+<td style="text-align:right;">
+-0.176
+</td>
+<td style="text-align:right;">
+0.601
 </td>
 </tr>
 <tr>
@@ -3286,7 +3353,13 @@ uncued - cued
 .001</span>
 </td>
 <td style="text-align:right;">
-0.578
+0.821
+</td>
+<td style="text-align:right;">
+0.376
+</td>
+<td style="text-align:right;">
+1.266
 </td>
 </tr>
 <tr>
@@ -3309,7 +3382,13 @@ neutral - cued
 <span style=" font-weight: bold;    color: green !important;text-align: left;">0.0049</span>
 </td>
 <td style="text-align:right;">
-0.428
+0.609
+</td>
+<td style="text-align:right;">
+0.190
+</td>
+<td style="text-align:right;">
+1.027
 </td>
 </tr>
 </tbody>
@@ -3342,6 +3421,12 @@ p.value
 <th style="text-align:right;">
 CohensD
 </th>
+<th style="text-align:right;">
+lowCI
+</th>
+<th style="text-align:right;">
+highCI
+</th>
 </tr>
 </thead>
 <tbody>
@@ -3367,6 +3452,12 @@ uncued
 <td style="text-align:right;">
 0.074
 </td>
+<td style="text-align:right;">
+-0.308
+</td>
+<td style="text-align:right;">
+0.456
+</td>
 </tr>
 <tr>
 <td style="text-align:left;">
@@ -3390,6 +3481,12 @@ neutral
 <td style="text-align:right;">
 0.466
 </td>
+<td style="text-align:right;">
+0.064
+</td>
+<td style="text-align:right;">
+0.869
+</td>
 </tr>
 <tr>
 <td style="text-align:left;">
@@ -3412,6 +3509,12 @@ cued
 </td>
 <td style="text-align:right;">
 0.480
+</td>
+<td style="text-align:right;">
+0.077
+</td>
+<td style="text-align:right;">
+0.884
 </td>
 </tr>
 </tbody>
@@ -3444,6 +3547,12 @@ p.value
 <th style="text-align:right;">
 CohensD
 </th>
+<th style="text-align:right;">
+lowCI
+</th>
+<th style="text-align:right;">
+highCI
+</th>
 </tr>
 </thead>
 <tbody>
@@ -3467,7 +3576,13 @@ uncued
 <span style="     color: red !important;text-align: left;">0.6258</span>
 </td>
 <td style="text-align:right;">
-0.123
+0.158
+</td>
+<td style="text-align:right;">
+-0.226
+</td>
+<td style="text-align:right;">
+0.541
 </td>
 </tr>
 <tr>
@@ -3490,7 +3605,13 @@ neutral
 <span style="     color: red !important;text-align: left;">0.6258</span>
 </td>
 <td style="text-align:right;">
--0.151
+-0.193
+</td>
+<td style="text-align:right;">
+-0.577
+</td>
+<td style="text-align:right;">
+0.192
 </td>
 </tr>
 <tr>
@@ -3513,7 +3634,13 @@ cued
 <span style="     color: red !important;text-align: left;">0.3248</span>
 </td>
 <td style="text-align:right;">
--0.242
+-0.310
+</td>
+<td style="text-align:right;">
+-0.700
+</td>
+<td style="text-align:right;">
+0.080
 </td>
 </tr>
 </tbody>
@@ -3546,6 +3673,12 @@ p.value
 <th style="text-align:right;">
 CohensD
 </th>
+<th style="text-align:right;">
+lowCI
+</th>
+<th style="text-align:right;">
+highCI
+</th>
 </tr>
 </thead>
 <tbody>
@@ -3569,7 +3702,13 @@ uncued
 <span style="     color: red !important;text-align: left;">1</span>
 </td>
 <td style="text-align:right;">
-0.082
+0.108
+</td>
+<td style="text-align:right;">
+-0.272
+</td>
+<td style="text-align:right;">
+0.488
 </td>
 </tr>
 <tr>
@@ -3592,7 +3731,13 @@ neutral
 <span style="     color: red !important;text-align: left;">1</span>
 </td>
 <td style="text-align:right;">
--0.080
+-0.105
+</td>
+<td style="text-align:right;">
+-0.484
+</td>
+<td style="text-align:right;">
+0.275
 </td>
 </tr>
 <tr>
@@ -3615,7 +3760,13 @@ cued
 <span style=" font-weight: bold;    color: green !important;text-align: left;">0.0012</span>
 </td>
 <td style="text-align:right;">
--0.546
+-0.713
+</td>
+<td style="text-align:right;">
+-1.139
+</td>
+<td style="text-align:right;">
+-0.288
 </td>
 </tr>
 </tbody>
